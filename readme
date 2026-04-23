@@ -7,3 +7,42 @@ Für bitcoin Netzwerk
     ./deploy.sh
     ./check.sh
     ./connect-nodes.sh
+
+    Cold-Wallet
+        cold-key-A
+            OS: NixOS minimal: AMD/intel
+            Add to HA: off
+            BIOS: OVMF
+            machine q35
+            SCSI: VirtI SCSI Single
+            Qemu Agent: off
+            Add EFI Disk: ON
+            Pre-Enroll keys: opff
+            TPM: off
+            storage: qcow2
+            grphic: none
+            Bus/Device: SCSI 1
+            storage local
+            size: 10
+            cache: none
+            discard: ON
+            Io Thread: ON
+            SSD Emu: ON
+            Read-Only: off
+            Backup: off
+            skip replication: ON
+            Async IO: native
+            sockets: 1
+            Cores: 1
+            CPU tyoe: Host
+            Enable NUMA: off
+            CPU-flags: default
+            memory: 1024
+            Reduktion der Netzwerk/Host interaktion
+            ballooning: off
+            allow KSM: off
+            No network device: on
+        cold-key-B
+        cold-signer
+            memory: 2048
+            
