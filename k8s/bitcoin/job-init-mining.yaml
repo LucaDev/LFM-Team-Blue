@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bitcoin-init
+  namespace: bitcoin
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: ruimarinho/bitcoin-core:25
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sleep 10
+
+              bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
+                -rpcuser=bitcoin -rpcpassword=supersecure \
+                createwallet "miner"
+
+              ADDR=$(bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
+                -rpcuser=bitcoin -rpcpassword=supersecure \
+                getnewaddress)
+
+              bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
+                -rpcuser=bitcoin -rpcpassword=supersecure \
+                generatetoaddress 101 $ADDR

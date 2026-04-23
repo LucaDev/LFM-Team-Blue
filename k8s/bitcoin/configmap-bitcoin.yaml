@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bitcoin-config
+  namespace: bitcoin
+data:
+  bitcoin.conf: |
+    regtest=1
+    server=1
+    txindex=1
+    rpcuser=bitcoin
+    rpcpassword=supersecure
+    rpcallowip=0.0.0.0/0
+    rpcbind=0.0.0.0
+    fallbackfee=0.0001
+    zmqpubrawtx=tcp://0.0.0.0:28332
+    zmqpubrawblock=tcp://0.0.0.0:28333

@@ -1,1 +1,9 @@
-Das ist ein Test
+Für bitcoin Netzwerk
+    Führe deploy.sh aus
+    Prüfe mit check.sh
+    Führe connect-nodes.sh aus, um Bitcoin Nodes im netzwerk hzzfg
+
+    chmod +x *.sh
+    ./deploy.sh
+    ./check.sh
+    ./connect-nodes.sh

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bitcoind
+  namespace: bitcoin
+spec:
+  serviceName: "bitcoind"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bitcoind
+  template:
+    metadata:
+      labels:
+        app: bitcoind
+    spec:
+      containers:
+        - name: bitcoind
+          image: ruimarinho/bitcoin-core:25
+          command:
+            - "bitcoind"
+            - "-conf=/etc/bitcoin/bitcoin.conf"
+          ports:
+            - containerPort: 18444
+            - containerPort: 18443
+          volumeMounts:
+            - name: bitcoin-data
+              mountPath: /home/bitcoin/.bitcoin
+            - name: config
+              mountPath: /etc/bitcoin
+  volumeClaimTemplates:
+    - metadata:
+        name: bitcoin-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
