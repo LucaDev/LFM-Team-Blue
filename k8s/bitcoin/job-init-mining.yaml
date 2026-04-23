@@ -10,20 +10,51 @@ spec:
       containers:
         - name: init
           image: ruimarinho/bitcoin-core:25
+          env:
+            - name: RPC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: bitcoind-rpc-auth
+                  key: rpcuser
+            - name: RPC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bitcoind-rpc-auth
+                  key: rpcpassword
           command:
             - /bin/sh
             - -c
             - |
-              sleep 10
+              set -e
 
+              echo "Waiting for RPC..."
+              bitcoin-cli -regtest -rpcwait -rpcconnect=bitcoind-0.bitcoind \
+                -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                getblockchaininfo >/dev/null
+
+              echo "Ensuring wallet exists..."
+              EXISTS=$(bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
+                -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                listwalletdir | grep -c '"name": "miner"' || true)
+
+              if [ "$EXISTS" -eq 0 ]; then
+                bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
+                  -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                  createwallet "miner" >/dev/null
+              fi
+
+              echo "Loading wallet..."
               bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
-                -rpcuser=bitcoin -rpcpassword=supersecure \
-                createwallet "miner"
+                -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                loadwallet "miner" >/dev/null || true
 
+              echo "Mining blocks..."
               ADDR=$(bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
-                -rpcuser=bitcoin -rpcpassword=supersecure \
+                -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
                 getnewaddress)
 
               bitcoin-cli -regtest -rpcconnect=bitcoind-0.bitcoind \
-                -rpcuser=bitcoin -rpcpassword=supersecure \
-                generatetoaddress 101 $ADDR
+                -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                generatetoaddress 101 "$ADDR" >/dev/null
+
+              echo "Done."

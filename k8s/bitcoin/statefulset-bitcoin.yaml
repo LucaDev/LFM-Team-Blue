@@ -17,17 +17,71 @@ spec:
       containers:
         - name: bitcoind
           image: ruimarinho/bitcoin-core:25
+          env:
+            - name: RPC_USER
+              valueFrom:
+                secretKeyRef:
+                  name: bitcoind-rpc-auth
+                  key: rpcuser
+            - name: RPC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bitcoind-rpc-auth
+                  key: rpcpassword
           command:
-            - "bitcoind"
-            - "-conf=/etc/bitcoin/bitcoin.conf"
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              cp /etc/bitcoin-src/bitcoin.conf /etc/bitcoin/bitcoin.conf
+              echo "rpcuser=${RPC_USER}" >> /etc/bitcoin/bitcoin.conf
+              echo "rpcpassword=${RPC_PASSWORD}" >> /etc/bitcoin/bitcoin.conf
+              exec bitcoind -conf=/etc/bitcoin/bitcoin.conf
           ports:
             - containerPort: 18444
+              name: p2p
             - containerPort: 18443
+              name: rpc
           volumeMounts:
             - name: bitcoin-data
               mountPath: /home/bitcoin/.bitcoin
+            - name: config-src
+              mountPath: /etc/bitcoin-src
+              readOnly: true
             - name: config
               mountPath: /etc/bitcoin
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  bitcoin-cli -regtest -rpcwait -rpcconnect=127.0.0.1 \
+                    -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                    getblockchaininfo >/dev/null
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  bitcoin-cli -regtest -rpcconnect=127.0.0.1 \
+                    -rpcuser="${RPC_USER}" -rpcpassword="${RPC_PASSWORD}" \
+                    uptime >/dev/null
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+      volumes:
+        - name: config-src
+          configMap:
+            name: bitcoin-config
+        - name: config
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: bitcoin-data

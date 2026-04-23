@@ -8,10 +8,11 @@ data:
     regtest=1
     server=1
     txindex=1
-    rpcuser=bitcoin
-    rpcpassword=supersecure
+
+    # RPC auth comes from env in the container wrapper (see StatefulSet)
     rpcallowip=0.0.0.0/0
     rpcbind=0.0.0.0
+
     fallbackfee=0.0001
     zmqpubrawtx=tcp://0.0.0.0:28332
     zmqpubrawblock=tcp://0.0.0.0:28333
