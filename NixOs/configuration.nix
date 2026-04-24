@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 {
-  imports = [
+  imports = [    
     ./hardware-configuration.nix
     ./profiles/base.nix
     ./profiles/gui.nix

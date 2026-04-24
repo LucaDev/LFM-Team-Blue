@@ -45,4 +45,10 @@ Für bitcoin Netzwerk
         cold-key-B
         cold-signer
             memory: 2048
-            
+
+NixOs Erstellung
+    Ubuntu maschine SSH aktivieren
+        sudo apt update
+        sudo apt install -y openssh-server
+        sudo systemctl enable ssh
+        sudo systemctl start ssh

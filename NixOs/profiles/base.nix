@@ -7,7 +7,7 @@
   i18n.defaultLocale = "de_DE.UTF-8";
   console.keyMap = "de";
 
-  networking.hostName = "cold-signer"
+  networking.hostName = "cold-signer";
 
   #User mit Sudo
   users.users.admin = {
@@ -34,33 +34,23 @@
     v4l-utils
   ];
 
-  environment.etc."scripts/deploy.sh" = {
-    source = /etc/nixos/files/deploy.sh;
-    mode = "0755";
-  };
-
-  environment.etc."scripts/check.sh" = {
-    source = /etc/nixos/files/check.sh;
-    mode = "0755";
-  };
-
   environment.etc."cold/scripts/psbt-inbox-status.sh" = {
-    source = /etc/nixos/files/psbt-inbox-status.sh;
+    source = ./files/psbt-inbox-status.sh;
     mode = "0755";
   };
 
   environment.etc."cold/scripts/psbt-outbox-status.sh" = {
-    source = /etc/nixos/files/psbt-outbox-status.sh;
+    source = ./files/psbt-outbox-status.sh;
     mode = "0755";
   };
 
   environment.etc."cold/scripts/psbt-hash.sh" = {
-    source = /etc/nixos/files/psbt-hash.sh;
+    source = ./files/psbt-hash.sh;
     mode = "0755";
   };
 
   environment.etc."cold/scripts/README.txt" = {
-    source = /etc/nixos/files/README.txt;
+    source = ./files/README.txt;
     mode   = "0644";
   };
   
