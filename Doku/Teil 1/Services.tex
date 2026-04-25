@@ -1,0 +1,105 @@
+\section{Ausgewählte Services}
+Die Anforderungen des Mandanten sehen die Umsetzung eines selbstgehosteten und umfassend abgesicherten Systems mit mindestens 15 Services vor, die "eine breite Palette an alltäglichen Produktivitäts- und Cloud-Diensten abbildet...". Aufgrund der umfangreichen Investitionen in Kryptowährungen liegt außerdem ein besonderer Fokus auf Sicherheit und Datenschutz. Vor diesem Hintergurnd wurden Dienste ausgewählt, die zentrale Anwendungsbereiche abdecken und gleichzeitig die Anforderungen an Datensouveränität und Kontrolle erfüllen. 
+
+Die ausgewählten Services beinhalten dabei sowohl alltägliche Anwendungen, wie Medienverwaltung, Dokumentenarchivierung und kollaboratives Arbeiten, als auch spezialisierte Komponenten für Infrastruktur, Monitoring und Sicherheit. Ergänzend dazu wurden Lösungen für eine sichere Smart-Home-Integration sowie Authentifizierungs- und Zugriffsmanagement berücksichtigt, um ein ganzheitliches und praxisnahes System zu realisieren. 
+
+Der thematische Schwerpunkt liegt auf der Integration eines sicheren Bitcoin-Ökosystems, das sowohl automatisierte Prozesse als auch manuelle Kontrollmechanismen unterstützt und damit den spezifischen Anforderung des Mandanten gerecht wird. Die Umsetzung des Ökosystems von Bitcoin wird in Kapitel \ref{Krypto}) vertieft und in diesem Kapitel lediglich als Teil der angebotenen Services aufgelistet.
+
+Das gesamte System wird auf einem Kubernetes-Cluster betrieben, der auf Talos Linux basiert und innerhalb der Virtualisierungsumgebung Proxmox Virtual Environment ausgeführt wird. 
+
+\begin{enumerate}
+    \item Dokumente, Medien \& Notizen
+    \begin{itemize}
+        \begin{multicols}{2}
+        \item Jellyfin
+        \item Immich
+        \item Paperless-ngx
+        \item bento-pdf
+        \end{multicols}
+    \end{itemize}
+    \item Smart-Home \& \ac{IoT}
+    \begin{itemize}
+        \begin{multicols}{2}
+        \item Home-Assistant
+        \item mosquitto
+        \end{multicols}
+    \end{itemize}
+    \item Bitcoin-Architektur
+    \begin{itemize}
+        \begin{multicols}{2}
+        \item Bitcoin Core
+        \item Sparrow
+        \item Open Policy Agent
+        \item Middleware
+        \item Cold Wallet
+        \begin{itemize}
+            \item Sparrow (offline)
+        \end{itemize}
+        \item Simuliertes Air-gapped System (2x)
+        \end{multicols}
+    \end{itemize}
+    \item Dashboards \& Monitoring
+    \begin{itemize}
+        \begin{multicols}{2}
+        \item homepage
+        \item openspeedtest
+        \item Grafana
+        \item Prometheus
+        \item Loki
+        \item Alertmanager
+        \item ntfy
+        \end{multicols}
+    \end{itemize}
+    \item Authentifizierung \& Passwort- Manangement
+    \begin{itemize}
+        \begin{multicols}{2}
+        \item KeyCloak
+        \item Vaultwarden
+        \end{multicols}
+    \end{itemize}
+    \item Infrastruktur
+    \begin{itemize}
+        \begin{multicols}{2}
+        \item envoy-gateway
+        \item dragonflydb
+        \item postgresgl auf (cnpg)
+        \item volsync
+        \item openappsec
+        \item forgejo
+        \end{multicols}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Begründung einzelner Services}
+
+\subsubsection{Vaultwarden}
+
+Während der Freigabe der Services äußerte der Mandant bedenken bezüglich dem ausgewählten Passwortmanager und brachte eine von ihm bevorzugte Alternative namens KeePass ein, da er einen Argon2-Schutz bevorzugt. Argon2 wird genutzt, um das Master-Passwort, welches die gesamte Datenbank entschlüsselt, zu hashen.  
+
+%Argon2 ist eine speicherintensive Funktion zum Passwort-Hashing. Sie wurde entwickelt, um Angriffe durch GPUs und ASICs zu erschweren, indem nicht nur die Rechenleistung, sondern auch ein hoher Bedarf an Arbeitsspeicher benötigt wird \cite{rfc9106}. 
+
+%Argon2 gilt als Stand der Technik im Bereich der Passwort-Hashing-Algorithmen. Es zielt darauf ab, Angriffe durch Time-Space Trade Offs zu verhindern und dabei eine effiziente Nutzung moderner Hardware zu ermöglichen \cite{argon2}. 
+
+Doch auch Vaultwarden ist mit Argon2 nutzbar \cite{cloudron}. Die konkrete Umsetzung von Argon2 ist in Kapitel (hier Referenz einfügen) beschrieben. Damit haben bezüglich der kryptographischen Absicherung der Master-Passwörter Vaultwarden und KeePass ein vergleichbares Sicherheitsniveau. 
+
+Ein bedeutender Vorteil von Vaultwarden liegt in der Vereinbarkeit von Sicherheit und Benutzerfreundlichkeit. Während KeePass als lokale, dateibasierte Lösung konzipiert ist und eine manuelle Synchronisation erfordert, ermöglicht Vaultwarden eine zentral gemanagte, selbstgehostete Verwaltung der Zugangsdaten. Dies erleichtert die Nutzung über mehrere Geräte, ohne auf eine externe Cloud angewiesen zu sein. Durch die Integration der Bitwarden-Browsererweiterung erhöht sich nochmal die Benutzerfreundlichkeit durch das automatische Ausfüllen von Zugangsdaten. Vaultwarden bietet außerdem Ende-zu-Ende-Verschlüsselung, die Trennung von Vertrauen zwischen Client und Server sowie Mehrfaktorauthentifizierung. Diese Aspekte machen Vaultwarden zu einer attraktiveren Lösung für das vorliegende Szenario. \cite{vaultwarden_git} 
+
+Besonders die Integration mit KeyCloak trägt zu einer konsistenten und zentral verwalteten Authentifizierungsstrategie bei, denn Vaultwarden unterstützt OpenID Connect, sodass eine nahtlose Einbindung in das Identity- und Access-Management möglich ist \cite{v1350}. Der Mandant authentifiziert sich über KeyCloak, wodurch Single-Sign-On über verschiedene Dienste hinweg möglich ist. Gleichzeitig können sicherheitsrelevante Richtlinien wie z.B. Passwortanforderungen oder Mehrfaktorauthentifizierung zentral in KeyCloak verwaltet und durchgesetzt werden \cite{keyCloak}. Vaultwarden übernimmt dabei weiterhin die sichere Speicherung der Zugangsdaten im Sinne der Zero-Knowledge-Architektur \cite{hussain_2026}. 
+
+Ein weiterer Vorteil ergibt sich im Bereich Monitoring. In der geplanten Architektur mit KeyCloak können Ereignisse bei Authentifizierungen (Logs, fehlgeschlagene Anmeldeversuche oder Token) erfasst und durch Prometheus und Grafana überwacht und in kritischen Situationen der Mandant durch ntfy alarmiert werden. Dadurch ist der Ablauf und der Nutzen für den Mandanten jederzeit einsichtbar und transparent. Vaultwarden selbst kann auch als System von Prometheus überwacht werden.
+
+Im Gegensatz dazu ist KeePass eine rein lokale Anwendung und deshalb nicht sinnvoll in das geplante Monitoring und Logging-Konzept integrierbar. Für Prometheus sind keine Metriken oder Authentifizierungsversuche erfassbar. Aktivitäten wie das Öffnen der Datenbank, fehlgeschlagene Log In Versuche oder die Nutzung einzelner Datenbankeinträge bleiben lokal auf dem jeweiligen Gerät und sind für die Administration nicht einsehbar. 
+
+Die identifizierten Schwachstellen von Vaultwarden (insbesondere CVE-2024-55225 \cite{nist_cve_2024_55225}, CVE-2025-24364 \cite{nist_cve_2025_24364} und CVE-2025-24365 \cite{nist_cve_2025_24365}) wurden im Rahmen dieser Umsetzung diskutiert. Dabei ist zu berücksichtigen, dass diese (teils auch schwerwiegenden) Sicherheitslücken nur unter spezifischen Voraussetzungen ausnutzbar sind (z. B. bei bereits vorhandenem Zugriff das Admin-Panel oder bereits vorhandene Nutzerrechte). Durch die im vorliegenden System implementierten Schutzmaßnahmen, wie eine konsequente Netzwerksegmentierung, restriktive Zugriffskontrollen und Mehrfaktorauthentifizierung wird die Wahrscheinlichkeit einer erfolgreichen Ausnutzung dieser oder ähnlicher Schwachstellen erheblich reduziert (zudem wurden die Schwachstellen bereits behoben oder durch bereitgestellte Anleitungen zur manuellen Behebung adressiert).
+
+Gleichzeitig ist die zentrale Rolle von Vaultwarden als Passwort-Manager kritisch zu bewerten, da eine erfolgreiche Kompromittierung potenziell den Zugriff auf alle gespeicherten Zugangsdaten ermöglichen würde. Dies hätte insbesondere im Kontext von Bitcoin gravierende Auswirkungen, bis hin zum vollständigen Kontrollverlust über relevante Systeme. Insgesamt zeigt sich jedoch, dass die bestehenden Risiken durch geeignete technische und organisatorische Maßnahmen kontrollierbar sind und im Rahmen des gewählten Sicherheitskonzepts angemessen adressiert werden. 
+
+
+
+
+
+Mandant meinte: Beim Punkt Passwort-Management ist der Mandant etwas skeptisch. Er nutzt bisher KeePass, vor allem wegen des Argon2-Schutzes, und macht sich bei Vaultwarden Sorgen hinsichtlich der Sicherheit. Er möchte Sie bitten, in der weiteren Ausarbeitung nachvollziehbar darzulegen, warum Vaultwarden für sein Szenario eine geeignete Wahl ist, oder alternativ zu prüfen, ob eine andere Lösung besser zu seinen Anforderungen passt.
+
+
+\subsubsection{openappsec}
+Mandant meinte: Zu openappsec und der erwähnten ML-Komponente konnte sich der Mandant bislang nichts Konkretes vorstellen. Ihm ist zwar klar, worum es sich bei openappsec grundsätzlich handelt, allerdings nicht, wofür er das in seinem Setup konkret braucht. Insbesondere ist ihm unklar, was ML in diesem Zusammenhang bedeutet, wofür es dort eingesetzt wird und wie es funktioniert. Er bittet Sie, spätestens bei der Implementierung genau zu erläutern, weswegen und wozu hier ML zum Einsatz kommt und was es konkret tut.

@@ -68,10 +68,14 @@
 
 % Abkürzungen 
 \usepackage{acronym}
+% Ganze Zeile als Absatz
+\usepackage{parskip}
 
+\usepackage{multicol}
 
 %%%% Beginn %%%%
 \begin{document}
+\input{Doku/Definitionen/Glossar}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Titelseite  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\pagestyle{empty} % keine Header/Footer
@@ -79,8 +83,8 @@
 	\include{Doku/Titelseite}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%  Abstract und Danksagung  %%%%%%%%%%%%%%%%%%%%	
-	\include{Kurz}
-	\cleardoublepage
+	%\include{Kurz}
+	%\cleardoublepage
 \pagestyle{plain}
 \pagenumbering{Roman} 
 
@@ -103,6 +107,9 @@
 \pagestyle{headings} 
 %Anmerkung von M: subject to change
 	\include{Doku/Teil 1/Einleitung}
+    \include{Doku/Teil 1/Services}
+    \include{Doku/Teil 1/Krypto}
+    
 
 
 
