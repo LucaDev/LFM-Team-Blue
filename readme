@@ -61,7 +61,8 @@ NixOs Erstellung
             ls
                 es sollte NixOs da stehen
             cd NixOs
-
+	Nix builder installieren
+		sudo apt install nix-bin
         Nix bauen, mit ISO image und sparrow im storage 
             nix-build '<nixpkgs/nixos>' \
             -A config.system.build.isoImage \
