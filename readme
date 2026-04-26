@@ -80,3 +80,26 @@ NixOs Erstellung
 
     NixOs von ubuntu downloaden (vorher cd zur Wunschablage)
         scp -r user@192.168.99.108:/home/user/cold-iso .
+
+
+
+Direkt auf NixOS    
+    Aktivieren SSH
+        sudo nano /etc/nixos/configuration.nix
+            services.openssh.enable = true;
+            services.openssh.settings.PasswordAuthentication = true;
+        sudo nixos-rebuild switch
+
+    Per github
+        Alte config löschen
+            sudo rm -rf /etc/nixos/*
+        In Ordner reingehen
+            cd /etc/nixos
+        Git kopieren
+            git clone  https://...git
+        In Ordner kopieren
+            sudo mv /home/nixos/NixOsCold/cold-Signer/* /etc/nixos/
+        sudo nixos-rebuild switch
+
+
+Iso nix.iso entfernen
