@@ -53,17 +53,27 @@ NixOs Erstellung
         sudo systemctl enable ssh
         sudo systemctl start ssh
 
-        Auf windows PC transferieren
-            scp -r NixOs user@192.168.99.108:~
+    Auf windows PC transferieren
+        scp -r NixOs user@192.168.99.108:~
 
-        Überprüfen
-            ssh user@192.168.99.108
-            ls
-                es sollte NixOs da stehen
-            cd NixOs
+    Überprüfen
+        ssh user@192.168.99.108
+        ls
+            es sollte NixOs da stehen
+        cd NixOs
+
 	Nix builder installieren
 		sudo apt install nix-bin
-        Nix bauen, mit ISO image und sparrow im storage 
-            nix-build '<nixpkgs/nixos>' \
-            -A config.system.build.isoImage \
-            -I nixos-config=./iso.nix
+
+    User zu Nix gruppe hzfg (vermeiden permission denied)
+        sudo usermod -aG nix-users user
+
+    Nix-pkgs channel hzfg  
+        nix-channel --add https://nixos.org/channels/nixpkgs-unstable nixpkgs
+        nix-channel --update
+
+    Nix bauen, mit ISO image und sparrow im storage 
+        nix-build '<nixpkgs/nixos>' \
+        -A config.system.build.isoImage \
+        -I nixos-config=./iso.nix
+        -I nixpkgs=$HOME/.nix-defexpr/channels/nixpkgs

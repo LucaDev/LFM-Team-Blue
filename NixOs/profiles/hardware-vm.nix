@@ -1,4 +1,4 @@
-{ config, pkgs, modulesPath, ... }:
+{ config, pkgs, modulesPath, lib, ... }:
 
 {
   imports = [
@@ -13,5 +13,5 @@
   ];
 
   # USB bewusst steuern
-  services.udisks2.enable = false;
+  services.udisks2.enable = lib.mkForce false;
 }
