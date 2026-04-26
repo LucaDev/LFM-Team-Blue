@@ -7,7 +7,7 @@
   i18n.defaultLocale = "de_DE.UTF-8";
   console.keyMap = "de";
 
-  networking.hostName = "cold-signer";
+  networking.hostName = "cold-Signer";
 
   #User mit Sudo
   users.users.admin = {

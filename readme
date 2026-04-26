@@ -77,3 +77,6 @@ NixOs Erstellung
         -A config.system.build.isoImage \
         -I nixos-config=./iso.nix
         -I nixpkgs=$HOME/.nix-defexpr/channels/nixpkgs
+
+    NixOs von ubuntu downloaden (vorher cd zur Wunschablage)
+        scp -r user@192.168.99.108:/home/user/cold-iso .
