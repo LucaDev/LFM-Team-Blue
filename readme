@@ -90,7 +90,7 @@ Direkt auf NixOS
             n
             enter
             enter
-            +512M
+            +1024M
             t
             1
             n
