@@ -10,9 +10,14 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/XXXXXXXX";
+    device = "/dev/disk/by-uuid/NIXROOT";
     fsType = "ext4";
   };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-label/NIXBOOT";
+      # ...
+    };
 
   swapDevices = [ ];
 

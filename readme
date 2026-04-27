@@ -84,22 +84,45 @@ NixOs Erstellung
 
 
 Direkt auf NixOS    
-    Aktivieren SSH
-        sudo nano /etc/nixos/configuration.nix
-            services.openssh.enable = true;
-            services.openssh.settings.PasswordAuthentication = true;
-        sudo nixos-rebuild switch
+    NixOs installlieren
+        sudo fdisk /dev/vda
+            g
+            n
+            enter
+            enter
+            +512M
+            t
+            1
+            n
+            Enter
+            Enter
+            w
+        sudo mkfs.fat -F 32 /dev/sda1
+        sudo fatlabel /dev/sda1 NIXBOOT
+        sudo mkfs.ext4 /dev/sda2 -L NIXROOT
+
+        sudo mount /dev/disk/by-label/NIXROOT /mnt
+        sudo mkdir -p /mnt/boot
+        sudo mount /dev/disk/by-label/NIXBOOT /mnt/boot
+
+        sudo dd if=/dev/zero of=/mnt/.swapfile bs=1024 count=2097152 # 2GB size
+        sudo chmod 600 /mnt/.swapfile
+        sudo mkswap /mnt/.swapfile
+        sudo swapon /mnt/.swapfile
+
 
     Per github
+        Neue struktur auf mount anlegen 
+            sudo nixos-generate-config --root /mnt
         Alte config löschen
-            sudo rm -rf /etc/nixos/*
+            sudo rm -rf mnt/etc/nixos/*
         Git kopieren
             git clone  https://...git
         In Ordner reingehen
             cd /etc/nixos
         In Ordner kopieren
             sudo mv ~/NixOsCold/Cold-Signer/* /etc/nixos/
-        sudo nixos-rebuild switch
+        sudo nixos-rebuild boot
 
         config.airgap = true;
         sudo nixos
