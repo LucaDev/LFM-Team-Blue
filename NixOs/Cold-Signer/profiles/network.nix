@@ -2,14 +2,17 @@
 
 {
   # Kein DHCP, kein NetworkManager
-  networking.useDHCP = false;
-  networking.networkmanager.enable = lib.mkForce false;
+  
+  networking.networkmanager.enable = lib.mkIf (!config.airgap) true;
+  networking.useDHCP = lib.mkIf (!config.airgap) true;
+
 
   # SSH aus (Cold)
-  services.openssh.enable = false;
+  services.openssh.enable = lib.mkIf (!config.airgap) true;
 
-  networking.useNetworkd = true;
-  systemd.network.enable = true;
+  networking.useNetworkd = lib.mkIf config.airgap true;
+  systemd.network.enable = lib.mkIf config.airgap true;
+
 
   # Firewall kann an bleiben (praktisch “egal” ohne Netz, aber sauber)
   networking.firewall.enable = true;

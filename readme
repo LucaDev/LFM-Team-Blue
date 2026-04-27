@@ -93,13 +93,16 @@ Direkt auf NixOS
     Per github
         Alte config löschen
             sudo rm -rf /etc/nixos/*
-        In Ordner reingehen
-            cd /etc/nixos
         Git kopieren
             git clone  https://...git
+        In Ordner reingehen
+            cd /etc/nixos
         In Ordner kopieren
-            sudo mv /home/nixos/NixOsCold/cold-Signer/* /etc/nixos/
+            sudo mv ~/NixOsCold/Cold-Signer/* /etc/nixos/
         sudo nixos-rebuild switch
+
+        config.airgap = true;
+        sudo nixos
 
 
 Iso nix.iso entfernen
