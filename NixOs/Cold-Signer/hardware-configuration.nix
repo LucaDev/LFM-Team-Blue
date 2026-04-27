@@ -10,7 +10,7 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/NIXROOT";
+    device = "/dev/disk/by-label/NIXROOT";
     fsType = "ext4";
   };
 

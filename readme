@@ -85,7 +85,7 @@ NixOs Erstellung
 
 Direkt auf NixOS    
     NixOs installlieren
-        sudo fdisk /dev/vda
+        sudo fdisk /dev/sda
             g
             n
             enter
@@ -115,16 +115,18 @@ Direkt auf NixOS
         Neue struktur auf mount anlegen 
             sudo nixos-generate-config --root /mnt
         Alte config löschen
-            sudo rm -rf mnt/etc/nixos/*
+            sudo rm -rf /mnt/etc/nixos/*
         Git kopieren
             git clone  https://...git
-        In Ordner reingehen
-            cd /etc/nixos
+
         In Ordner kopieren
-            sudo mv ~/NixOsCold/Cold-Signer/* /etc/nixos/
-        sudo nixos-rebuild boot
+            sudo mv ~/NixOsCold/Cold-Signer/* /mnt/etc/nixos/
+
+        cd /mnt
+        sudo nixos-install        
 
         config.airgap = true;
+
         sudo nixos
 
 
