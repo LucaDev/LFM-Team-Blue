@@ -1,20 +1,8 @@
 { config, pkgs, ... }:
 
 {
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-
-config.airgap = false; # Build-Mode
-  
-  services.resolved.enable = true;
-
-  networking.nameservers = [
-    "1.1.1.1"
-    "8.8.8.8"
-  ];
-
-
   imports = [   
+    ./profiles/airgap-option.nix
     ./profiles/hardware-vm.nix 
     ./hardware-configuration.nix
     ./profiles/base.nix
@@ -22,5 +10,14 @@ config.airgap = false; # Build-Mode
     ./profiles/sparrow.nix
     ./profiles/network.nix
   ];
+
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  config.airgap = false; # Build-Mode
+  
+  airgap.enable = true;   # oder false
+
+  system.stateVersion = "24.05";
 
 }

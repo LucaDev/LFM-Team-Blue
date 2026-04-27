@@ -1,19 +1,16 @@
-{ config, pkgs, lib, ... }:
+{ config, lib, ... }:
 
+let
+  airgap = config.coldSigner.airgap.enable;
+in
 {
-  # Kein DHCP, kein NetworkManager
-  
-  networking.networkmanager.enable = lib.mkIf (!config.airgap) true;
-  networking.useDHCP = lib.mkIf (!config.airgap) true;
+  networking.useDHCP = lib.mkIf airgap false;
+  networking.networkmanager.enable = lib.mkForce (lib.mkIf airgap false);
 
+  networking.useNetworkd = lib.mkIf airgap true;
+  systemd.network.enable = lib.mkIf airgap true;
 
-  # SSH aus (Cold)
-  services.openssh.enable = lib.mkIf (!config.airgap) true;
+  services.openssh.enable = lib.mkIf airgap false;
 
-  networking.useNetworkd = lib.mkIf config.airgap true;
-  systemd.network.enable = lib.mkIf config.airgap true;
-
-
-  # Firewall kann an bleiben (praktisch “egal” ohne Netz, aber sauber)
   networking.firewall.enable = true;
 }
