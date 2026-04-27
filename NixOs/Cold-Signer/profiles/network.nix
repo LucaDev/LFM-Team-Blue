@@ -1,11 +1,11 @@
 { config, lib, ... }:
 
 let
-  airgap = config.coldSigner.airgap.enable;
+  airgap = config.airgap.enable;
 in
 {
   networking.useDHCP = lib.mkIf airgap false;
-  networking.networkmanager.enable = lib.mkForce (lib.mkIf airgap false);
+  networking.networkmanager.enable = lib.mkIf (!airgap) true;
 
   networking.useNetworkd = lib.mkIf airgap true;
   systemd.network.enable = lib.mkIf airgap true;
