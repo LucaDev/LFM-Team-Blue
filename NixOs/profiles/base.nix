@@ -61,7 +61,7 @@
   };
 
   environment.etc."/home/user/Desktop/scripts/README.md" = {
-    source = ../files/README.md;
+    source = ./files/README.md;
     mode   = "0644";
   };
   
