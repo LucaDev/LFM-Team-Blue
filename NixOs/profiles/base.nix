@@ -19,10 +19,12 @@
 
   #Legt Ordner beim Boot an (oder beim tmpfiles-setup)
   systemd.tmpfiles.rules = [
-    "d /home/user/psbt 0750 user users - -"
-    "d /home/user/psbt/in 0750 user users - -"
-    "d /home/user/psbt/out 0750 user users - -"
+    "d /home/user/Desktop 0750 user users - -"
+    "d /home/user/Desktop/psbt 0750 user users - -"
+    "d /home/user/Desktop/psbt/in 0750 user users - -"
+    "d /home/user/Desktop/psbt/out 0750 user users - -"
     "d /home/user/bin 0750 user users - -"
+    "d /home/user/Desktop/scripts 0750 user users - -"
   ];
 
   #hilfreiche Tools
@@ -33,33 +35,33 @@
     v4l-utils
   ];
 
-  environment.etc."/scripts/psbt-inbox-status.sh" = {
+  environment.etc."/home/user/Desktop/scripts/psbt-inbox-status.sh" = {
     source = ./files/psbt-inbox-status.sh;
     mode = "0755";
   };
 
-  environment.etc."/scripts/psbt-outbox-status.sh" = {
+  environment.etc."/home/user/Desktop/scripts/psbt-outbox-status.sh" = {
     source = ./files/psbt-outbox-status.sh;
     mode = "0755";
   };
 
-  environment.etc."/scripts/psbt-hash.sh" = {
+  environment.etc."/home/user/Desktop/scripts/psbt-hash.sh" = {
     source = ./files/psbt-hash.sh;
     mode = "0755";
   };
 
-  environment.etc."/scripts/online.sh" = {
+  environment.etc."/home/user/Desktop/scripts/online.sh" = {
     source = ./files/online.sh;
     mode   = "0755";
   };
 
-  environment.etc."/scripts/airgap.sh" = {
+  environment.etc."/home/user/Desktop/scripts/airgap.sh" = {
     source = ./files/airgap.sh;
     mode   = "0755";
   };
 
-  environment.etc."/scripts/README.md" = {
-    source = ./files/README.txt;
+  environment.etc."/home/user/Desktop/scripts/README.md" = {
+    source = ../files/README.md;
     mode   = "0644";
   };
   
