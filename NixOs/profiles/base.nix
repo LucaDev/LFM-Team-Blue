@@ -49,7 +49,7 @@
     source = ./files/airgap.sh;
     mode   = "0755";
   };
-
+  
   environment.etc."scripts/README.md" = {
     source = ./files/README.md;
     mode   = "0644";

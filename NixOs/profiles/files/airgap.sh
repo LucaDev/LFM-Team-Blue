@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CFG="/etc/nixos/configuration.nix"
-OUT="/root/airgap-result"
+
 
 [ "$(id -u)" -eq 0 ] || { echo "Run as root: sudo $0" >&2; exit 1; }
 [ -f "$CFG" ] || { echo "ERROR: $CFG not found" >&2; exit 1; }
@@ -19,12 +19,13 @@ sed -i -E 's/^\s*airgap\.enable\s*=\s*(true|false)\s*;/  airgap.enable = true;/'
 echo "Set airgap.enable=true"
 
 
-rm -f "$OUT"
-nixos-rebuild build --out-link "$OUT"
+nixos-rebuild build 
 
-echo "Build done: $OUT"
+echo "Build done:"
+
+RESULT="$(readlink -f ./result)"
 
 echo "Applying now..."
-"$OUT/bin/switch-to-configuration" switch
+"$Result/bin/switch-to-configuration" switch
 
 echo "Airgap applied."
