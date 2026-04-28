@@ -5,7 +5,7 @@ DISK="/dev/sda"
 EFI_SIZE="1024M"
 
 REPO_URL="https://github.com/overflowdo/NixOsCold.git"
-REPO_SUBDIR="Cold-Signer"
+REPO_SUBDIR=""
 SWAP_SIZE_GB="2"
 
 # Robust partition naming
