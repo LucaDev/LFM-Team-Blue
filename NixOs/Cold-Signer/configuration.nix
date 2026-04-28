@@ -15,4 +15,5 @@
   boot.loader.efi.canTouchEfiVariables = true;
   
   airgap.enable = false;   # Build-Mode
+  system.stateVersion = "24.05";
 }

@@ -11,6 +11,7 @@
   users.users.user = {
     isNormalUser = true;
     description = "Admin";
+    initialPassword = "changeme";
     extraGroups = [ "wheel" ];
   };
 

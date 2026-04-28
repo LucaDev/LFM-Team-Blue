@@ -4,13 +4,17 @@ set -euo pipefail
 DISK="/dev/sda"
 EFI_SIZE="1024M"
 
-HOSTNAME="cold-signer"
-TARGET_USER="user"
-
 REPO_URL="https://github.com/overflowdo/NixOsCold.git"
-REPO_SUBDIR="Cold-Signer"   # Ordner innerhalb des Repos, der configuration.nix + profiles enthält
-
+REPO_SUBDIR="Cold-Signer"
 SWAP_SIZE_GB="2"
+
+# Robust partition naming
+part1="${DISK}1"
+part2="${DISK}2"
+if [[ "$DISK" =~ nvme ]]; then
+  part1="${DISK}p1"
+  part2="${DISK}p2"
+fi
 
 echo "[1/9] Check disk exists: $DISK"
 lsblk "$DISK" >/dev/null
@@ -21,24 +25,66 @@ sgdisk -og "$DISK"
 sgdisk -n 1:0:+"$EFI_SIZE" -t 1:ef00 -c 1:"NIXBOOT" "$DISK"
 sgdisk -n 2:0:0           -t 2:8300 -c 2:"NIXROOT" "$DISK"
 partprobe "$DISK"
+udevadm trigger
+udevadm settle
 sleep 2
 
-echo "[3/9] Formatting partitions (FAT32 EFI + EXT4 root)"
-mkfs.fat -F 32 "${DISK}1"
-fatlabel "${DISK}1" NIXBOOT
+ensure_nixboot() {
+  local part="$part1"
+  [[ -b "$part" ]] || { echo "ERROR: $part not found"; exit 1; }
 
-mkfs.ext4 -F -L NIXROOT "${DISK}2"
+  local fstype label
+  fstype="$(blkid -o value -s TYPE "$part" 2>/dev/null || true)"
+  label="$(blkid -o value -s LABEL "$part" 2>/dev/null || true)"
+
+  if [[ "$fstype" == "vfat" && "$label" == "NIXBOOT" ]]; then
+    echo "[OK] NIXBOOT already present on $part"
+    return 0
+  fi
+
+  echo "[DO] Creating/refreshing NIXBOOT on $part (fstype=$fstype label=$label)"
+  mkfs.fat -F 32 -n NIXBOOT "$part"
+}
+
+ensure_nixroot() {
+  local part="$part2"
+  [[ -b "$part" ]] || { echo "ERROR: $part not found"; exit 1; }
+
+  local fstype label
+  fstype="$(blkid -o value -s TYPE "$part" 2>/dev/null || true)"
+  label="$(blkid -o value -s LABEL "$part" 2>/dev/null || true)"
+
+  if [[ "$fstype" == "ext4" && "$label" == "NIXROOT" ]]; then
+    echo "[OK] NIXROOT already present on $part"
+    return 0
+  fi
+
+  echo "[DO] Creating/refreshing NIXROOT on $part (fstype=$fstype label=$label)"
+  mkfs.ext4 -F -L NIXROOT "$part"
+}
+
+echo "[3/9] Formatting partitions (FAT32 EFI + EXT4 root)"
+ensure_nixboot
+ensure_nixroot
+
+partprobe "$DISK"
+udevadm trigger
+udevadm settle
+sleep 1
 
 echo "[4/9] Mounting"
+mountpoint -q /mnt && umount -R /mnt || true
 mount /dev/disk/by-label/NIXROOT /mnt
 mkdir -p /mnt/boot
 mount /dev/disk/by-label/NIXBOOT /mnt/boot
 
 echo "[5/9] Creating swapfile (${SWAP_SIZE_GB}G)"
-fallocate -l "${SWAP_SIZE_GB}G" /mnt/.swapfile
-chmod 600 /mnt/.swapfile
-mkswap /mnt/.swapfile
-swapon /mnt/.swapfile
+if [[ ! -f /mnt/.swapfile ]]; then
+  fallocate -l "${SWAP_SIZE_GB}G" /mnt/.swapfile
+  chmod 600 /mnt/.swapfile
+  mkswap /mnt/.swapfile
+fi
+swapon /mnt/.swapfile || true
 
 echo "[6/9] Generate hardware config"
 nixos-generate-config --root /mnt
@@ -64,7 +110,6 @@ fi
 rm -rf /mnt/etc/nixos/.repo
 
 echo "[8/9] Ensure bootloader + swap is configured (patch if missing)"
-# Ensure swap is persistent across boots by adding swapDevices if not already present
 if ! grep -q "swapDevices" /mnt/etc/nixos/hardware-configuration.nix; then
   cat >> /mnt/etc/nixos/hardware-configuration.nix <<'EOF'
 
@@ -74,12 +119,6 @@ swapDevices = [
 EOF
 fi
 
-# Make sure configuration imports hardware-configuration.nix
-if ! grep -q "hardware-configuration.nix" /mnt/etc/nixos/configuration.nix; then
-  echo "WARNING: configuration.nix does not import hardware-configuration.nix. Please fix in repo."
-fi
-
-# Ensure system is bootable (UEFI/systemd-boot)
 if ! grep -q "boot.loader.systemd-boot.enable" /mnt/etc/nixos/configuration.nix; then
   cat >> /mnt/etc/nixos/configuration.nix <<'EOF'
 
