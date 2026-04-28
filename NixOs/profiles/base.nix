@@ -33,22 +33,32 @@
     v4l-utils
   ];
 
-  environment.etc."cold/scripts/psbt-inbox-status.sh" = {
+  environment.etc."/scripts/psbt-inbox-status.sh" = {
     source = ./files/psbt-inbox-status.sh;
     mode = "0755";
   };
 
-  environment.etc."cold/scripts/psbt-outbox-status.sh" = {
+  environment.etc."/scripts/psbt-outbox-status.sh" = {
     source = ./files/psbt-outbox-status.sh;
     mode = "0755";
   };
 
-  environment.etc."cold/scripts/psbt-hash.sh" = {
+  environment.etc."/scripts/psbt-hash.sh" = {
     source = ./files/psbt-hash.sh;
     mode = "0755";
   };
 
-  environment.etc."cold/scripts/README.txt" = {
+  environment.etc."/scripts/online.sh" = {
+    source = ./files/online.sh;
+    mode   = "0755";
+  };
+
+  environment.etc."/scripts/airgap.sh" = {
+    source = ./files/airgap.sh;
+    mode   = "0755";
+  };
+
+  environment.etc."/scripts/README.md" = {
     source = ./files/README.txt;
     mode   = "0644";
   };

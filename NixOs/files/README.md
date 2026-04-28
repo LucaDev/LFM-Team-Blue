@@ -229,6 +229,15 @@ sudo ./result/bin/switch-to-configuration switch
 
 ***
 
+### Air-Gap Automation
+
+These commands can be automatically executed by running airgap.sh through the command prompt or through the file exploring in the script folder
+
+```bash
+cd scripts/
+sudo ./airgap.sh
+```
+
 ### Air‑Gap Verification
 
 This disables SSH, DHCP, NetworkManager and removes all active routes.
@@ -251,6 +260,15 @@ In **Proxmox**:
 *   Attach VM to an isolated, non‑routed bridge
 
 ***
+
+### Air-Gap reversal
+
+The Air-Gap can be automatically reversed by running online.sh through the command prompt or through the file exploring in the script folder
+
+```bash
+cd scripts/
+sudo ./online.sh
+```
 
 ## Sparrow Wallet
 
