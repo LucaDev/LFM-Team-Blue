@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MNT="/mnt/usb"
+GNUPGHOME="/var/lib/psbt-guard/gnupg"
+
+die(){ echo "ERROR: $*" >&2; exit 1; }
+info(){ echo "[*] $*"; }
+
+[[ $EUID -eq 0 ]] || die "Bitte als root ausführen."
+mountpoint -q "$MNT" || die "Nicht gemountet: $MNT"
+
+export GNUPGHOME
+mkdir -p "$GNUPGHOME"
+chmod 0700 "$GNUPGHOME" || true
+
+# ------------------------------------------------------------
+# Approval verify (KeyB/KeyC): for-signing.psbt + for-signing.psbt.sig
+# ------------------------------------------------------------
+FOR="$MNT/psbt/out/for-signing.psbt"
+FOR_SIG="$MNT/psbt/out/for-signing.psbt.sig"
+
+# Wenn jemand versucht, das im Hot-Release Schritt zu benutzen: klar abbrechen
+if [[ -f "$MNT/psbt/out/final.psbt" || -f "$MNT/psbt/out/final.psbt.sig" ]]; then
+  die "Release/Final Dateien gefunden (final.psbt). Dieses Script ist nur für KEY Approval verify gedacht."
+fi
+
+[[ -f "$FOR" ]] || die "Fehlt: psbt/out/for-signing.psbt"
+[[ -f "$FOR_SIG" ]] || die "Fehlt: psbt/out/for-signing.psbt.sig"
+
+info "Phase: APPROVAL verify (Signer -> Key)"
+gpg --verify "$FOR_SIG" "$FOR" >/dev/null 2>&1 \
+  || die "Approval Signatur ungültig (Signer PubKey importiert?)."
+
+info "OK: Approved vom Signer. Du darfst jetzt in Sparrow signieren:"
+info " - psbt/out/for-signing.psbt"

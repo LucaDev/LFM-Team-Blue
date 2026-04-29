@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MNT="/mnt/usb"
+GNUPGHOME="/var/lib/psbt-guard/gnupg"
+
+IN_UNSIGNED="$MNT/psbt/in/unsigned.psbt"
+
+OUT_DIR="$MNT/psbt/out"
+APP_DIR="$MNT/psbt/approval"
+ARCH_DIR="$MNT/psbt/archive"
+
+die(){ echo "ERROR: $*" >&2; exit 1; }
+info(){ echo "[*] $*"; }
+[[ $EUID -eq 0 ]] || die "Bitte als root ausführen."
+mountpoint -q "$MNT" || die "Nicht gemountet: $MNT"
+[[ -f "$IN_UNSIGNED" ]] || die "Fehlt: $IN_UNSIGNED"
+
+mkdir -p "$OUT_DIR" "$APP_DIR" "$ARCH_DIR"
+
+U_HASH="$(sha256sum "$IN_UNSIGNED" | awk '{print $1}')"
+SHORT="${U_HASH:0:12}"
+TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+APPROVAL_ID="$(date -u +"%Y%m%d-%H%M%S")-${SHORT}"
+
+FOR_UNIQUE="$OUT_DIR/for-signing.${APPROVAL_ID}.psbt"
+FOR_ALIAS="$OUT_DIR/for-signing.psbt"
+
+cp -f "$IN_UNSIGNED" "$FOR_UNIQUE"
+rm -f "$FOR_ALIAS"
+ln -s "$(basename "$FOR_UNIQUE")" "$FOR_ALIAS"
+
+FOR_HASH="$(sha256sum "$FOR_UNIQUE" | awk '{print $1}')"
+
+APP_JSON_UNIQUE="$APP_DIR/approval.${APPROVAL_ID}.json"
+APP_SIG_UNIQUE="$APP_DIR/approval.${APPROVAL_ID}.json.sig"
+APP_JSON="$APP_DIR/approval.json"
+APP_SIG="$APP_DIR/approval.json.sig"
+
+cat > "$APP_JSON_UNIQUE" <<EOF
+{
+  "type": "psbt-approval",
+  "approval_id": "${APPROVAL_ID}",
+  "created_utc": "${TS}",
+  "input_psbt_path": "psbt/in/unsigned.psbt",
+  "input_psbt_sha256": "${U_HASH}",
+  "for_signing_path": "psbt/out/$(basename "$FOR_UNIQUE")",
+  "for_signing_sha256": "${FOR_HASH}"
+}
+EOF
+
+export GNUPGHOME
+gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:' \
+  || die "Kein GPG Secret Key in $GNUPGHOME (Signer Key fehlt)."
+
+gpg --yes --detach-sign -o "$APP_SIG_UNIQUE" "$APP_JSON_UNIQUE"
+
+rm -f "$APP_JSON" "$APP_SIG"
+ln -s "$(basename "$APP_JSON_UNIQUE")" "$APP_JSON"
+ln -s "$(basename "$APP_SIG_UNIQUE")" "$APP_SIG"
+
+# Inbox aufräumen: unsigned.psbt ins Archiv verschieben
+A_DIR="$ARCH_DIR/$APPROVAL_ID"
+mkdir -p "$A_DIR"
+mv -f "$IN_UNSIGNED" "$A_DIR/unsigned.psbt"
+
+sync
+info "APPROVAL erstellt (Signer-auth):"
+info " - psbt/out/$(basename "$FOR_UNIQUE")"
+info " - psbt/out/for-signing.psbt (alias)"
+info " - psbt/approval/approval.${APPROVAL_ID}.json(.sig)"
+info " - psbt/approval/approval.json(.sig) (alias)"
+info "Inbox aufgeräumt -> psbt/archive/$APPROVAL_ID/unsigned.psbt"

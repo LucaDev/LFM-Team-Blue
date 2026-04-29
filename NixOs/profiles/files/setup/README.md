@@ -304,3 +304,5 @@ sparrow-desktop
 ✅ Air‑Gap validated
 
 ***
+
+Sparrow setup mit MultiSig?
