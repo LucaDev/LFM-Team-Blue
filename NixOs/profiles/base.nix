@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   time.timeZone = "Europe/Berlin";
@@ -23,6 +23,8 @@
     unzip
     #webcam zum QR-code scannen fuer sparrow
     v4l-utils
+    gnupg
+    coreutils
   ];
 
   environment.etc."scripts/psbt-inbox-status.sh" = {
@@ -35,8 +37,8 @@
     mode = "0755";
   };
 
-  environment.etc."scripts/psbt-hash.sh" = {
-    source = ./files/psbt-hash.sh;
+  environment.etc."scripts/psbt-guard.sh" = {
+    source = ./files/psbt-guard.sh;
     mode = "0755";
   };
 
@@ -47,6 +49,16 @@
 
   environment.etc."scripts/airgap.sh" = {
     source = ./files/airgap.sh;
+    mode   = "0755";
+  };
+
+  environment.etc."scripts/hash-keyGen.sh" = {
+    source = ./files/hash-keyGen.sh;
+    mode   = "0755";
+  };
+
+  environment.etc."scripts/hash-keyStore.sh" = {
+    source = ./files/hash-keyStore.sh;
     mode   = "0755";
   };
   
@@ -63,15 +75,21 @@
     "d /home/user/Desktop/psbt/out 0750 user users - -"
     "d /home/user/bin 0750 user users - -"
     "d /home/user/Desktop/scripts 0750 user users - -"
+    "d /var/lib/psbt-guard 0700 root root - -"
+    "d /var/lib/psbt-guard/gnupg 0700 root root - -"
+    "d /var/lib/psbt-guard/identity 0700 root root - -"
+    "d /mnt/usb 0755 root root - -"
 
     "L+ /home/user/Desktop/scripts/psbt-inbox-status.sh - - - - /etc/scripts/psbt-inbox-status.sh"
     "L+ /home/user/Desktop/scripts/psbt-outbox-status.sh - - - - /etc/scripts/psbt-outbox-status.sh"
-    "L+ /home/user/Desktop/scripts/psbt-hash.sh - - - - /etc/scripts/psbt-hash.sh"
     "L+ /home/user/Desktop/scripts/online.sh - - - - /etc/scripts/online.sh"
     "L+ /home/user/Desktop/scripts/airgap.sh - - - - /etc/scripts/airgap.sh"
     "L+ /home/user/Desktop/scripts/README.md - - - - /etc/scripts/README.md"
+    "L+ /home/user/Desktop/scripts/psbt-guard.sh - - - - /etc/scripts/psbt-guard.sh"
+    "L+ /home/user/Desktop/scripts/psbt-guard.sh - - - - /etc/scripts/hash-keyGen.sh"
+    "L+ /home/user/Desktop/scripts/psbt-guard.sh - - - - /etc/scripts/hash-keyStore.sh"
   ];
-    
+      
   #Journald begrenzen (VM-Disk nicht zulaufen lassen)
   services.journald.extraConfig = ''
     SystemMaxUse=200M

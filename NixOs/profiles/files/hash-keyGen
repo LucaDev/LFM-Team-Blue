@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# =========================
+# Konfiguration
+# =========================
+MNT="/mnt/psbtusb"
+STATE_DIR="/var/lib/psbt-guard"
+GNUPGHOME="$STATE_DIR/gnupg"
+OUT_DIR="$MNT/psbt/identity"
+
+KEY_NAME_REAL="PSBT Signer Approval"
+KEY_NAME_EMAIL="signer@airgap"
+KEY_BITS="4096"
+
+# =========================
+# Helper
+# =========================
+die() { echo "ERROR: $*" >&2; exit 1; }
+info() { echo "[*] $*"; }
+
+# root erzwingen (weil /var/lib/..)
+[[ $EUID -eq 0 ]] || die "Bitte als root ausführen."
+
+# =========================
+# 0. Airgap sanity check (ignoriert lo)
+# =========================
+if ip -o link show | awk -F': ' '{print $2}' | grep -vx "lo" | while read -r ifc; do
+  ip link show "$ifc" | grep -q "state UP" && exit 0
+done; then
+  die "Netzwerk-Interface ist UP (außer lo). Bitte erst airgap aktivieren."
+fi
+
+# =========================
+# 1. Wechselmedium prüfen (muss bewusst gemountet sein)
+# =========================
+if ! mountpoint -q "$MNT"; then
+  die "Kein Wechselmedium gemountet unter $MNT"
+fi
+
+SRC_DEV="$(findmnt -n -o SOURCE --target "$MNT")"
+[[ "$SRC_DEV" =~ ^/dev/ ]] || die "Mountpoint ist kein Blockdevice: $SRC_DEV"
+info "Wechselmedium erkannt: $SRC_DEV"
+
+# Optional, aber sehr empfehlenswert: Label-Check gegen Verwechslung
+# LABEL="$(lsblk -no LABEL "$SRC_DEV" 2>/dev/null | head -n1 || true)"
+# [[ "$LABEL" == "PSBTUSB" ]] || die "Falsches Medium (Label != PSBTUSB)."
+
+# =========================
+# 2. Zielverzeichnis vorbereiten
+# =========================
+mkdir -p "$OUT_DIR"
+chmod 0700 "$OUT_DIR" || true
+
+# =========================
+# 3. GPG Key erzeugen (nur wenn noch keiner existiert)
+# =========================
+mkdir -p "$GNUPGHOME"
+chmod 0700 "$GNUPGHOME"
+export GNUPGHOME
+
+if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
+  die "Es existiert bereits ein GPG Private Key in $GNUPGHOME. Abbruch."
+fi
+
+info "Erzeuge neuen GPG Key (offline)…"
+
+mkdir -p "$STATE_DIR"
+chmod 0700 "$STATE_DIR"
+
+cat > "$STATE_DIR/keyparams" <<EOF
+%no-protection
+Key-Type: RSA
+Key-Length: $KEY_BITS
+Name-Real: $KEY_NAME_REAL
+Name-Email: $KEY_NAME_EMAIL
+Expire-Date: 0
+%commit
+EOF
+
+gpg --batch --gen-key "$STATE_DIR/keyparams"
+
+# =========================
+# 4. Public Key + Fingerprint exportieren
+# =========================
+FP="$(gpg --list-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')"
+[[ -n "$FP" ]] || die "Kein Fingerprint gefunden"
+
+PUB_OUT="$OUT_DIR/signer-pubkey.asc"
+META_OUT="$OUT_DIR/signer-identity.txt"
+
+gpg --export --armor "$FP" > "$PUB_OUT"
+chmod 0444 "$PUB_OUT"
+
+PUB_SHA="$(sha256sum "$PUB_OUT" | awk '{print $1}')"
+
+cat > "$META_OUT" <<EOF
+fingerprint:   $FP
+pubkey_sha256: $PUB_SHA
+created_utc:   $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+source_dev:    $SRC_DEV
+EOF
+chmod 0444 "$META_OUT"
+
+info "Public Key exportiert:"
+info " - $PUB_OUT"
+info " - $META_OUT"
+info "Fingerprint: $FP"
+
+# =========================
+# 5. Sync & Eject
+# =========================
+sync
+info "Daten geschrieben. Hänge Wechselmedium aus…"
+
+umount "$MNT" || die "Konnte $MNT nicht aushängen"
+
+info "FERTIG."
+info "Wechselmedium kann jetzt physisch entfernt werden."
