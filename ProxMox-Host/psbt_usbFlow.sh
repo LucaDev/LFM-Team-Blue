@@ -38,6 +38,7 @@ warn(){ echo "[!] $*" >&2; }
 need_root(){ [[ $EUID -eq 0 ]] || die "Bitte als root ausführen."; }
 
 lock(){
+  mkdir -p "$(dirname "$LOCK")"
   exec 9>"$LOCK"
   flock -n 9 || die "Lock aktiv: ein anderer psbt-usb Prozess läuft gerade."
 }
@@ -144,10 +145,42 @@ cmd_step(){
   [[ -n "$role" ]] || die "Usage: $0 <hot|signer|keyb|keyc|vmid> [message...]"
   local vmid; vmid="$(role_to_vmid "$role")"
   local name; name="$(vmid_to_name "$vmid")"
-  local msg="${*:-In der VM: mounten, Sparrow Aktion, dann umount.}"
 
   ensure_vm_running "$vmid"
   attach_usb "$vmid"
+  
+  local DETACHED=0
+  cleanup(){
+    if [[ $DETACHED -eq 0 ]]; then
+      warn "Cleanup: Detach (exit/abort) ..."
+      detach_usb "$vmid" || true
+    fi
+  }
+  trap cleanup EXIT INT TERM  
 
+  echo "USB ist jetzt an VM '$name' (VMID $vmid) als scsi${SLOT} attached."
+  echo
+  echo "In der VM jetzt ausführen:"
+  echo "  sudo mount /dev/disk/by-label/USB /mnt/usb"
+  echo "  # Sparrow / Scripts ausführen"
+  echo "  sync"
+  echo "  sudo umount /mnt/usb"
   echo
   echo "================================================================================"
+  read -r -p "ENTER zum Detach..." _
+
+  detach_usb "$vmid"
+  info "Fertig: USB detached von VM '$name' (VMID $vmid)."
+ 
+  DETACHED=1
+  trap - EXIT INT TERM
+}
+
+
+main(){
+  need_root
+  lock
+  cmd_step "$@"
+}
+
+main "$@"

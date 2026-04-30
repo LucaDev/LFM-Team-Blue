@@ -1,4 +1,3 @@
-
 ***
 
 # Cold Wallet Infrastructure (NixOS + Sparrow Wallet)
@@ -15,31 +14,6 @@ The setup is split into:
 *   Proxmox VM definitions for cold keys and signer
 *   Declarative OS + application configuration (NixOS)
 *   Final air‑gapped hardening
-
-***
-
-## Bitcoin Network Preparation
-
-Used for testing, development, and verification of PSBT flows.
-Configured on the talos linux device where the hot wallet is also located
-
-### Scripts
-
-Additional scripts for the Bitcoin Network
-Make scripts executable and run them in order:
-
-```bash
-chmod +x *.sh
-./deploy.sh
-./check.sh
-./connect-nodes.sh
-```
-
-### Purpose
-
-*   `deploy.sh` – deploys the Bitcoin nodes
-*   `check.sh` – verifies node health
-*   `connect-nodes.sh` – connects nodes within the Bitcoin network
 
 ***
 

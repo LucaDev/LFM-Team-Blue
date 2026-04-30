@@ -26,32 +26,46 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Medium-Check (Hardening)
 SRC_DEV="$(findmnt -n -o SOURCE --target "$MNT")"
 [[ "$SRC_DEV" =~ ^/dev/ ]] || die "Mountpoint ist kein Blockdevice: $SRC_DEV"
 
 LABEL="$(lsblk -no LABEL "$SRC_DEV" 2>/dev/null | head -n1 || true)"
 [[ "$LABEL" == "USB" ]] || die "Falsches Medium (Label != USB)."
 
+# GPG Home vorbereiten
 export GNUPGHOME
 mkdir -p "$GNUPGHOME"
 chmod 0700 "$GNUPGHOME" || true
 
 # ------------------------------------------------------------
-# Approval verify (KeyB/KeyC): for-signing.psbt + for-signing.psbt.sig
+# APPROVAL verify (KeyB/KeyC): psbt/auth/approval.json(.sig)
 # ------------------------------------------------------------
-FOR="$MNT/psbt/for-signing.psbt"
-FOR_SIG="$MNT/psbt/for-signing.psbt.sig"
+APP_JSON="$MNT/psbt/auth/approval.json"
+APP_SIG="$MNT/psbt/auth/approval.json.sig"
 
-[[ -f "$FOR" ]] || die "Fehlt: psbt/for-signing.psbt"
-[[ -f "$FOR_SIG" ]] || die "Fehlt: psbt/for-signing.psbt.sig"
+[[ -f "$APP_JSON" && -f "$APP_SIG" ]] || die "psbt/auth/approval.json(.sig) nicht gefunden."
 
 info "Phase: APPROVAL verify (Signer -> Key)"
-gpg --verify "$FOR_SIG" "$FOR" >/dev/null 2>&1 \
-  || die "Approval Signatur ungültig (Signer PubKey importiert?)."
+gpg --verify "$APP_SIG" "$APP_JSON" >/dev/null 2>&1 || die "Approval GPG verify fehlgeschlagen."
 
-# Ab hier erfolgreich -> cleanup soll NICHT unmounten
-info "OK: Approved vom Signer. Du darfst jetzt in Sparrow signieren:"
-info " - psbt/for-signing.psbt"
+# Auslesen neuer Felder (Readme-konform)
+PSBT_REL="$(grep -E '"appr_path"' "$APP_JSON" | head -n1 | sed -E 's/.*"appr_path"\s*:\s*"([^"]+)".*/\1/')"
+PSBT_HASH="$(grep -E '"appr_sha256"' "$APP_JSON" | head -n1 | sed -E 's/.*"appr_sha256"\s*:\s*"([^"]+)".*/\1/')"
+ID="$(grep -E '"id"' "$APP_JSON" | head -n1 | sed -E 's/.*"id"\s*:\s*"([^"]+)".*/\1/')"
+
+[[ -n "$PSBT_REL" && -n "$PSBT_HASH" && -n "$ID" ]] || die "approval.json unlesbar (appr_path/appr_sha256/id fehlen)."
+
+PSBT="$MNT/$PSBT_REL"
+[[ -f "$PSBT" ]] || die "PSBT fehlt: $PSBT_REL"
+
+CALC="$(sha256sum "$PSBT" | awk '{print $1}')"
+[[ "$CALC" == "$PSBT_HASH" ]] || die "PSBT Hash mismatch! expected=$PSBT_HASH got=$CALC"
+
+info "OK: APPROVAL gültig. id=$ID"
+info "Du darfst jetzt in Sparrow signieren:"
+info " - $PSBT_REL"
 info "USB bleibt gemountet unter $MNT (für Sparrow)."
 
 VERIFIED=1
+exit 0

@@ -10,7 +10,7 @@
 
 ### Proxmox Host
 
-*   Führt **`/root/psbt-usb.sh …`** aus (physisches „einstecken/abziehen“)
+*   Führt **`/root/psbt-usbFlow.sh …`** aus (physisches „einstecken/abziehen“)
 *   Attacht das **virtuelle USB‑Medium (qcow2)** als `scsi2` an **genau eine** VM (Exklusivität)
 *   Startet VM bei Bedarf (`qm start`)
 
@@ -22,7 +22,7 @@
 
 ### Medium / Mount
 
-**einzelnes Medium** zum Vorbeugen von Verwechslungen. Dieses beinhält immer nur eine TX und kann somit mit dieser gleichgesetzt werden
+**einzelnes Medium** zum Vorbeugen von Verwechslungen. Dieses beinhaltet immer nur eine TX und kann somit mit dieser gleichgesetzt werden
 
 *   **Label:** `USB`
 *   **Mountpoint:** `/mnt/usb`
@@ -35,24 +35,24 @@ Auf dem USB (gemountet als `/mnt/usb`) liegen diese möglichen Dateien an einem 
 
 ```text
 /mnt/usb/psbt/
-  unsigned.psbt         # Hot -> Signer (Input)
-  for-signing.<id>.psbt
-  for-signing.psbt -> for-signing.<id>.psbt   (alias "latest")
-  signed-<host>.<id>.psbt                     (KeyB/KeyC -> Signer) 
-  final.<id>.psbt
-  final.psbt -> final.<id>.psbt               (alias "latest")
-  approval/               # Signer Approval (GPG)
-    approval.json
-    approval.json.sig
-  archive                                           # Verschieben der nicht mehr benötigten Dateien nach jedem Teilschritt
+  unappr.<id>.psbt          # Hot -> Signer (Input)
+  appr.<id>.psbt           # Signer -> Key-Holder
+  signed.<id>.psbt          # Key-Holder -> Signer
+  final.<id>.psbt           # Signer -> Hot
+  auth/
+    approval.json          # Auth Signer -> Key-Holder
+    approval.json.sig      # Auth Signer -> Key-Holder
+  archive
 ```
+Archiv ist append‑only und dient ausschließlich Audit / Debug,
+niemals als Input für weitere Schritte
 
 ### ID‑Definition (eindeutig & debug‑freundlich)
 
-**`<id>`** wird beim Approval vom Signer erzeugt:
+**`<id>`** wird beim Erstellen vom Hot-Wallet erzeugt:
 
 *   **empfohlen:** `YYYYmmdd-HHMMSS-<sha256prefix>`
-*   `<sha256prefix>` = **kurzer** SHA256‑Prefix (z. B. 12 Zeichen) der `unsigned.psbt` (oder der for-signing Datei)
+*   `<sha256prefix>` = **kurzer** SHA256‑Prefix (z. B. 12 Zeichen) der `unappr.<id>.psbt`
 
 > PSBT selbst garantiert keinen stabilen „Unique Identifier“, auf den man sich als Dateiname verlassen sollte.  
 > Daher: **ID über Zeit + Hash‑Prefix**.
@@ -61,7 +61,7 @@ Auf dem USB (gemountet als `/mnt/usb`) liegen diese möglichen Dateien an einem 
 
 ## 2 PSBT‑Workflow Schritt für Schritt (mit Dateien, Ort, Zeitpunkt)
 
-> **Jeder `/root/psbt-usb.sh …` Schritt läuft auf dem Proxmox Host.**  
+> **Jeder `/root/psbt-usbFlow.sh …` Schritt läuft auf dem Proxmox Host.**  
 > Alle `mount`/`Sparrow`/`psbt-*.sh` Befehle laufen **in der jeweiligen VM**.
 
 ***
@@ -71,7 +71,7 @@ Auf dem USB (gemountet als `/mnt/usb`) liegen diese möglichen Dateien an einem 
 #### 2.1.1 Proxmox Host („USB in Hot stecken“)
 
 ```bash
-/root/psbt-usb.sh hot
+/root/psbt-usbFlow.sh hot
 ```
 
 #### 2.1.2 Hot‑VM (Datei erzeugen & ablegen)
@@ -82,10 +82,10 @@ Mount:
 sudo mount /dev/disk/by-label/USB /mnt/usb
 ```
 
-Hot erstellt PSBT in sparrow extortiert diese auf den USB
+Hot erstellt PSBT in sparrow exportiert diese auf den USB
 
 *   **Input‑Datei auf USB:**  
-    **`/mnt/usb/psbt/unsigned.psbt`**
+    **`/mnt/usb/psbt/unappr.<id>.psbt`**
 
 Check:
 
@@ -104,7 +104,7 @@ sudo umount /mnt/usb
 
 **Erwarteter Output nach Schritt A (auf USB):**
 
-*   `/mnt/usb/psbt/unsigned.psbt`
+*   `/mnt/usb/psbt/unappr.<id>.psbt`
 
 ***
 
@@ -113,7 +113,7 @@ sudo umount /mnt/usb
 #### 2.2.1 Proxmox Host („USB in Signer stecken“)
 
 ```bash
-/root/psbt-usb.sh signer
+/root/psbt-usbFlow.sh signer
 ```
 
 #### 2.2.2 Signer‑VM: Approval
@@ -132,26 +132,25 @@ sudo psbt-approve.sh
 
 **`psbt-approve.sh` benötigt (Input):**
 
-*   `/mnt/usb/psbt/unsigned.psbt`
+*   `/mnt/usb/psbt/unappr.<id>.psbt`
 
 **`psbt-approve.sh` erzeugt (Output):**
 
 *   Approval‑Metadaten (GPG signiert):
-    *   `/mnt/usb/psbt/approval/approval.json`
-    *   `/mnt/usb/psbt/approval/approval.json.sig`
+    *   `/mnt/usb/psbt/auth/approval.json`
+    *   `/mnt/usb/psbt/auth/approval.json.sig`
 *   Freigegebene PSBT:
-    *   `/mnt/usb/psbt/for-signing.<id>.psbt`  *(unique)*
-    *   `/mnt/usb/psbt/for-signing.psbt`       *(alias/symlink von unique)*
+    *   `/mnt/usb/psbt/appr.<id>.psbt`
 
 **Aufräumen:**
 
-*   `unsigned.psbt` wird nach Approval verschoben
+*   `unappr.<id>.psbt` wird nach Archive verschoben
     *   `Von psbt nach psbt/archive
 
 Checks:
 
 ```bash
-ls -lah /mnt/usb/psbt/approval/
+ls -lah /mnt/usb/psbt/auth/
 ls -lah /mnt/usb/psbt/
 ```
 
@@ -160,13 +159,12 @@ Unmount wird automatisch von psbt-approve.sh ausgeführt
 **USB-Ordnerstruktur**
 ```text
 /mnt/usb/psbt/
-  approval/
+  auth/
     approval.json
     approval.json.sig
   archive      
-    unsigned.psbt
-  for-signing.<id>.psbt
-  for-signing.psbt -> for-signing.<id>.psbt
+    unappr.<id>.psbt
+  appr.<id>.psbt
 ```
 
 ***
@@ -179,7 +177,7 @@ Unmount wird automatisch von psbt-approve.sh ausgeführt
 #### 2.3.1 Proxmox Host („USB in KeyB stecken“)
 
 ```bash
-/root/psbt-usb.sh keyb
+/root/Flow.sh keyb
 ```
 
 #### 2.3.2 Key‑VM verify
@@ -189,7 +187,8 @@ Mount:
 sudo mount /dev/disk/by-label/USB /mnt/usb
 ```
 
-Approval vom Signer werden verifiziert, dies ist noch nicht die Signatur für TX selbst:
+Approval vom Signer werden verifiziert, dies ist noch nicht die Signatur für TX selbst.
+Vorraussetzung, dass Voraussetzung Signer‑PubKey bereits in GNUPGHOME importiert wurde (via hash-keyStore.sh).
 
 ```bash
 sudo hash-verify.sh
@@ -197,36 +196,30 @@ sudo hash-verify.sh
 
 **`hash-verify.sh` benötigt:**
 
-*   `/mnt/usb/psbt/for-signing.psbt`
-*   `/mnt/usb/psbt/for-signing.psbt.sig` *(oder approval.json(.sig) je nach Implementierung)*
+*   `/mnt/usb/psbt/auth/approval.json`
+*   `/mnt/usb/psbt/auth/approval.json.sig`
 
 **Output (Konsole):**
 
-*   `OK: Approved vom Signer…`
+*   `OK: Approval vom Signer…`
 
-#### 2.3.3 Key‑VM sign
-
-Dann Signier‑Guidance:
-
-```bash
-sudo psbt-sign.sh
-```
+#### 2.3.3 Key‑VM Signieren in Sparrow-desktop
 
 Sparrow (manuell):
 
-*   Import: `/mnt/usb/psbt/for-signing.psbt`
+*   Import: `/mnt/usb/psbt/appr.<id>.psbt`
 *   Signieren mit KeyB/KeyC
 *   Export:
     *   `/mnt/usb/psbt/signed.<id>.psbt`
 
 ***
 
-### Schritt 2.4 — Signer kombiniert Signaturen, finalisiert und erstellt Final‑PSBT
+### Schritt 2.4 — Signer kombiniert und finalisiert
 
 #### 2.4.1 Proxmox Host („USB zurück in Signer stecken“)
 
 ```bash
-/root/psbt-usb.sh signer
+/root/psbt-usbFlow.sh signer
 ```
 
 #### 2.4.2 Signer‑VM: combine/finalize
@@ -242,8 +235,7 @@ Sparrow (manuell):
 *   Import: `psbt/signed.<id>.psbt`
 *   Combine / Finalize
 *   Export final:
-    *   `/mnt/usb/psbt/final.psbt` *(alias‑Name)*
-    *   oder `/mnt/usb/psbt/final.<id>.psbt` *(unique)*
+    *   `/mnt/usb/psbt/final.<id>.psbt`
 
 Unmount.
 
@@ -255,28 +247,26 @@ sudo umount /mnt/usb
 **USB-Ordnerstruktur**
 ```text
 /mnt/usb/psbt/
-  approval/
+  auth/
     approval.json
     approval.json.sig
-  archive      
-    unsigned.psbt
-    for-signing.<id>.psbt
-    for-signing.psbt -> for-signing.<id>.psbt
+  archive 
+    unappr.<id>.psbt     
+    appr.<id>.psbt
     signed.<id>.psbt
-  final.psbt (alias‑Name)
-  final.<id>.psbt (unique)
+  final.<id>.psbt
 ```
 
 ***
 
-### 2.5.1 — Hot importiert Final‑PSBT und broadcastet (ohne Verify)
+### 2.5.1 — Hot importiert Final‑PSBT und broadcastet (ohne Verifizieren)
 
 **Hot führt keinen hash-verify/psbt-verify mehr aus.**
 
 #### 2.5.1 Proxmox Host („USB zurück in Hot stecken“)
 
 ```bash
-/root/psbt-usb.sh hot
+/root/psbt-usbFlow.sh hot
 ```
 
 #### 2.5.2 Hot‑VM (broadcast)
@@ -284,12 +274,12 @@ sudo umount /mnt/usb
 Mount:
 
 ```bash
-sudo mount /dev/disk/by-label/PSBTUSB /mnt/usb
+sudo mount /dev/disk/by-label/USB /mnt/usb
 ```
 
 Hot importiert und broadcastet:
 
-*   Input: `/mnt/usb/psbt/final.psbt`
+*   Input: `/mnt/usb/psbt/final.<id>.psbt`
 *   Broadcast via Sparrow/Bitcoin Core
 
 Unmount:
@@ -300,4 +290,4 @@ sudo umount /mnt/usb
 ```
 
 #### 2.5.3 Archivieren auf Hot-VM
-    Archivieren auif der Hot-VM um Buch zu halten
+    Archivieren auf der Hot-VM um Buch zu halten

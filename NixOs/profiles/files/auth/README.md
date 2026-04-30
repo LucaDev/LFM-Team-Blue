@@ -11,7 +11,7 @@
 
 ### Proxmox Host
 
-*   Führt `/root/psbt-usb.sh` aus
+*   Führt `/root/psbt-usbFlow.sh` aus
 *   **Attacht/Detacht** das USB‑qcow2 als `scsi2` an genau **eine** VM
 *   Startet VM falls nötig
 
@@ -50,11 +50,11 @@ systemd.tmpfiles.rules = [
 
 Auf dem **Proxmox Host**:
 
-*   Script liegt unter `/root/psbt-usb.sh`
+*   Script liegt unter `/root/psbt-usbFlow.sh`
 *   ist ausführbar:
 
 ```bash
-chmod +x /root/psbt-usb.sh
+chmod +x /root/psbt-usbFlow.sh
 ```
 
 ***
@@ -83,7 +83,7 @@ Wir legen (empfohlen) folgende Struktur an:
 
 ## 3) Workflow: Pub Key Generation + Distribution
 
-> **Jeder „/root/psbt-usb.sh …“ Schritt wird auf dem Proxmox Host ausgeführt.**  
+> **Jeder „/root/psbt-usbFlow.sh …“ Schritt wird auf dem Proxmox Host ausgeführt.**  
 > Innerhalb der VM ausführen der `mount` + Script‑Kommandos.
 
 ***
@@ -93,7 +93,7 @@ Wir legen (empfohlen) folgende Struktur an:
 **Auf dem Proxmox Host:**
 
 ```bash
-/root/psbt-usb.sh signer
+/root/psbt-usbFlow.sh signer
 ```
 
 **Was passiert (Host‑seitig):**
@@ -152,7 +152,7 @@ sudo hash-keyGen.sh
 *   erzeugt **GPG Keypair** im Signer‑State (z. B. `GNUPGHOME=/var/lib/psbt-guard/gnupg`)
 *   exportiert **Public Key + Metadaten**
 *   schreibt diese nach USB (`psbt/identity/...`)
-*   zeigt Dir 40 Hexa-Dezimal zeichen als Fingerprint
+*   zeigt Dir 40 hexadezimale Zeichen als Fingerprint
     *   Schriebe diese ab für einen späteren vergleich
 *   `sync`
 *   `umount`
@@ -184,7 +184,7 @@ chmod 0400 /var/lib/psbt-guard/identity/signer-revocation.asc
 **Auf dem Proxmox Host:**
 
 ```bash
-/root/psbt-usb.sh keyb
+/root/psbt-usbFlow.sh keyb
 ```
 
 ***
@@ -221,7 +221,7 @@ sudo hash-keyStore.sh
 Wdh. von Schritt 2 mit
 
 ```bash
-/root/psbt-usb.sh keyc
+/root/psbt-usbFlow.sh keyc
 ```
 
 ***
@@ -229,7 +229,7 @@ Wdh. von Schritt 2 mit
 # Keys kompromittiert
 
 ## Key revocation
-Die public Keys müssen daraufhin revoked werden, was über den import einer Datei möglcih ist
+Die public Keys müssen daraufhin revoked werden, was über den import einer Datei möglich ist
 Diese wird auf Singer-VM mit dem private Key erstellt.
 
 Auf dem private-Hash-Holder (signer):
@@ -300,11 +300,12 @@ gpg --list-keys
 
 Technisch passiert das über **GPG-Signaturprüfung**:
 
-*   Key‑VMs verifizieren: `for-signing.psbt.sig` ↔ `for-signing.psbt`
+*   die GPG‑Signatur von `approval.json` und die darin gebundene SHA256‑Hash‑Referenz auf `appr.<id>.psbt`
+
 
 
 > **Warum reicht das als „Hash‑Verify“?**  
-> Weil die Signaturprüfung intern den Hash der Datei berechnet und mit der Signatur vergleicht. Ein separater Hash‑Austausch ist redundant.
+> Wir verifizieren die Signatur auf approval.json und prüfen, dass die freigegebene PSBT (appr.<id>.psbt) dem in approval.json gebundenen SHA256 entspricht.
 
 ***
 
@@ -314,8 +315,10 @@ Technisch passiert das über **GPG-Signaturprüfung**:
 
 **Erwartete Dokumente auf dem USB:**
 
-*   `psbt/for-signing.psbt`
-*   `psbt/for-signing.psbt.sig`
+*   `psbt/appr.<id>.psbt`
+*   `psbt/auth/approval.json`
+*   `psbt/auth/approval.json.sig`
+
 
 **VM (KeyB/KeyC):**
 
@@ -349,11 +352,12 @@ gpg --list-keys
 ls -lah /mnt/usb/psbt/
 ```
 
-### 3) Fingerpreint manuell prüfen (für genaue Fehlermeldung)
+### 3) Fingerprint manuell prüfen (für genaue Fehlermeldung)
 
 ```bash
 export GNUPGHOME=/var/lib/psbt-guard/gnupg
-gpg --verify /mnt/usb/psbt/for-signing.psbt.sig /mnt/usb/psbt/for-signing.psbt
+gpg --verify /mnt/usb/psbt/auth/approval.json.sig /mnt/usb/psbt/auth/approval.json
+sha256sum /mnt/usb/psbt/appr.<id>.psbt
 ```
 
 ***
@@ -363,7 +367,7 @@ gpg --verify /mnt/usb/psbt/for-signing.psbt.sig /mnt/usb/psbt/for-signing.psbt
 Spätere Verifizierung nicht benötigt, da beim initialen Hot -> Cold eine psbt übertragen wird, die bereits von keyA signiert wurde.
 Dies kann verifiziert werden und ein weiterer Hash würde redundanz bedeuten.
 
-Auch ist ein weiterer hash von Cold -> Hot vernahclässigbar, da die Hot Wallet nur noch den USB inhalt broadcasted.
+Auch ist ein weiterer hash von Cold -> Hot vernachlässigbar, da die Hot Wallet nur noch den USB inhalt broadcasted.
 Fehlerhafte, unsignierte, manipuliert TXs würde beim broadcast fehlschlagen oder könnten das cold Wallet nicht addressieren
 
 Zudem soll der USB Flashdrive immernur für eine TX zur selben Zeit verwendet werden
