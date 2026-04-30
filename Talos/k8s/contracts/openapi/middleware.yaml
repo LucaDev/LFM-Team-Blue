@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: Middleware API
+  version: 0.1.0
+servers:
+  - url: http://middleware:8080
+paths:
+  /api/v1/hot/tx:
+    post:
+      summary: Request a hot auto-signed transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/intent.json
+      responses:
+        "202":
+          description: Accepted - processing started
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/tx_state.json
+
+  /api/v1/intents/{intentId}/psbt:
+    get:
+      summary: Get PSBT for a refill intent
+      parameters:
+        - name: intentId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [base64]
+          description: Always base64 (transport format)
+      responses:
+        "200":
+          description: PSBT base64 payload
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/psbt_payload.json
+
+  /api/v1/broadcast:
+    post:
+      summary: Broadcast a signed raw transaction via node-only bitcoind
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [signed_rawtx_hex]
+              properties:
+                signed_rawtx_hex:
+                  type: string
+      responses:
+        "200":
+          description: TXID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [txid]
+                properties:
+                  txid: { type: string }

@@ -1,0 +1,51 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: btc-hot
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress","Egress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-bitcoind-rpc-from-hot-services
+  namespace: btc-net
+spec:
+  podSelector:
+    matchLabels:
+      app: bitcoind-regtest
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: btc-hot
+          podSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["middleware", "tx-builder"]
+      ports:
+        - protocol: TCP
+          port: 18443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-bitcoind-p2p
+  namespace: btc-net
+spec:
+  podSelector:
+    matchLabels:
+      app: bitcoind-regtest
+  policyTypes: ["Ingress","Egress"]
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 18444
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 18444

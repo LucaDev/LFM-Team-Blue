@@ -71,23 +71,27 @@
   systemd.tmpfiles.rules = [
     "d /home/user/Desktop 0750 user users - -"
     "d /home/user/Desktop/psbt 0750 user users - -"
-    "d /home/user/Desktop/psbt/in 0750 user users - -"
-    "d /home/user/Desktop/psbt/out 0750 user users - -"
     "d /home/user/bin 0750 user users - -"
     "d /home/user/Desktop/scripts 0750 user users - -"
+    "d /home/user/Desktop/scripts/auth 0750 user users - -"
+    "d /home/user/Desktop/scripts/psbt 0750 user users - -"
+    "d /home/user/Desktop/scripts/setup 0750 user users - -"
     "d /var/lib/psbt-guard 0700 root root - -"
     "d /var/lib/psbt-guard/gnupg 0700 root root - -"
     "d /var/lib/psbt-guard/identity 0700 root root - -"
     "d /mnt/usb 0755 root root - -"
 
-    "L+ /home/user/Desktop/scripts/psbt-inbox-status.sh - - - - /etc/scripts/psbt-inbox-status.sh"
-    "L+ /home/user/Desktop/scripts/psbt-outbox-status.sh - - - - /etc/scripts/psbt-outbox-status.sh"
-    "L+ /home/user/Desktop/scripts/online.sh - - - - /etc/scripts/online.sh"
-    "L+ /home/user/Desktop/scripts/airgap.sh - - - - /etc/scripts/airgap.sh"
-    "L+ /home/user/Desktop/scripts/README.md - - - - /etc/scripts/README.md"
-    "L+ /home/user/Desktop/scripts/psbt-guard.sh - - - - /etc/scripts/psbt-guard.sh"
-    "L+ /home/user/Desktop/scripts/psbt-guard.sh - - - - /etc/scripts/hash-keyGen.sh"
-    "L+ /home/user/Desktop/scripts/psbt-guard.sh - - - - /etc/scripts/hash-keyStore.sh"
+    "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/online.sh"
+    "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/airgap.sh"
+    "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/README.md"
+
+    "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/psbt-approve.sh"
+    "L+ /home/user/Desktop/scripts/psbt/README.md - - - - /etc/scripts/psbt/README.md"
+
+    "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/hash-keyGen.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/hash-keyStore.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/hash-verify.sh"
+    "L+ /home/user/Desktop/scripts/auth/README.md - - - - /etc/scripts/README.md"
   ];
       
   #Journald begrenzen (VM-Disk nicht zulaufen lassen)
