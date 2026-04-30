@@ -67,10 +67,8 @@ Wir legen (empfohlen) folgende Struktur an:
 
 ```text
 /mnt/usb/psbt/identity/
-  signer/
-    signer-pubkey.asc
-    signer-identity.txt
-  manifest.sha256 (optional)
+  signer-pubkey.asc
+  signer-identity.txt
 ```
 
 ### Lokal auf den VMs (State)
@@ -153,18 +151,31 @@ sudo hash-keyGen.sh
 *   sicherstellen: airgapped (keine NIC UP außer `lo`)
 *   erzeugt **GPG Keypair** im Signer‑State (z. B. `GNUPGHOME=/var/lib/psbt-guard/gnupg`)
 *   exportiert **Public Key + Metadaten**
-*   schreibt diese nach USB (z. B. `psbt/identity/signer/...`)
+*   schreibt diese nach USB (`psbt/identity/...`)
+*   zeigt Dir 40 Hexa-Dezimal zeichen als Fingerprint
+    *   Schriebe diese ab für einen späteren vergleich
 *   `sync`
 *   `umount`
 
 **Erwartete Outputs (Dateien):**
 
 *   auf USB:
-    *   `/mnt/usb/psbt/identity/signer/signer-pubkey.asc`
-    *   `/mnt/usb/psbt/identity/signer/signer-identity.txt`
+    *   `/mnt/usb/psbt/identity/signer-pubkey.asc`
+    *   `/mnt/usb/psbt/identity/signer-identity.txt`
 *   lokal (Signer):
     *   `/var/lib/psbt-guard/gnupg/` (private key material)
     *   `/var/lib/psbt-guard/identity/...`
+
+### Schritt 1c — (Signer VM) Revocation erzeugen
+
+```bash
+export GNUPGHOME=/var/lib/psbt-guard/gnupg
+mkdir -p /var/lib/psbt-guard/identity
+chmod 0700 /var/lib/psbt-guard/identity
+
+gpg --output /var/lib/psbt-guard/identity/signer-revocation.asc --gen-revoke <FINGERPRINT>
+chmod 0400 /var/lib/psbt-guard/identity/signer-revocation.asc
+```
 
 ***
 
@@ -191,11 +202,10 @@ sudo hash-keyStore.sh
 
 *   airgap check
 *   prüft, dass **Signer Public Key** auf USB existiert:
-    *   `/mnt/usb/psbt/identity/signer/signer-pubkey.asc`
+    *   `/mnt/usb/psbt/identity/signer-pubkey.asc`
 *   importiert Signer Public Key ins lokale KeyB‑GNUPG:
     *   `GNUPGHOME=/var/lib/psbt-guard/gnupg`
     *   `gpg --import ...`
-*   schreibt Import‑Status/Manifest
 *   `sync`
 *   `umount`
 
@@ -215,6 +225,71 @@ Wdh. von Schritt 2 mit
 ```
 
 ***
+
+# Keys kompromittiert
+
+## Key revocation
+Die public Keys müssen daraufhin revoked werden, was über den import einer Datei möglcih ist
+Diese wird auf Singer-VM mit dem private Key erstellt.
+
+Auf dem private-Hash-Holder (signer):
+```bash
+export GNUPGHOME=/var/lib/psbt-guard/gnupg
+
+# Fingerprint bestimmen
+export GNUPGHOME=/var/lib/psbt-guard/gnupg
+gpg --list-secret-keys --keyid-format long
+
+FP="<DEIN_FINGERPRINT>"
+
+mkdir -p /var/lib/psbt-guard/identity
+chmod 0700 /var/lib/psbt-guard/identity
+
+gpg --output /var/lib/psbt-guard/identity/signer-revocation.asc --gen-revoke "$FP"
+chmod 0400 /mnt/usb/psbt/identity/signer-revocation.asc
+```
+
+Auf Public-Hash-Holder B und C
+```bash
+export GNUPGHOME=/var/lib/psbt-guard/gnupg
+gpg --import /mnt/usb/psbt/identity/signer-revocation.asc
+```
+Revoked status prüfen per
+```bash
+gpg --list-keys --with-colons | grep -E '^(pub|rev):'
+gpg --list-keys --fingerprint
+```
+
+## Key Deletion
+Anstelle von Revoke können diese auch direkt gelöscht werden.
+Den einzigen Vorteil weißt revoke durch seine Nachverfolgbarkeit aus.
+
+Auf dem private-Hash-Holder (signer):
+```bash
+rm -rf /var/lib/psbt-guard/gnupg
+
+#Ordner neu-Anlegen
+mkdir -p /var/lib/psbt-guard/gnupg
+chmod 0700 /var/lib/psbt-guard/gnupg
+```
+Prüfen per:
+```bash
+gpg --list-secret-keys
+gpg --list-keys
+```
+
+Auf Public-Hash-Holder B und C
+```bash
+rm -rf /var/lib/psbt-guard/gnupg
+
+#Ordner neu-Anlegen
+mkdir -p /var/lib/psbt-guard/gnupg
+chmod 0700 /var/lib/psbt-guard/gnupg
+```
+Prüfen per:
+```bash
+gpg --list-keys
+```
 
 # Hash‑verify
 
@@ -239,8 +314,8 @@ Technisch passiert das über **GPG-Signaturprüfung**:
 
 **Erwartete Dokumente auf dem USB:**
 
-*   `psbt/out/for-signing.psbt`
-*   `psbt/out/for-signing.psbt.sig`
+*   `psbt/for-signing.psbt`
+*   `psbt/for-signing.psbt.sig`
 
 **VM (KeyB/KeyC):**
 
@@ -271,16 +346,14 @@ gpg --list-keys
 ### 2) Sind die Dateien da?
 
 ```bash
-ls -lah /mnt/usb/psbt/out/
+ls -lah /mnt/usb/psbt/
 ```
 
-### 3) Signatur manuell prüfen (für genaue Fehlermeldung)
+### 3) Fingerpreint manuell prüfen (für genaue Fehlermeldung)
 
 ```bash
 export GNUPGHOME=/var/lib/psbt-guard/gnupg
-gpg --verify /mnt/usb/psbt/out/for-signing.psbt.sig /mnt/usb/psbt/out/for-signing.psbt
-# oder:
-gpg --verify /mnt/usb/psbt/out/final.psbt.sig /mnt/usb/psbt/out/final.psbt
+gpg --verify /mnt/usb/psbt/for-signing.psbt.sig /mnt/usb/psbt/for-signing.psbt
 ```
 
 ***

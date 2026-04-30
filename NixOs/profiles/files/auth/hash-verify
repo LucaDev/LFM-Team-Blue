@@ -10,6 +10,28 @@ info(){ echo "[*] $*"; }
 [[ $EUID -eq 0 ]] || die "Bitte als root ausführen."
 mountpoint -q "$MNT" || die "Nicht gemountet: $MNT"
 
+VERIFIED=0
+
+cleanup() {
+  # NUR BEI NICHT-ERFOLG unmounten
+  if [[ "$VERIFIED" -ne 1 ]]; then
+    if mountpoint -q "$MNT"; then
+      if umount "$MNT" >/dev/null 2>&1; then
+        echo "[!] Not verified, unmounted." >&2
+      else
+        echo "[!] Cleanup: unmount failed for $MNT" >&2
+      fi
+    fi
+  fi
+}
+trap cleanup EXIT
+
+SRC_DEV="$(findmnt -n -o SOURCE --target "$MNT")"
+[[ "$SRC_DEV" =~ ^/dev/ ]] || die "Mountpoint ist kein Blockdevice: $SRC_DEV"
+
+LABEL="$(lsblk -no LABEL "$SRC_DEV" 2>/dev/null | head -n1 || true)"
+[[ "$LABEL" == "USB" ]] || die "Falsches Medium (Label != USB)."
+
 export GNUPGHOME
 mkdir -p "$GNUPGHOME"
 chmod 0700 "$GNUPGHOME" || true
@@ -17,20 +39,19 @@ chmod 0700 "$GNUPGHOME" || true
 # ------------------------------------------------------------
 # Approval verify (KeyB/KeyC): for-signing.psbt + for-signing.psbt.sig
 # ------------------------------------------------------------
-FOR="$MNT/psbt/out/for-signing.psbt"
-FOR_SIG="$MNT/psbt/out/for-signing.psbt.sig"
+FOR="$MNT/psbt/for-signing.psbt"
+FOR_SIG="$MNT/psbt/for-signing.psbt.sig"
 
-# Wenn jemand versucht, das im Hot-Release Schritt zu benutzen: klar abbrechen
-if [[ -f "$MNT/psbt/out/final.psbt" || -f "$MNT/psbt/out/final.psbt.sig" ]]; then
-  die "Release/Final Dateien gefunden (final.psbt). Dieses Script ist nur für KEY Approval verify gedacht."
-fi
-
-[[ -f "$FOR" ]] || die "Fehlt: psbt/out/for-signing.psbt"
-[[ -f "$FOR_SIG" ]] || die "Fehlt: psbt/out/for-signing.psbt.sig"
+[[ -f "$FOR" ]] || die "Fehlt: psbt/for-signing.psbt"
+[[ -f "$FOR_SIG" ]] || die "Fehlt: psbt/for-signing.psbt.sig"
 
 info "Phase: APPROVAL verify (Signer -> Key)"
 gpg --verify "$FOR_SIG" "$FOR" >/dev/null 2>&1 \
   || die "Approval Signatur ungültig (Signer PubKey importiert?)."
 
+# Ab hier erfolgreich -> cleanup soll NICHT unmounten
 info "OK: Approved vom Signer. Du darfst jetzt in Sparrow signieren:"
-info " - psbt/out/for-signing.psbt"
+info " - psbt/for-signing.psbt"
+info "USB bleibt gemountet unter $MNT (für Sparrow)."
+
+VERIFIED=1
