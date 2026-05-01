@@ -2,7 +2,12 @@
 
 let
   #====================#
-  # 1) Sparrow Wrapper: startet Sparrow stabil in XFCE/Proxmox (X11 + optional Software Rendering)  # 1) Sparrow Standalone Pfad (liegt bereits im Repo /etc/nixos/...)
+  # 1) Sparrow Standalone Pfad (liegt bereits im Repo /etc/nixos/...)
+  #====================#
+  sparrowStandalone = "/etc/nixos/NixOs/profiles/programs/Sparrow/bin/Sparrow";
+
+  #====================#
+  # 2) Wrapper: startet Sparrow stabil in XFCE/Proxmox (X11 + optional Software Rendering)
   #====================#
   sparrowWrapped = pkgs.writeShellScriptBin "sparrow" ''
     set -euo pipefail
@@ -93,7 +98,3 @@ in
   #   trezor-udev-rules
   # ];
 }
-  #====================#
-  sparrowStandalone = "/etc/nixos/NixOs/profiles/programs/Sparrow/bin/Sparrow";
-
-  #====================#
