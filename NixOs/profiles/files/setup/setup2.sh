@@ -127,6 +127,42 @@ boot.loader.efi.canTouchEfiVariables = true;
 EOF
 fi
 
+echo "[8/10] Setup Sparrow Standalone (already in repo, already extracted)"
+
+SPARROW_REL="/profiles/programs/Sparrow/bin/Sparrow"
+SPARROW_SRC="/mnt/etc/nixos/${SPARROW_REL}"
+
+# 1) Check path exists
+if [[ ! -f "$SPARROW_SRC" ]]; then
+  echo "ERROR: Sparrow Standalone not found at: $SPARROW_SRC"
+  echo "Hint: expected repo path relative to /etc/nixos: $SPARROW_REL"
+  echo "Repo root listing:"
+  ls -la /mnt/etc/nixos | sed 's|^|  |'
+  exit 1
+fi
+
+# 2) Ensure it is executable
+chmod +x "$SPARROW_SRC" || true
+
+# 3) Create stable launcher in target system (/usr/local/bin)
+mkdir -p /mnt/usr/local/bin
+ln -sf "/etc/nixos/${SPARROW_REL}" /mnt/usr/local/bin/Sparrow
+ln -sf "/etc/nixos/${SPARROW_REL}" /mnt/usr/local/bin/sparrow
+
+# 4) Optional: desktop entry in target system
+mkdir -p /mnt/etc/xdg/applications
+cat > /mnt/etc/xdg/applications/sparrow.desktop <<'EOF'
+[Desktop Entry]
+Name=Sparrow Wallet (Standalone)
+Exec=/usr/local/bin/Sparrow
+Type=Application
+Categories=Finance;
+Terminal=false
+EOF
+
+echo "[OK] Sparrow launcher created: /usr/local/bin/Sparrow (and /usr/local/bin/sparrow)"
+
+
 echo "[10/10] Install NixOS"
 nixos-install --no-root-passwd
 
