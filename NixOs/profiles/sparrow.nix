@@ -8,50 +8,40 @@ let
 
   sparrowReal = lib.getExe sparrowPkg;
 
-  javaPkg =
-    if pkgs ? jre17 then pkgs.jre17
-    else if pkgs ? jdk17 then pkgs.jdk17
-    else if pkgs ? openjdk17 then pkgs.openjdk17
-    else if pkgs ? "temurin-jre-bin-17" then pkgs."temurin-jre-bin-17"
-    else if pkgs ? "temurin-bin-17" then pkgs."temurin-bin-17"
-    else if pkgs ? jre then pkgs.jre
-    else if pkgs ? jdk then pkgs.jdk
-    else throw "No Java runtime found in this nixpkgs (tried jre17/jdk17/openjdk17/temurin*/jre/jdk)";
+  # Java 17 mit JavaFX
+  jdkWithFX =
+    (pkgs.openjdk17.override { enableJavaFX = true; });
 
   sparrowWrapped = pkgs.writeShellScriptBin "sparrow" ''
     export GDK_BACKEND=x11
-    export JAVA_HOME=${javaPkg}
-    export PATH=${javaPkg}/bin:$PATH
+    export JAVA_HOME=${jdkWithFX}
+    export PATH=${jdkWithFX}/bin:$PATH
 
     unset _JAVA_OPTIONS
     unset JAVA_TOOL_OPTIONS
     unset CLASSPATH
 
-    # ENTSCHEIDENDER FIX:
-    export _JAVA_OPTIONS="
-      -Dprism.order=sw
-      -Dglass.platform=x11
-      -Djavafx.platform=x11
-      -Dawt.useSystemAAFontSettings=on
-    "
+    # VM/Proxmox häufig nötig:
+    export _JAVA_OPTIONS="-Dprism.order=sw"
 
     exec ${sparrowReal} "$@"
   '';
-
 in
 {
   environment.systemPackages = with pkgs; [
     sparrowPkg
     sparrowWrapped
 
-    # GUI/JavaFX-Umfeld, verhindert viele JavaFX-Crashes:
     fontconfig
     dejavu_fonts
-    glib
-    gtk3
     xorg.xrandr
     xorg.xset
+    glib
+    gtk3
+    gsettings-desktop-schemas
   ];
+
+  programs.dconf.enable = true;
 
   environment.etc."xdg/applications/sparrow.desktop" = {
     mode = "0644";
