@@ -8,40 +8,51 @@ let
 
   sparrowReal = lib.getExe sparrowPkg;
 
-  # Java 17 mit JavaFX
-  jdkWithFX =
-    (pkgs.openjdk17.override { enableJavaFX = true; });
-
   sparrowWrapped = pkgs.writeShellScriptBin "sparrow" ''
     export GDK_BACKEND=x11
-    export JAVA_HOME=${jdkWithFX}
-    export PATH=${jdkWithFX}/bin:$PATH
 
+    # Wichtig: nicht auf irgendeine systemweite Java-Installation zwingen
+    unset JAVA_HOME
+    unset CLASSPATH
     unset _JAVA_OPTIONS
     unset JAVA_TOOL_OPTIONS
-    unset CLASSPATH
 
-    # VM/Proxmox häufig nötig:
+    # VM/Proxmox/ohne GPU: JavaFX stabiler ohne OpenGL/ES2
     export _JAVA_OPTIONS="-Dprism.order=sw"
 
     exec ${sparrowReal} "$@"
   '';
 in
 {
+  programs.dconf.enable = true;
+
   environment.systemPackages = with pkgs; [
     sparrowPkg
     sparrowWrapped
 
+    # JavaFX/GTK Umfeld
+    glib
+    gtk3
+    gsettings-desktop-schemas
+
+    # Fonts + X11 Tools (häufig nötig)
     fontconfig
     dejavu_fonts
     xorg.xrandr
     xorg.xset
-    glib
-    gtk3
-    gsettings-desktop-schemas
+
+    # X11 libs, die JavaFX gelegentlich braucht
+    xorg.libX11
+    xorg.libXext
+    xorg.libXi
+    xorg.libXrender
+    xorg.libXtst
+    xorg.libXxf86vm
   ];
 
-  programs.dconf.enable = true;
+  environment.sessionVariables = {
+    GDK_BACKEND = "x11";
+  };
 
   environment.etc."xdg/applications/sparrow.desktop" = {
     mode = "0644";
@@ -54,4 +65,9 @@ in
       Terminal=false
     '';
   };
+
+  systemd.tmpfiles.rules = lib.mkAfter [
+    "d /home/user/Desktop 0755 user users - -"
+    "L+ /home/user/Desktop/sparrow.desktop - - - - /etc/xdg/applications/sparrow.desktop"
+  ];
 }
