@@ -221,3 +221,14 @@ sudo umount /mnt/usb
 *   **Key‑VMs signieren nur nach `hash-verify.sh`**
 
 ***
+
+Sparrow setup
+Starte sparrow
+schalte es in den offline mode 
+clicke auf import new file und use mnemneic phrase
+Wähle 24 wörter
+    in dejem Wort copntainer kannst du einen buchstaben eingeben und kriegst dann eine auswahl an möglcihen passphrases vorgeschlagen
+    Fülle so alle wörter und schriebe diese auf
+    generiere das wallet
+    wähkle script antive...
+    wähle ein passwort
