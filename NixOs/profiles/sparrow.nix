@@ -8,16 +8,26 @@ let
 
   sparrowReal = lib.getExe sparrowPkg;
 
+  javaPkg =
+    if pkgs ? jre17 then pkgs.jre17
+    else if pkgs ? jdk17 then pkgs.jdk17
+    else if pkgs ? openjdk17 then pkgs.openjdk17
+    else if pkgs ? "temurin-jre-bin-17" then pkgs."temurin-jre-bin-17"
+    else if pkgs ? "temurin-bin-17" then pkgs."temurin-bin-17"
+    else if pkgs ? jre then pkgs.jre
+    else if pkgs ? jdk then pkgs.jdk
+    else throw "No Java runtime found in this nixpkgs (tried jre17/jdk17/openjdk17/temurin*/jre/jdk)";
+
   sparrowWrapped = pkgs.writeShellScriptBin "sparrow" ''
     export GDK_BACKEND=x11
-    export JAVA_HOME=${pkgs.jre17}
-    export PATH=${pkgs.jre17}/bin:$PATH
+    export JAVA_HOME=${javaPkg}
+    export PATH=${javaPkg}/bin:$PATH
 
     unset _JAVA_OPTIONS
     unset JAVA_TOOL_OPTIONS
     unset CLASSPATH
 
-    # Optional: hilft in VMs/ohne saubere GL-Unterstützung
+    # Sehr oft hilfreich in VMs (Proxmox) oder ohne gutes OpenGL:
     export _JAVA_OPTIONS="-Dprism.order=sw -Djavafx.platform=gtk"
 
     exec ${sparrowReal} "$@"
@@ -28,20 +38,13 @@ in
     sparrowPkg
     sparrowWrapped
 
-    # Java Runtime (definiert)
-    jre17
-
-    # JavaFX/GUI-Umfeld, sehr oft nötig in NixOS/VMs
+    # GUI/JavaFX-Umfeld, verhindert viele JavaFX-Crashes:
     fontconfig
     dejavu_fonts
     glib
     gtk3
-
-    # X11 Tools/Libs, JavaFX fragt teils xrandr/xset ab
     xorg.xrandr
     xorg.xset
-
-    xterm
   ];
 
   environment.etc."xdg/applications/sparrow.desktop" = {
@@ -55,9 +58,4 @@ in
       Terminal=false
     '';
   };
-
-  systemd.tmpfiles.rules = lib.mkAfter [
-    "d /home/user/Desktop 0755 user users - -"
-    "L+ /home/user/Desktop/sparrow.desktop - - - - /etc/xdg/applications/sparrow.desktop"
-  ];
 }
