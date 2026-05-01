@@ -48,3 +48,10 @@ spec:
             httpGet: { path: /healthz, port: 8080 }
             initialDelaySeconds: 10
             periodSeconds: 20
+      volumes:
+        - name: archive
+          persistentVolumeClaim:
+            claimName: btc-archive-pvc
+      volumeMounts:
+      - name: archive
+        mountPath: /var/lib/btc-archive

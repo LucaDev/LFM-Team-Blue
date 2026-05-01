@@ -407,6 +407,38 @@ OPA loads policies via ConfigMap in `deploy/k8s/base/opa.yaml`.
 
 ***
 
+## 8. VolSync Backup Setup
+
+### 8.1 Installation (einmalig)
+
+```bash
+helm repo add backube https://backube.github.io/helm-charts/
+helm install -n volsync-system --create-namespace volsync backube/volsync
+```
+
+### 8.2 Backup konfigurieren
+
+```bash
+kubectl apply -f deploy/k8s/volsync/00-volsync-restic-secret.yaml
+kubectl apply -f deploy/k8s/volsync/10-archive-replicationsource.yaml
+```
+
+✅ Backup ist **komplett entkoppelt**  
+✅ Applikationen kennen das Backup‑Ziel nicht
+
+***
+
+## 9. Wiederherstellung (DR‑Gedanke)
+
+*   Restore erfolgt über `ReplicationDestination`
+*   Archiv‑PVC wird aus Backup wiederhergestellt
+*   Middleware findet:
+    *   PSBTs
+    *   Broadcast‑Daten
+    *   GPG‑Approvals
+
+***
+
 ## 8) Deployment (Kubernetes/Talos)
 
 ### 8.1 Prereqs
@@ -417,27 +449,7 @@ OPA loads policies via ConfigMap in `deploy/k8s/base/opa.yaml`.
 
 ### 8.2 Apply manifests
 
-Recommended order (also encoded in `k8s/scripts/deploy.sh`):
-
-```bash
-kubectl apply -f deploy/k8s/base/namespace.yaml
-
-kubectl apply -f deploy/k8s/base/nats.yaml
-kubectl apply -f deploy/k8s/base/opa.yaml
-
-kubectl apply -f deploy/k8s/base/configmap.yaml
-# secrets-template is a template. Apply your real secret:
-kubectl apply -f deploy/k8s/base/secrets-template.yaml  # only if you filled it
-
-kubectl apply -f deploy/k8s/bitcoin-net/bitcoind-regtest.yaml
-kubectl apply -f deploy/k8s/bitcoin-net/miner.yaml
-
-kubectl apply -f deploy/k8s/base/middleware.yaml
-kubectl apply -f deploy/k8s/base/tx-builder.yaml
-kubectl apply -f deploy/k8s/base/policy-signer.yaml
-
-kubectl apply -f deploy/k8s/base/networkpolicies.yaml
-```
+Recommended order (encoded in `k8s/scripts/deploy.sh`):
 
 ### 8.3 Verify
 
@@ -472,6 +484,15 @@ bash k8s/scripts/push-images.sh
 
 ```bash
 bash k8s/scripts/deploy.sh
+```
+
+### 9.4 redploy on changes
+```bash
+export REG=ghcr.io/your-org
+export TAG=0.1.0
+bash k8s/scripts/build-images.sh
+bash k8s/scripts/push-images.sh
+kubectl -n btc-hot rollout restart deployment middleware
 ```
 
 ***
@@ -551,3 +572,69 @@ Planned next iterations:
 *   Notification integration with ntfy (external)
 
 ***
+
+## PostGres-SQL DB
+
+### 12.1 Minimaler DB‑Betrieb (How‑To)
+
+**Migration ausführen (lokal/CI/CD):**
+
+*   Variante A (einfach): `psql` direkt
+
+```bash
+psql "$DATABASE_URL" -f services/middleware/migrations/001_init.sql
+```
+
+*   Variante B (Job im Cluster):  
+    Ein K8s Job, der `psql` nutzt und die Migration aus einem ConfigMap/Container ausführt (optional; sag Bescheid, dann schreibe ich dir den Job).
+
+***
+
+### 12.4 Mapping: Welche Aktion schreibt in welche Tabellen?
+
+**Hot Auto‑Flow**
+
+*   `intent` (type=hot\_tx)
+*   `policy_decision` (policy.hot)
+*   `hot_sign_request` (request\_id, tx\_hash, state)
+*   `archived_tx` (nach Broadcast + Archivierung auf PVC)
+*   optional `event_log` (NATS lifecycle)
+
+**Cold Manual Refill**
+
+*   `intent` (type=refill, state=WAITING\_HUMAN)
+*   `policy_decision` (policy.refill)
+*   `psbt_artifact` (stage=unappr/appr/signed/final, jeweils Pfad+Hash)
+*   `archived_tx` (nach Broadcast + Archiv)
+*   optional `event_log`
+
+***
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TEST
+Deploy komplett grün (Pods Running, Services erreichbar)
+DB Migrationen (001+002) im externen Postgres
+Auto-build Pipeline testen (Intent event → Work‑PVC → Middleware GET returns base64)
+Broadcast+Archive Pipeline testen (mit Dummy PSBT falls nötig, oder einfach Archive Endpoint via curl)
+Observability:
+
+/metrics in middleware/tx-builder/policy-signer
+JSON logs in Loki
+
+
+NetPol Verification:
+
+“deny by default” wirklich wirksam?
+nur erlaubte Egress/Ingress funktionieren

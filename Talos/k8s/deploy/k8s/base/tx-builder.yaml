@@ -26,6 +26,10 @@ spec:
       labels:
         app: tx-builder
     spec:
+      volumes:
+        - name: work
+          persistentVolumeClaim:
+            claimName: btc-work-pvc
       containers:
         - name: tx-builder
           image: ghcr.io/your-org/tx-builder:0.1.0
@@ -52,3 +56,18 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 20 
+          volumeMounts:
+            - name: work
+              mountPath: /var/lib/btc-work
+          env:
+            - name: WORK_ROOT
+              value: "/var/lib/btc-work/psbt-work"
+            - name: BITCOIN_NETWORK
+              value: "regtest"
+            - name: REFILL_TARGET_ADDRESS
+              value: "bcrt1qhotdepositaddress00000000000000000000000"
+            - name: THRESHOLD_MIN_HOT_SATS
+              value: "1000000"
+            - name: THRESHOLD_TARGET_HOT_SATS
+              value: "2000000"
+          
