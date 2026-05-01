@@ -31,13 +31,18 @@
     source = ./files/psbt/psbt-guard.sh;
     mode = "0755";
   };
+  environment.etc."scripts/psbt/README.md" = {
+    source = ./files/psbt/README.md;
+    mode   = "0644";
+  };
+
 
   environment.etc."scripts/setup/online.sh" = {
     source = ./files/setup/online.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/setup.sh" = {
-    source = ./files/auth/setup.sh;
+    source = ./files/setup/setup.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/airgap.sh" = {
@@ -49,8 +54,9 @@
     mode   = "0644";
   };
 
+
   environment.etc."scripts/auth/hash-keyGen.sh" = {
-    source = ./files/hash-keyGen.sh;
+    source = ./files/auth/hash-keyGen.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/hash-keyStore.sh" = {
@@ -65,6 +71,7 @@
     source = ./files/auth/README.md;
     mode   = "0644";
   };
+
 
   #Legt Ordner beim Boot an (oder beim tmpfiles-setup)
   systemd.tmpfiles.rules = [
