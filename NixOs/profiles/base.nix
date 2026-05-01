@@ -27,43 +27,42 @@
     coreutils
   ];
 
-  environment.etc."scripts/psbt-inbox-status.sh" = {
-    source = ./files/psbt-inbox-status.sh;
+  environment.etc."scripts/psbt/psbt-guard.sh" = {
+    source = ./files/psbt/psbt-guard.sh;
     mode = "0755";
   };
 
-  environment.etc."scripts/psbt-outbox-status.sh" = {
-    source = ./files/psbt-outbox-status.sh;
-    mode = "0755";
-  };
-
-  environment.etc."scripts/psbt-guard.sh" = {
-    source = ./files/psbt-guard.sh;
-    mode = "0755";
-  };
-
-  environment.etc."scripts/online.sh" = {
-    source = ./files/online.sh;
+  environment.etc."scripts/setup/online.sh" = {
+    source = ./files/setup/online.sh;
     mode   = "0755";
   };
-
-  environment.etc."scripts/airgap.sh" = {
-    source = ./files/airgap.sh;
+  environment.etc."scripts/setup/setup.sh" = {
+    source = ./files/auth/setup.sh;
     mode   = "0755";
   };
+  environment.etc."scripts/setup/airgap.sh" = {
+    source = ./files/setup/airgap.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/setup/README.md" = {
+    source = ./files/setup/README.md;
+    mode   = "0644";
+  };
 
-  environment.etc."scripts/hash-keyGen.sh" = {
+  environment.etc."scripts/auth/hash-keyGen.sh" = {
     source = ./files/hash-keyGen.sh;
     mode   = "0755";
   };
-
-  environment.etc."scripts/hash-keyStore.sh" = {
-    source = ./files/hash-keyStore.sh;
+  environment.etc."scripts/auth/hash-keyStore.sh" = {
+    source = ./files/auth/hash-keyStore.sh;
     mode   = "0755";
   };
-  
-  environment.etc."scripts/README.md" = {
-    source = ./files/README.md;
+  environment.etc."scripts/auth/hash-verify.sh" = {
+    source = ./files/auth/hash-verify.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/auth/README.md" = {
+    source = ./files/auth/README.md;
     mode   = "0644";
   };
 
@@ -81,16 +80,17 @@
     "d /var/lib/psbt-guard/identity 0700 root root - -"
     "d /mnt/usb 0755 root root - -"
 
-    "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/online.sh"
-    "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/airgap.sh"
-    "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/README.md"
+    "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/setup/online.sh"
+    "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/setup/airgap.sh"
+    "L+ /home/user/Desktop/scripts/setup/setup.sh - - - - /etc/scripts/setup/setup.sh"
+    "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/setup/README.md"
 
-    "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/psbt-approve.sh"
+    "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/psbt/psbt-approve.sh"
     "L+ /home/user/Desktop/scripts/psbt/README.md - - - - /etc/scripts/psbt/README.md"
 
-    "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/hash-keyGen.sh"
-    "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/hash-keyStore.sh"
-    "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/hash-verify.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/auth/hash-keyGen.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/auth/hash-keyStore.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/auth/hash-verify.sh"
     "L+ /home/user/Desktop/scripts/auth/README.md - - - - /etc/scripts/README.md"
   ];
       
