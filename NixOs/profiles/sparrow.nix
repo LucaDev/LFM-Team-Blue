@@ -27,11 +27,17 @@ let
     unset JAVA_TOOL_OPTIONS
     unset CLASSPATH
 
-    # Sehr oft hilfreich in VMs (Proxmox) oder ohne gutes OpenGL:
-    export _JAVA_OPTIONS="-Dprism.order=sw -Djavafx.platform=gtk"
+    # ENTSCHEIDENDER FIX:
+    export _JAVA_OPTIONS="
+      -Dprism.order=sw
+      -Dglass.platform=x11
+      -Djavafx.platform=x11
+      -Dawt.useSystemAAFontSettings=on
+    "
 
     exec ${sparrowReal} "$@"
   '';
+
 in
 {
   environment.systemPackages = with pkgs; [

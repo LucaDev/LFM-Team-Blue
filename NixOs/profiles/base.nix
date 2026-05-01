@@ -27,8 +27,8 @@
     coreutils
   ];
 
-  environment.etc."scripts/psbt/psbt-guard.sh" = {
-    source = ./files/psbt/psbt-guard.sh;
+  environment.etc."scripts/psbt/psbt-approve.sh" = {
+    source = ./files/psbt/psbt-approve.sh;
     mode = "0755";
   };
   environment.etc."scripts/psbt/README.md" = {
