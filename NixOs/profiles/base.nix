@@ -98,7 +98,7 @@
     "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/auth/hash-keyGen.sh"
     "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/auth/hash-keyStore.sh"
     "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/auth/hash-verify.sh"
-    "L+ /home/user/Desktop/scripts/auth/README.md - - - - /etc/scripts/README.md"
+    "L+ /home/user/Desktop/scripts/auth/README.md - - - - /etc/scripts/auth/README.md"
   ];
       
   #Journald begrenzen (VM-Disk nicht zulaufen lassen)
