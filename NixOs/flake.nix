@@ -13,7 +13,7 @@
     pkgsUnstable = import nixpkgs-unstable { inherit system; };
   in
   {
-    nixosConfigurations.cold = pkgs.lib.nixosSystem {
+    nixosConfigurations.cold = nixpkgs.lib.nixosSystem {
       inherit system;
 
       specialArgs = {
