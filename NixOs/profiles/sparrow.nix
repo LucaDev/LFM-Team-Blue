@@ -1,15 +1,16 @@
-{ config, pkgs, ... }:
+{ pkgs, lib, pkgsUnstable, ... }:
 
 let
   sparrowPkg =
-    if pkgs ? sparrow-wallet then pkgs.sparrow-wallet
-    else if pkgs ? sparrow then pkgs.sparrow
-    else throw "No sparrow package found in this nixpkgs";
+    if pkgsUnstable ? sparrow-wallet then pkgsUnstable.sparrow-wallet
+    else if pkgsUnstable ? sparrow then pkgsUnstable.sparrow
+    else throw "No sparrow package found in nixpkgs-unstable";
+
+  sparrowExec = lib.getExe sparrowPkg;
 in
 {
   environment.systemPackages = [
     sparrowPkg
-    pkgs.xterm
   ];
 
   environment.etc."xdg/applications/sparrow.desktop" = {
@@ -17,10 +18,15 @@ in
     text = ''
       [Desktop Entry]
       Name=Sparrow Wallet
-      Exec=${sparrowPkg}/bin/sparrow
+      Exec=${sparrowExec}
       Type=Application
       Categories=Finance;
       Terminal=false
     '';
   };
+
+  systemd.tmpfiles.rules = lib.mkAfter [
+    "d /home/user/Desktop 0755 user users - -"
+    "L+ /home/user/Desktop/sparrow.desktop - - - - /etc/xdg/applications/sparrow.desktop"
+  ];
 }

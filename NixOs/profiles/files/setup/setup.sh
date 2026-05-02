@@ -127,7 +127,8 @@ boot.loader.efi.canTouchEfiVariables = true;
 EOF
 fi
 
-echo "[10/10] Install NixOS"
-nixos-install --no-root-passwd
+echo "[9/9] Install NixOS"
+export NIX_CONFIG="experimental-features = nix-command flakes"
+nixos-install --no-root-passwd --flake /mnt/etc/nixos#cold
 
 echo "DONE. Remove ISO in Proxmox and reboot."

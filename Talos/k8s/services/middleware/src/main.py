@@ -25,6 +25,7 @@ BITCOIND_RPC_PASS = os.getenv("BITCOIND_RPC_PASS", "")
 
 ARCHIVE_ROOT = os.getenv("ARCHIVE_ROOT", "/var/lib/btc-archive/psbt-archive")
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
+POLICY_SIGNER_URL = os.getenv("POLICY_SIGNER_URL", "http://policy-signer:8080")
 
 
 def utc_now_iso() -> str:
@@ -49,7 +50,10 @@ def is_hex(s: str) -> bool:
         return True
     except Exception:
         return False
-
+    
+# middleware/src/main.py — fehlt:
+async def subscribe_nats():
+    await nc.subscribe("tx_hot_requested", cb=handle_hot_tx)
 
 class PsbtExtractRequest(BaseModel):
     psbt_base64: str
@@ -252,3 +256,9 @@ async def get_psbt(intent_id: str, format: str = "base64"):
             raise HTTPException(404, "psbt not ready")
         r.raise_for_status()
         return r.json()
+
+@app.post("/api/v1/broadcast")
+async def broadcast(req: BroadcastRequest):
+    # Nur signierte TXs von Policy-Signer akzeptieren
+    if not verify_signer_signature(req.signed_rawtx_hex):
+        raise HTTPException(403, "invalid signature")
