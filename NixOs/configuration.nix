@@ -16,4 +16,15 @@
   
   airgap.enable = false;   # Build-Mode
   system.stateVersion = "24.05";
+
+  home-manager.users.user = { ... }: {
+      programs.xfconf.enable = true;
+
+      xfconf.settings = {
+        thunar = {
+          # Shell-Skripte per Doppelklick ausführen
+          "misc-exec-shell-scripts-by-default" = true;
+        };
+      };
+    };
 }

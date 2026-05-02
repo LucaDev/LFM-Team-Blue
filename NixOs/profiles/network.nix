@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 let
   airgap = config.airgap.enable;
@@ -8,7 +8,6 @@ in
   config = lib.mkIf airgap {
 
     networking.useDHCP = false;
-    networking.interfaces.${iface}.useDHCP = false;
 
     networking.networkmanager.enable = false;
     networking.useNetworkd = true;
@@ -25,7 +24,6 @@ in
 
     # kein Warten auf Netzwerk
     systemd.network.wait-online.enable = false;
-    networking.networkmanager.wait-online.enable = false;
 
     
     # One-shot: bei jedem boot/switch alle aktuellen Interfaces härten
@@ -40,13 +38,14 @@ in
         for i in $(ip -o link show | awk -F': ' '{print $2}'); do
           [ "$i" = "lo" ] && continue
 
-          sysctl -w "net.ipv6.conf.${i}.disable_ipv6=1" >/dev/null || true
-          sysctl -w "net.ipv6.conf.${i}.accept_ra=0" >/dev/null || true
-          sysctl -w "net.ipv6.conf.${i}.autoconf=0" >/dev/null || true
-          sysctl -w "net.ipv6.conf.${i}.accept_redirects=0" >/dev/null || true
-          sysctl -w "net.ipv6.conf.${i}.dad_transmits=0" >/dev/null || true
+          sysctl -w "net.ipv6.conf.$i.disable_ipv6=1" >/dev/null || true
+          sysctl -w "net.ipv6.conf.$i.accept_ra=0" >/dev/null || true
+          sysctl -w "net.ipv6.conf.$i.autoconf=0" >/dev/null || true
+          sysctl -w "net.ipv6.conf.$i.accept_redirects=0" >/dev/null || true
+          sysctl -w "net.ipv6.conf.$i.dad_transmits=0" >/dev/null || true
 
-          sysctl -w "net.ipv4.conf.${i}.disable_ipv4=1" >/dev/null || true
+          sysctl -w "net.ipv4.conf.$i.disable_ipv4=1" >/dev/null || true
+          sysctl -w "networking.interfaces.$i.useDHCP=1;" >/dev/null || true
         done
       '';
     };

@@ -28,7 +28,7 @@
   ];
 
   environment.etc."scripts/psbt/psbt-approve.sh" = {
-    source = ./files/psbt/psbt-approve.sh;
+    source = ./files/wrappers/psbt-approve.sh;
     mode = "0755";
   };
   environment.etc."scripts/psbt/README.md" = {
@@ -38,15 +38,23 @@
 
 
   environment.etc."scripts/setup/online.sh" = {
-    source = ./files/setup/online.sh;
+    source = ./files/wrappers/online.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/setup.sh" = {
-    source = ./files/setup/setup.sh;
+    source = ./files/wrappers/setup.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/airgap.sh" = {
-    source = ./files/setup/airgap.sh;
+    source = ./files/wrappers/airgap.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/setup/mnt-USB.sh" = {
+    source = ./files/wrappers/mnt-USB.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/setup/format-USB.sh" = {
+    source = ./files/wrappers/format-USB.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/README.md" = {
@@ -56,15 +64,15 @@
 
 
   environment.etc."scripts/auth/hash-keyGen.sh" = {
-    source = ./files/auth/hash-keyGen.sh;
+    source = ./files/wrappers/hash-keyGen.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/hash-keyStore.sh" = {
-    source = ./files/auth/hash-keyStore.sh;
+    source = ./files/wrappers/hash-keyStore.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/hash-verify.sh" = {
-    source = ./files/auth/hash-verify.sh;
+    source = ./files/wrappers/hash-verify.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/README.md" = {
@@ -90,6 +98,8 @@
     "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/setup/online.sh"
     "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/setup/airgap.sh"
     "L+ /home/user/Desktop/scripts/setup/setup.sh - - - - /etc/scripts/setup/setup.sh"
+    "L+ /home/user/Desktop/scripts/setup/format-USB.sh - - - - /etc/scripts/setup/format-USB.sh"
+    "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/setup/mnt-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/setup/README.md"
 
     "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/psbt/psbt-approve.sh"

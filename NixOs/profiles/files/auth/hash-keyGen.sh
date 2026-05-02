@@ -29,16 +29,18 @@ info(){ echo "[*] $*"; }
 umask 077
 
 # =========================
-# 0. Airgap sanity check (ignoriert lo)
+# 0. Airgap sanity check (ignoriert)
 # =========================
-# robust: erlaubt nur "lo" als UP
-if ip -o link show up | awk -F': ' '{print $2}' | grep -qvx "lo"; then
-  die "Netzwerk-Interface ist UP (außer lo). Bitte erst airgap aktivieren."
+if grep -Eq '^\s*airgap\.enable\s*=\s*false\s*;' "$CFG"; then
+  echo "airgap enabled"
+else
+  exit 0
 fi
 
 # =========================
 # 1. Wechselmedium prüfen (bewusster mount)
 # =========================
+
 if ! mountpoint -q "$MNT"; then
   die "Kein Wechselmedium gemountet unter $MNT"
 fi

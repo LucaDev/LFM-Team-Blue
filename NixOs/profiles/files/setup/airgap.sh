@@ -35,6 +35,6 @@ echo "Build done:"
 
 RESULT="$(readlink -f ./result)"
 echo "Applying now..."
-"$Result/bin/switch-to-configuration" switch
+"$RESULT/bin/switch-to-configuration" switch
 
 echo "Airgap applied."

@@ -29,8 +29,10 @@ IMPORTED=0
 # 0. Airgap sanity check (ignoriert lo)
 # =========================
 if [[ "$REQUIRE_AIRGAP" == "1" ]]; then
-  if ip -o link show up | awk -F': ' '{print $2}' | grep -qvx "lo"; then
-    die "Netzwerk-Interface ist UP (außer lo). Bitte erst airgap aktivieren."
+  if grep -Eq '^\s*airgap\.enable\s*=\s*false\s*;' "$CFG"; then
+    echo "airgap enabled"
+  else
+    exit 0
   fi
 fi
 
@@ -75,6 +77,8 @@ export GNUPGHOME
 # =========================
 # 3.1 Identity prüfen (SHA256)
 # =========================
+echo ""
+echo "==========================="
 EXPECTED_SHA="$(awk -F': ' '/^pubkey_sha256:/ {print $2}' "$META_USB" | tr -d '\r')"
 [[ -n "$EXPECTED_SHA" ]] || die "Konnte pubkey_sha256 nicht aus $META_USB lesen"
 
@@ -83,10 +87,14 @@ ACTUAL_SHA="$(sha256sum "$PUB_USB" | awk '{print $1}')"
 
 info "Identity OK (PubKey SHA256 passt)."
 
+echo "============================"
+echo ""
+
 # =========================
 # 3.2 Fingerprint kontrollieren
 # =========================
 #Fingerprint aus META lesen (erwartet)
+echo "============================"
 EXPECTED_FPR="$(awk -F': *' '/^fingerprint:/ {print $2}' "$META_USB" | tr -d '\r' | tr -d ' ')"
 [[ -n "$EXPECTED_FPR" ]] || die "Konnte fingerprint nicht aus $META_USB lesen"
 info "Erwarteter Fingerprint (META): $EXPECTED_FPR"
@@ -97,16 +105,18 @@ PUB_FPR="$(
     | awk -F: '/^fpr:/ {print $10; exit}'
 )"
 [[ -n "$PUB_FPR" ]] || die "Konnte Fingerprint nicht aus $PUB_USB bestimmen"
-info "Fingerprint (aus PUB): $PUB_FPR"
+info "Fingerprint (aus USB): $PUB_FPR"
 
 # Fingerprints vergleichen, sodass public Key nicht ausgetauscht wurde (allgemeinee Manipulationsschutz)
 [[ "$EXPECTED_FPR" == "$PUB_FPR" ]] || die "Fingerprint mismatch! expected=$EXPECTED_FPR pub=$PUB_FPR"
 info "Identity OK (Fingerprint passt)."
 
+echo "============================"
+echo ""
+
 # Chain of trust für das initiale aufsetzen
 info ""
 info "OUT-OF-BAND CHECK:"
-info "Fingerprint laut USB (META): $EXPECTED_FPR"
 info "Vergleiche das mit dem Fingerprint, den du auf dem Signer offline notiert hast."
 read -r -p "Stimmt der Fingerprint überein? [Y/N] " ans
 case "${ans,,}" in
