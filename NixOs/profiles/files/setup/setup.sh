@@ -108,6 +108,7 @@ else
 fi
 
 rm -rf /mnt/etc/nixos/.repo
+rm -rf /etc/nixos/.git
 
 echo "[9/10] Ensure bootloader + swap is configured (patch if missing)"
 if ! grep -q "swapDevices" /mnt/etc/nixos/hardware-configuration.nix; then
