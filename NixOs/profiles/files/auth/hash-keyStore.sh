@@ -12,6 +12,8 @@ GNUPGHOME="$STATE_DIR/gnupg"
 PUB_USB="$MNT/psbt/identity/signer-pubkey.asc"
 META_USB="$MNT/psbt/identity/signer-identity.txt"
 
+CFG="/etc/nixos/configuration.nix"
+
 # 1 = nur lo darf UP sein (KeyB/KeyC)
 # 0 = Airgap-Check aus (Hot)
 REQUIRE_AIRGAP="${REQUIRE_AIRGAP:-1}"

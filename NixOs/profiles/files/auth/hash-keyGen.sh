@@ -16,6 +16,8 @@ KEY_NAME_REAL="PSBT Signer Approval"
 KEY_NAME_EMAIL="signer@airgap"
 KEY_BITS="4096"
 
+CFG="/etc/nixos/configuration.nix"
+
 # =========================
 # Helper
 # =========================
