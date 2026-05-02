@@ -19,7 +19,7 @@ if grep -Eq '^\s*airgap\.enable\s*=' "$CFG"; then
   sed -i -E 's/^\s*airgap\.enable\s*=\s*(true|false)\s*;/  airgap.enable = true;/' "$CFG"
   echo "Set airgap.enable=true"
 else
-  echo "ERROR: airgap.enable not found in $CFG. I won't append blindly (risk wrong scope)."
+  echo "ERROR: airgap.enable not found in $CFG."
   echo "Add 'airgap.enable = false;' once in the right module scope, then rerun."
   exit 1
 fi
@@ -29,10 +29,12 @@ OUT_LINK="$(mktemp -d)/result"
 
 nixos-rebuild build \
   --flake "path:${FLAKE_DIR}#${TARGET}" \
-  --impure \
-  --out-link "$OUT_LINK"
+  --impure
 
-echo "Build done: $OUT_LINK"
+echo "Build done:"
+
+RESULT="$(readlink -f ./result)"
 echo "Applying now..."
-"$OUT_LINK/bin/switch-to-configuration" switch
+"$Result/bin/switch-to-configuration" switch
+
 echo "Airgap applied."
