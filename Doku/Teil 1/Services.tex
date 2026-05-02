@@ -35,7 +35,7 @@ Das gesamte System wird auf einem Kubernetes-Cluster betrieben, der auf Talos Li
         \begin{itemize}
             \item Sparrow (offline)
         \end{itemize}
-        \item Simuliertes Air-gapped System (2x)
+        \item Simuliertes Air-gapped System (3x)
         \end{multicols}
     \end{itemize}
     \item Dashboards \& Monitoring
@@ -94,12 +94,36 @@ Die identifizierten Schwachstellen von Vaultwarden (insbesondere CVE-2024-55225 
 
 Gleichzeitig ist die zentrale Rolle von Vaultwarden als Passwort-Manager kritisch zu bewerten, da eine erfolgreiche Kompromittierung potenziell den Zugriff auf alle gespeicherten Zugangsdaten ermöglichen würde. Dies hätte insbesondere im Kontext von Bitcoin gravierende Auswirkungen, bis hin zum vollständigen Kontrollverlust über relevante Systeme. Insgesamt zeigt sich jedoch, dass die bestehenden Risiken durch geeignete technische und organisatorische Maßnahmen kontrollierbar sind und im Rahmen des gewählten Sicherheitskonzepts angemessen adressiert werden. 
 
+\subsubsection{OpenAppSec}
+Während des Freigabeprozesses äußerte der Mandant, dass der konkrete Nutzen von OpenAppSec innerhalb seines Setups für ihn nicht eindeutig nachvollziehbar sei. Er bat daher um eine Erläuterung der Einsatzzwecke von OpenAppSec, seiner Funktionsweise sowie der Rolle von \ac{ML} im System und den konkreten Beitrag zur Angriffserkennung und -abwehr.
 
+OpenAppSec ist eine Open-Source-Firewall für Web- und \ac{API}-Sicherheit \ac{WAF}, die auf Contextual Machine Learning basiert. Die Verarbeitung der Sicherheitsrelevanten Daten findet lokal statt, sodass der Schutz personenbezogener Daten gewährleistet ist. Die Firewall ist darauf ausgelegt, Angriffe gemäß der \ac{OWASP} Top 10 und Zero-Day-Angriffe zu erkennen und abzuwehren. Auch wenn Zero-Day-Angriffe laut des Mandanten nicht im Fokus stehen (also Out Of Scope sind), ist die Abdeckung ein zusätzlicher Gewinn an Sicherheit für das System. 
 
+Die primäre \acl{ML}-Funktion von OpenAppSec ist die Erkennung und Prävention von Web- und \acs{API}-Angriffen im laufenden \acs{HTTP}/S-Verkehr. Laut Produktdokumentation dient die ML-basierte \acs{WAF} dazu, unbekannte und fortgeschrittene Webangriffe zu erkennen, die False-Positive-Rate gegenüber klassischen Signatur-\acs{WAF}s deutlich zu senken und administrative Tuning-Arbeit zu reduzieren. Der Hersteller nennt ausdrücklich Zero-Day-nahe Beispiele wie Log4Shell und Spring4Shell, die durch die ML-Technologie ohne vorgängiges Signatur-Update blockiert worden seien. Diese Aussage ist als Hersteller-Claim technisch plausibel, aber nicht als unabhängig publizierter Benchmark zu verstehen. 
 
+Der Schutz arbeitet dabei in drei Schritten: 
 
-Mandant meinte: Beim Punkt Passwort-Management ist der Mandant etwas skeptisch. Er nutzt bisher KeePass, vor allem wegen des Argon2-Schutzes, und macht sich bei Vaultwarden Sorgen hinsichtlich der Sicherheit. Er möchte Sie bitten, in der weiteren Ausarbeitung nachvollziehbar darzulegen, warum Vaultwarden für sein Szenario eine geeignete Wahl ist, oder alternativ zu prüfen, ob eine andere Lösung besser zu seinen Anforderungen passt.
+\begin{enumerate}
+    \item Vorverarbeitung der Requests: Alle Felder eingehender \ac{HTTP}-Requests werden analysiert
+    \item Analyse verdächtiger Merkmale: die Requests werden auf Charakteristiken untersucht, die in typischen Angriffen auftreten
+    \item Kontextualisierte Bewertung: Zuletzt erfolgt eine Bewertung der Daten basierend auf z.B. die Umgebung, das Ziel oder das Nutzerverhalten, um einen Confidence Score zu ermitteln, der final darüber entscheidet, ob ein Request vertrauenswürdig ist und somit durchgelassen wird.
+\end{enumerate}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Abbildungen/OpenAppSecML.png}
+    \caption{Schematische Darstellung des mehrstufigen Analyseprozesses von OpenAppSec zur Bewertung von \acs{HTTP}-Requests \cite{openappsec_tech}}
+    \label{fig1}
+\end{figure}
 
-\subsubsection{openappsec}
-Mandant meinte: Zu openappsec und der erwähnten ML-Komponente konnte sich der Mandant bislang nichts Konkretes vorstellen. Ihm ist zwar klar, worum es sich bei openappsec grundsätzlich handelt, allerdings nicht, wofür er das in seinem Setup konkret braucht. Insbesondere ist ihm unklar, was ML in diesem Zusammenhang bedeutet, wofür es dort eingesetzt wird und wie es funktioniert. Er bittet Sie, spätestens bei der Implementierung genau zu erläutern, weswegen und wozu hier ML zum Einsatz kommt und was es konkret tut.
+\paragraph{Was ist Contextual Machine Learning?}
+ 
+Die OpenAppSec \acl{WAF} kombiniert klassische Angriffserkennung mit einem \ac{ML}-basierten, kontextuierten Analyseansatz. Anstatt ausschließlich bekannte Signaturen oder feste Muster im \acs{HTTP}/S-Verkehr zu prüfen, werden Requests in Relation zum erwarteten Verhalten der konkreten Anwendung bewertet. Dabei fließen Faktoren wie \ac{URL}, Parameterstruktur, Nutzerkontext und Quellenreputation in die Bewertung ein. Ein identischer Payload kann somit, je nach Kontext, unterschiedlich eingestuft werden.
+
+Der zentrale Zweck des Contextual Machine Learning liegt darin, das „Normalverhalten“ einer Anwendung zu erlernen und Abweichungen davon als potenziell bösartig zu identifizieren. Dadurch kann die \acs{WAF} nicht nur bereits bekannte Angriffe erkennen, sondern auch Zero-Day-Angriffe detektieren. Im Vergleich zu rein signaturbasierten Systemen reduziert sich die False-Positive-Rate und den Bedarf an manuellem Tuning des Nutzers, da sich das System schrittweise an die jeweilige Umgebung anpasst.
+
+Während das \acl{ML}-Modell für Generalisierung und kontextbasierte Bewertung zuständig ist, können weiterhin klassische Signaturen für bekannte Schwachstellen (z. B. \ac{CVE}) eingesetzt werden, um eindeutig nachvollziehbare Erkennung zu gewährleisten. OpenAppSec wirbt außerdem damit, dass Angriffe wie Log4Shell oder Spring4Shell ohne vorherige Updates erkannt wurden. Diese Aussagen sind jedoch als Claims zu verstehen und nicht als unabhängig validierte Benchmarks.
+
+Gleichzeitig müssen die Grenzen dieses Ansatzes berücksichtigt werden. \acs{ML}-basierte Entscheidungen sind weniger transparent als explizite Regelwerke und erfordern eine initiale Lernphase, in der ausreichend Traffic vorhanden sein muss. Zudem bestehen systembedingte Inspektionsgrenzen (z. B. bei sehr großen Requests), und klassische regelbasierte Kontrollen bleiben für bestimmte Anwendungsfälle weiterhin notwendig.
+
+Aus der Sicht des Datenschutzes ist relevant, dass für die Analyse verschiedene \acs{HTTP}-Daten (u.a. Header, Body, \acs{URL} sowie Metadaten wie \ac{IP}-Adressen) verarbeitet werden, die potenziell personenbezogene Informationen enthalten können. Die eigentliche Sicherheitsverarbeitung erfolgt dabei lokal, wodurch ein Abfluss sensibler Daten reduziert wird. Werden jedoch optionale Funktionen wie zentrales Logging oder Learning-Datensynchronisation genutzt, können Daten an externe Komponenten übertragen werden.
