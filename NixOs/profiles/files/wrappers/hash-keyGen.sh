@@ -1,22 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 1) Echten Pfad dieses Wrappers ermitteln (Symlink wird aufgelöst)
-SELF="$(readlink -f "$0")"
-WRAPPER_DIR="$(dirname "$SELF")"
+TARGET="/etc/scripts/auth/hash-keyGen.sh"
 
-# 2) Zielscript relativ zum echten Wrapper-Verzeichnis bestimmen
-TARGET="$WRAPPER_DIR/../auth/hash-keyGen.sh"
+# Sicherheit: echte Pfade auflösen (auch falls TARGET mal ein Symlink ist)
+SELF_REAL="$(readlink -f "$0")"
+TARGET_REAL="$(readlink -f "$TARGET")"
 
-# 3) Optional: Existenz prüfen (hilft beim Debuggen)
-if [[ ! -x "$TARGET" ]]; then
-  # Falls nicht executable: Hinweis + trotzdem versuchen (oder exit 1)
-  echo "ERROR: Zielscript nicht ausführbar oder nicht gefunden: $TARGET" >&2
-  echo "Tipp: chmod +x \"$TARGET\"" >&2
+# Rekursionsschutz (genau gegen dein "unendlich Terminals" Problem)
+if [[ "$SELF_REAL" == "$TARGET_REAL" ]]; then
+  echo "ERROR: Wrapper ruft sich selbst auf (Rekursion)."
+  echo "SELF=$SELF_REAL"
+  echo "TARGET=$TARGET_REAL"
   exit 1
 fi
 
-# 4) Root-Abfrage + Terminal offen halten + Ausgabe sichtbar
+# Optional: Existenz / ausführbar prüfen
+if [[ ! -x "$TARGET_REAL" ]]; then
+  echo "ERROR: Zielscript fehlt oder ist nicht ausführbar: $TARGET_REAL"
+  echo "Tipp: chmod +x '$TARGET_REAL'"
+  exit 1
+fi
+
+# Root-Abfrage + Terminal offen lassen + sichtbares Feedback
 exec pkexec env DISPLAY="${DISPLAY:-}" XAUTHORITY="${XAUTHORITY:-}" \
   xfce4-terminal --hold --command \
-  "bash -lc '\"$TARGET\"; echo; read -n1 -rsp \"Taste zum Schließen…\"'"
+  "bash -lc '\"$TARGET_REAL\"; echo; read -n1 -rsp \"Taste zum Schließen…\"'"

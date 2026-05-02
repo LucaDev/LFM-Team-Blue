@@ -27,8 +27,12 @@
     coreutils
   ];
 
+  #============================================
+  #Echte scripte (referenziert in warpper)
+  #============================================
+
   environment.etc."scripts/psbt/psbt-approve.sh" = {
-    source = ./files/wrappers/psbt-approve.sh;
+    source = ./files/psbt/psbt-approve.sh;
     mode = "0755";
   };
   environment.etc."scripts/psbt/README.md" = {
@@ -36,25 +40,24 @@
     mode   = "0644";
   };
 
-
   environment.etc."scripts/setup/online.sh" = {
-    source = ./files/wrappers/online.sh;
+    source = ./files/setup/online.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/setup.sh" = {
-    source = ./files/wrappers/setup.sh;
+    source = ./files/setup/setup.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/airgap.sh" = {
-    source = ./files/wrappers/airgap.sh;
+    source = ./files/setup/airgap.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/mnt-USB.sh" = {
-    source = ./files/wrappers/mnt-USB.sh;
+    source = ./files/setup/mnt-USB.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/format-USB.sh" = {
-    source = ./files/wrappers/format-USB.sh;
+    source = ./files/setup/format-USB.sh;
     mode   = "0755";
   };
   environment.etc."scripts/setup/README.md" = {
@@ -62,17 +65,16 @@
     mode   = "0644";
   };
 
-
   environment.etc."scripts/auth/hash-keyGen.sh" = {
-    source = ./files/wrappers/hash-keyGen.sh;
+    source = ./files/auth/hash-keyGen.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/hash-keyStore.sh" = {
-    source = ./files/wrappers/hash-keyStore.sh;
+    source = ./files/auth/hash-keyStore.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/hash-verify.sh" = {
-    source = ./files/wrappers/hash-verify.sh;
+    source = ./files/auth/hash-verify.sh;
     mode   = "0755";
   };
   environment.etc."scripts/auth/README.md" = {
@@ -80,6 +82,52 @@
     mode   = "0644";
   };
 
+#===================================
+#Wrappers
+#===================================
+
+  environment.etc."scripts/wrappers/psbt-approve.sh" = {
+    source = ./files/wrappers/psbt-approve.sh;
+    mode = "0755";
+  };
+
+  environment.etc."scripts/wrappers/online.sh" = {
+    source = ./files/wrappers/online.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/wrappers/setup.sh" = {
+    source = ./files/wrappers/setup.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/wrappers/airgap.sh" = {
+    source = ./files/wrappers/airgap.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/wrappers/mnt-USB.sh" = {
+    source = ./files/wrappers/mnt-USB.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/wrappers/format-USB.sh" = {
+    source = ./files/wrappers/format-USB.sh;
+    mode   = "0755";
+  };
+
+  environment.etc."scripts/wrappers/hash-keyGen.sh" = {
+    source = ./files/wrappers/hash-keyGen.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/wrappers/hash-keyStore.sh" = {
+    source = ./files/wrappers/hash-keyStore.sh;
+    mode   = "0755";
+  };
+  environment.etc."scripts/wrappers/hash-verify.sh" = {
+    source = ./files/wrappers/hash-verify.sh;
+    mode   = "0755";
+  };
+
+#===========================
+#Desktop page mit symlinks auf wrappers
+#==============================
 
   #Legt Ordner beim Boot an (oder beim tmpfiles-setup)
   systemd.tmpfiles.rules = [
@@ -95,19 +143,19 @@
     "d /var/lib/psbt-guard/identity 0700 root root - -"
     "d /mnt/usb 0755 root root - -"
 
-    "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/setup/online.sh"
-    "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/setup/airgap.sh"
-    "L+ /home/user/Desktop/scripts/setup/setup.sh - - - - /etc/scripts/setup/setup.sh"
-    "L+ /home/user/Desktop/scripts/setup/format-USB.sh - - - - /etc/scripts/setup/format-USB.sh"
-    "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/setup/mnt-USB.sh"
+    "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/wrappers/online.sh"
+    "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/wrappers/airgap.sh"
+    "L+ /home/user/Desktop/scripts/setup/setup.sh - - - - /etc/scripts/wrappers/setup.sh"
+    "L+ /home/user/Desktop/scripts/setup/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
+    "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/setup/README.md"
 
-    "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/psbt/psbt-approve.sh"
+    "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/wrappers/psbt-approve.sh"
     "L+ /home/user/Desktop/scripts/psbt/README.md - - - - /etc/scripts/psbt/README.md"
 
-    "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/auth/hash-keyGen.sh"
-    "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/auth/hash-keyStore.sh"
-    "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/auth/hash-verify.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/wrappers/hash-keyGen.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/wrappers/hash-keyStore.sh"
+    "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/wrappers/hash-verify.sh"
     "L+ /home/user/Desktop/scripts/auth/README.md - - - - /etc/scripts/auth/README.md"
   ];
       
