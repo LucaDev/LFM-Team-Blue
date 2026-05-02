@@ -117,4 +117,18 @@
     RuntimeMaxUse=150M
   '';
 
+  
+ systemd.user.services.thunar-exec-shell-scripts = {
+    description = "Thunar: execute shell scripts by default";
+    wantedBy = [ "graphical-session.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = ''
+        ${pkgs.xfce.xfconf}/bin/xfconf-query \
+          --channel thunar \
+          --property /misc-exec-shell-scripts-by-default \
+          --create --type bool --set true
+      '';
+    };
+  };
 }

@@ -371,3 +371,14 @@ Auch ist ein weiterer hash von Cold -> Hot vernachlässigbar, da die Hot Wallet 
 Fehlerhafte, unsignierte, manipuliert TXs würde beim broadcast fehlschlagen oder könnten das cold Wallet nicht addressieren
 
 Zudem soll der USB Flashdrive immernur für eine TX zur selben Zeit verwendet werden
+
+
+###USB setup 
+go to VM
+Hardware
+Add Hard Disc
+Schriebe auf dieser
+unmount
+klick auf edit -> detach
+cklick auf disk action -> Reassign Owner 
+    zum nächsten
