@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/envoyproxy/gateway/refs/heads/main/charts/gateway-helm/crds/generated/gateway.envoyproxy.io_envoyproxies.yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: envoy
+spec:
+  ipFamily: DualStack
+  logging:
+    level:
+      default: info
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        replicas: 1
+        container:
+          #image: mirror.gcr.io/envoyproxy/envoy:contrib-v1.34-latest
+          image: mirror.gcr.io/envoyproxy/envoy:v1.37.1
+          resources:
+            requests:
+              cpu: 100m
+            limits:
+              memory: 2Gi
+              # patch:
+              #   type: StrategicMerge
+              #   value:
+              #     spec:
+              #       template:
+              #         spec:
+              #           initContainers:
+              #             - name: envoy-attachments
+              #               image: ghcr.io/openappsec/openappsec-envoy-filters:latest
+              #               imagePullPolicy: Always
+              #               command:
+              #                 - "/prepare_attachment.sh"
+              #               env:
+              #                 - name: ENVOY_VERSION
+              #                   value: "1.34"
+              #               volumeMounts:
+              #                 - name: attachment-shared
+              #                   mountPath: /envoy/attachment/shared
+              #           containers:
+              #             - name: envoy
+              #               env:
+              #                 - name: LD_LIBRARY_PATH
+              #                   value: /usr/lib/attachment
+              #               volumeMounts:
+              #                 - name: attachment-shared
+              #                   mountPath: /usr/lib/attachment
+              #             - name: openappsec-agent
+              #               image: ghcr.io/openappsec/agent:1.1.32
+              #               imagePullPolicy: IfNotPresent
+              #               command:
+              #                 - /cp-nano-agent
+              #               envFrom:
+              #                 - secretRef:
+              #                     name: openappsec-secret
+              #               env:
+              #                 - name: registered_server
+              #                   value: "Envoy Gateway"
+              #               volumeMounts:
+              #                 - name: agent-config
+              #                   mountPath: /etc/cp/conf
+              #                 - name: agent-data
+              #                   mountPath: /etc/cp/data
+              #                 - name: agent-logs
+              #                   mountPath: /var/log/nano_agent
+              #                 - name: advanced-model
+              #                   mountPath: /advanced-model/open-appsec-advanced-model.tgz
+              #                   subPath: open-appsec-advanced-model.tgz
+              #               resources:
+              #                 limits:
+              #                   cpu: 600m
+              #                   memory: 1024Mi
+              #                 requests:
+              #                   cpu: 200m
+              #                   memory: 512Mi
+              #               securityContext:
+              #                 runAsUser: 0
+              #           volumes:
+              #             - name: advanced-model
+              #               configMap:
+              #                 name: advanced-model-config
+              #             - name: attachment-shared
+              #               emptyDir: {}
+              #             - name: agent-config
+              #               emptyDir: {}
+              #             - name: agent-data
+              #               emptyDir: {}
+              #             - name: agent-logs
+              #               emptyDir: {}
+      envoyService:
+        externalTrafficPolicy: Local
+        loadBalancerClass: "io.cilium/node"
+  shutdown:
+    drainTimeout: 180s
+  telemetry:
+    metrics:
+      prometheus:
+        compression:
+          type: Gzip
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/gatewayclass_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: envoy
+    namespace: networking
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/gateway_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: envoy
+  annotations:
+    gatus.home-operations.com/endpoint: |-
+      ui:
+        hide-hostname: true
+        hide-url: true
+      alerts:
+        - type: discord
+          description: "healthcheck failed"
+          send-on-resolved: true
+          failure-threshold: 3
+spec:
+  gatewayClassName: envoy
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        certificateRefs:
+          - kind: Secret
+            name: lucadev-de-wildcard-cert
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/envoyproxy/gateway/refs/heads/main/charts/gateway-helm/crds/generated/gateway.envoyproxy.io_clienttrafficpolicies.yaml
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: envoy
+spec:
+  http2:
+    initialStreamWindowSize: 2Mi
+    initialConnectionWindowSize: 32Mi
+    onInvalidMessage: TerminateStream
+  http3: {}
+  connection:
+    bufferLimit: 8Mi
+    maxAcceptPerSocketEvent: 0
+  tcpKeepalive: {}
+  timeout:
+    http:
+      requestReceivedTimeout: 0s
+  tls:
+    minVersion: "1.2"
+    alpnProtocols:
+      - h2
+      - http/1.1
+  targetSelectors:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+---
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/gateway.networking.k8s.io/httproute_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-redirect
+spec:
+  parentRefs:
+    - name: envoy
+      namespace: networking
+      sectionName: http
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

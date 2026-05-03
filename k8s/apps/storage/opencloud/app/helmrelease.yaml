@@ -1,0 +1,141 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: opencloud
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      opencloud:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        initContainers:
+          init-config:
+            image:
+              repository: docker.io/opencloudeu/opencloud-rolling
+              tag: 6.0.0@sha256:283b1df495bd7c8571868bb8662336cc6e6fe3078b0bf907955651f245cf938f
+            command:
+              - /bin/sh
+              - -c
+              - test -f /etc/opencloud/opencloud.yaml || opencloud init --insecure=true
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+        containers:
+          app:
+            image:
+              repository: docker.io/opencloudeu/opencloud-rolling
+              tag: 6.0.0@sha256:283b1df495bd7c8571868bb8662336cc6e6fe3078b0bf907955651f245cf938f
+            env:
+              PROXY_CSP_CONFIG_FILE_LOCATION: /etc/opencloud/proxy/csp.yaml
+              WEB_OIDC_SCOPE: "openid profile email groups"
+              # OIDC configuration
+              PROXY_AUTOPROVISION_ACCOUNTS: "true"
+              PROXY_ROLE_ASSIGNMENT_DRIVER: oidc
+              PROXY_ROLE_ASSIGNMENT_OIDC_CLAIM: groups
+              OC_OIDC_ISSUER: https://idm.uni.lucadev.de
+/oauth2/openid/web
+              PROXY_OIDC_REWRITE_WELLKNOWN: true
+              PROXY_USER_OIDC_CLAIM: preferred_username
+              GRAPH_ASSIGN_DEFAULT_USER_ROLE: true
+              GRAPH_USERNAME_MATCH: none
+              OC_EXCLUDE_RUN_SERVICES: idp
+              OC_URL: https://cloud.uni.lucadev.de
+
+              # do not use SSL between Envoy and OpenCloud
+              PROXY_TLS: "false"
+              OC_INSECURE: "false"
+              # Other settings
+              OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD: "false"
+              FRONTEND_CHECK_FOR_UPDATES: "false"
+              # PosixFS collaborative mode
+              STORAGE_USERS_POSIX_WATCH_FS: "true"
+            command:
+              - "opencloud"
+              - "server"
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 9200
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+            resources:
+              requests:
+                cpu: 128m
+                memory: 128Mi
+              limits:
+                memory: 2Gi
+    service:
+      app:
+        controller: opencloud
+        ports:
+          http:
+            port: *port
+    persistence:
+      config:
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: ssd-dualreplica
+        globalMounts:
+          - path: /etc/opencloud
+      data:
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 10Gi
+        storageClass: cached-dualreplica
+        globalMounts:
+          - path: /var/lib/opencloud
+      apps:
+        type: persistentVolumeClaim
+        accessMode: ReadWriteOnce
+        size: 1Gi
+        storageClass: ssd-dualreplica
+        globalMounts:
+          - path: /var/lib/opencloud/web/assets/apps
+      homes:
+        type: hostPath
+        hostPath: /mnt/data/cached/single/homes/
+        globalMounts:
+          - path: /mnt/homes
+      public:
+        type: hostPath
+        hostPath: /mnt/data/cached/single/public-share/
+        globalMounts:
+          - path: /mnt/public
+
+    route:
+      app:
+        hostnames:
+          - "cloud.uni.lucadev.de
+"
+        parentRefs:
+          - name: envoy
+            namespace: networking
+            sectionName: https
+        rules:
+          - backendRefs:
+              - name: app
+                port: *port
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/description: Dateibrowser
+          gethomepage.dev/group: Weitere
+          gethomepage.dev/icon: opencloud
+          gethomepage.dev/name: Cloud

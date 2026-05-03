@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: cilium
+  values:
+    bpf:
+      masquerade: true
+      datapathMode: netkit
+      preallocateMaps: true
+      distributedLRU:
+        enabled: true
+    bpfClockProbe: true
+    operator:
+      replicas: 1 # single node
+    hubble:
+      enabled: false
+    nodeIPAM:
+      enabled: true
+    envoy:
+      enabled: false
+    rollOutCiliumPods: true
+    # ipv4NativeRoutingCIDR: 10.0.0.0/16 TODO
+    # routingMode: native
+    kubeProxyReplacement: true
+    k8sServiceHost: 192.168.99.150
+    k8sServicePort: 6443
+    pmtuDiscovery:
+      enabled: true
+    # Enable encryption for all traffic, including node-to-node traffic, which is not encrypted by default.
+    encryption:
+      enabled: true
+      type: wireguard

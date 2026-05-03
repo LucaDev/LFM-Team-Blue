@@ -1,0 +1,14 @@
+cluster:
+  # Allow scheduling on control planes. As we dont have any worker nodes, we need to allow scheduling on control planes to run our workloads.
+  allowSchedulingOnControlPlanes: true
+  # A list of urls that point to additional manifests. We will use this to deploy Flux and the CNI (Cilium) initially, but we will later switch to using the manifests provided by Flux. This is because we want to have a single source of truth for our manifests and we want to be able to easily update them without having to update the Talos configuration.
+  extraManifests:
+    - https://github.com/LucaDev/LFM-Team-Blue/raw/k8s/bootstrap/bootstrap.yaml
+  # We disable the CNI and kube-proxy because we will use the ones provided by Flux.
+  network:
+    cni:
+      name: none
+  proxy:
+    disabled: true
+  # See: https://github.com/siderolabs/talos/pull/9200 TODO: test if this is still needed with the latest Talos version
+  forwardKubeDNSToHost: false

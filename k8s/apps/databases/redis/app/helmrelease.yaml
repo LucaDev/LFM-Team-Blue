@@ -1,0 +1,36 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: shared-redis
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  values:
+    controllers:
+      redis:
+        containers:
+          app:
+            image:
+              repository: valkey/valkey
+              tag: 9.0.3@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
+            resources:
+              requests:
+                cpu: 5m
+                memory: 25Mi
+                hugepages-2Mi: 64Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi
+                hugepages-2Mi: 64Mi
+
+    service:
+      app:
+        controller: redis
+        ports:
+          redis:
+            port: 6379

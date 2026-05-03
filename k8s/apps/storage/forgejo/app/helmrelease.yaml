@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://kubernetes-schemas.pages.dev/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: forgejo
+spec:
+  interval: 30m
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 16.2.1
+  url: oci://code.forgejo.org/forgejo-helm/forgejo
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: forgejo
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: forgejo
+  values:
+    httpRoute:
+      enabled: true
+      annotations:
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/description: Source Repository
+        gethomepage.dev/group: Weitere
+        gethomepage.dev/icon: forgejo
+        gethomepage.dev/name: forgejo
+      hostnames:
+        - &hostname git.uni.lucadev.de
+      parentRefs:
+        - name: envoy
+          namespace: networking
+          sectionName: https
+    persistence:
+      storageClass: ssd-dualreplica
+    # databases
+    valkey-cluster:
+      enabled: false
+    postgresql-ha:
+      enabled: false
+    postgresql:
+      enabled: false
+    gitea:
+      admin:
+        username: ""
+        password: ""
+      oauth:
+        - name: "IDM"
+          provider: "openidConnect"
+          existingSecret: "forgejo-secret"
+          autoDiscoverUrl: "https://idm.uni.lucadev.de /oauth2/openid/forgejo/.well-known/openid-configuration"
+      # See https://forgejo.org/docs/latest/admin/config-cheat-sheet/
+      config:
+        APP_NAME: "LucaDev Git Repo"
+        service:
+          REQUIRE_SIGNIN_VIEW: true
+          DISABLE_REGISTRATION: true
+        openid:
+          ENABLE_OPENID_SIGNIN: false
+        oauth2_client:
+          REGISTER_EMAIL_CONFIRM: false
+          ENABLE_AUTO_REGISTRATION: true
+          UPDATE_AVATAR: true
+          ACCOUNT_LINKING: auto
+          USERNAME: nickname
+        server:
+          DISABLE_SSH: true
+          ROOT_URL: "https://git.uni.lucadev.de "
+          DOMAIN: *hostname
+          SSH_DOMAIN: *hostname
+        database:
+          DB_TYPE: postgres
+          HOST: shared-pg-rw.databases.svc.cluster.local
+          NAME: forgejo
+          USER: forgejo
+        session:
+          PROVIDER: redis
+          PROVIDER_CONFIG: redis://shared-redis.databases.svc.cluster.local:6379/5
+        cache:
+          ADAPTER: redis
+          HOST: redis://shared-redis.databases.svc.cluster.local:6379/5?pool_size=100&idle_timeout=180s
+        queue:
+          TYPE: redis
+          CONN_STR: redis://shared-redis.databases.svc.cluster.local:6379/5
+  valuesFrom:
+    - kind: Secret
+      name: "forgejo-secret"
+      valuesKey: helm-values
+      optional: false

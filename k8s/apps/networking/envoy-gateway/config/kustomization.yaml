@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: networking
+resources:
+  - ./envoy.yaml
+  - ./observability.yaml
+  - ./backendTrafficPolicy.yaml
+  - ./uni-lucadev-de.yaml
+  - ./grafanadashboard.yaml
+  - ./externalsecret.yaml
+  # - ./openappseccrd.yaml
+  # - ./openappsec.yaml
+configMapGenerator:
+  - name: envoy-5xx-error
+    files:
+      - response.body=error/5xx.html
+generatorOptions:
+  disableNameSuffixHash: true

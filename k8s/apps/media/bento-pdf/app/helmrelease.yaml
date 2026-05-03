@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: bento-pdf
+  namespace: media
+spec:
+  interval: 1h
+  chartRef:
+    kind: OCIRepository
+    name: app-template-4
+    namespace: flux-system
+  values:
+    controllers:
+      bento-pdf:
+        strategy: RollingUpdate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/alam00000/bentopdf-simple
+              tag: 2.8.2
+            resources:
+              requests:
+                cpu: 5m
+                memory: 10M
+              limits:
+                cpu: 100m
+                memory: 25M
+            probes:
+              liveness:
+                enabled: true
+              readiness:
+                enabled: true
+              startup:
+                enabled: true
+                spec:
+                  failureThreshold: 30
+                  periodSeconds: 5
+    service:
+      app:
+        controller: bento-pdf
+        ports:
+          http:
+            port: 8080
+    route:
+      app:
+        hostnames:
+          - pdf.uni.lucadev.de
+        parentRefs:
+          - name: envoy
+            namespace: networking
+            sectionName: https
+        annotations:
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/description: PDF Editor
+          gethomepage.dev/group: Medien
+          gethomepage.dev/icon: bentopdf
+          gethomepage.dev/name: BentoPDF

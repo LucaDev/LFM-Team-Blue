@@ -1,0 +1,23 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: &appname paperless
+  namespace: flux-system
+spec:
+  interval: 1h
+  path: "./k8s/apps/media/paperless-ngx/app"
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  wait: false # no flux ks dependents
+  dependsOn:
+    - name: redis
+    - name: external-secrets-stores
+  postBuild:
+    substitute:
+      APP: *appname
+      APP_UID: "568" # TODO
+      APP_GID: "568"
+      VOLSYNC_CLAIM: paperless-config # TODO

@@ -1,0 +1,3671 @@
+---
+# Source: cilium/templates/cilium-secrets-namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "cilium-secrets"
+  labels:
+    app.kubernetes.io/part-of: cilium
+  annotations:
+---
+# Source: cilium/templates/cilium-agent/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "cilium"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-operator/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "cilium-operator"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cilium-config
+  namespace: kube-system
+data:
+
+  # Identity allocation mode selects how identities are shared between cilium
+  # nodes by setting how they are stored. The options are "crd", "kvstore" or
+  # "doublewrite-readkvstore" / "doublewrite-readcrd".
+  # - "crd" stores identities in kubernetes as CRDs (custom resource definition).
+  #   These can be queried with:
+  #     kubectl get ciliumid
+  # - "kvstore" stores identities in an etcd kvstore, that is
+  #   configured below. Cilium versions before 1.6 supported only the kvstore
+  #   backend. Upgrades from these older cilium versions should continue using
+  #   the kvstore by commenting out the identity-allocation-mode below, or
+  #   setting it to "kvstore".
+  # - "doublewrite" modes store identities in both the kvstore and CRDs. This is useful
+  #   for seamless migrations from the kvstore mode to the crd mode. Consult the
+  #   documentation for more information on how to perform the migration.
+  identity-allocation-mode: crd
+
+  identity-heartbeat-timeout: "30m0s"
+  identity-gc-interval: "15m0s"
+  cilium-endpoint-gc-interval: "5m0s"
+  nodes-gc-interval: "5m0s"
+
+  # If you want to run cilium in debug mode change this value to true
+  debug: "false"
+  debug-verbose: ""
+  metrics-sampling-interval: "5m"
+  # The agent can be put into the following three policy enforcement modes
+  # default, always and never.
+  # https://docs.cilium.io/en/latest/security/policy/intro/#policy-enforcement-modes
+  enable-policy: "default"
+  policy-cidr-match-mode: ""
+  # Port to expose Envoy metrics (e.g. "9964"). Envoy metrics listener will be disabled if this
+  # field is not set.
+  proxy-prometheus-port: "9964"
+  # If you want metrics enabled in cilium-operator, set the port for
+  # which the Cilium Operator will have their metrics exposed.
+  # NOTE that this will open the port on the nodes where Cilium operator pod
+  # is scheduled.
+  operator-prometheus-serve-addr: ":9963"
+  enable-metrics: "true"
+  enable-policy-secrets-sync: "true"
+  policy-secrets-only-from-secrets-namespace: "true"
+  policy-secrets-namespace: "cilium-secrets"
+
+  # Enable IPv4 addressing. If enabled, all endpoints are allocated an IPv4
+  # address.
+  enable-ipv4: "true"
+
+  # Enable IPv6 addressing. If enabled, all endpoints are allocated an IPv6
+  # address.
+  enable-ipv6: "false"
+  # Users who wish to specify their own custom CNI configuration file must set
+  # custom-cni-conf to "true", otherwise Cilium may overwrite the configuration.
+  custom-cni-conf: "false"
+  enable-bpf-clock-probe: "true"
+  # If you want cilium monitor to aggregate tracing for packets, set this level
+  # to "low", "medium", or "maximum". The higher the level, the less packets
+  # that will be seen in monitor output.
+  monitor-aggregation: medium
+
+  # The monitor aggregation interval governs the typical time between monitor
+  # notification events for each allowed connection.
+  #
+  # Only effective when monitor aggregation is set to "medium" or higher.
+  monitor-aggregation-interval: "5s"
+
+  # The monitor aggregation flags determine which TCP flags which, upon the
+  # first observation, cause monitor notifications to be generated.
+  #
+  # Only effective when monitor aggregation is set to "medium" or higher.
+  monitor-aggregation-flags: all
+  # Specifies the ratio (0.0-1.0] of total system memory to use for dynamic
+  # sizing of the TCP CT, non-TCP CT, NAT and policy BPF maps.
+  bpf-map-dynamic-size-ratio: "0.0025"
+  # bpf-policy-map-max specifies the maximum number of entries in endpoint
+  # policy map (per endpoint)
+  bpf-policy-map-max: "16384"
+  # bpf-policy-stats-map-max specifies the maximum number of entries in global
+  # policy stats map
+  bpf-policy-stats-map-max: "65536"
+  # bpf-lb-map-max specifies the maximum number of entries in bpf lb service,
+  # backend and affinity maps.
+  bpf-lb-map-max: "65536"
+  bpf-lb-external-clusterip: "false"
+  bpf-lb-source-range-all-types: "false"
+  bpf-lb-algorithm-annotation: "false"
+  bpf-lb-mode-annotation: "false"
+
+  bpf-distributed-lru: "true"
+  bpf-events-drop-enabled: "true"
+  bpf-events-policy-verdict-enabled: "true"
+  bpf-events-trace-enabled: "true"
+
+  # Pre-allocation of map entries allows per-packet latency to be reduced, at
+  # the expense of up-front memory allocation for the entries in the maps. The
+  # default value below will minimize memory usage in the default installation;
+  # users who are sensitive to latency may consider setting this to "true".
+  #
+  # This option was introduced in Cilium 1.4. Cilium 1.3 and earlier ignore
+  # this option and behave as though it is set to "true".
+  #
+  # If this value is modified, then during the next Cilium startup the restore
+  # of existing endpoints and tracking of ongoing connections may be disrupted.
+  # As a result, reply packets may be dropped and the load-balancing decisions
+  # for established connections may change.
+  #
+  # If this option is set to "false" during an upgrade from 1.3 or earlier to
+  # 1.4 or later, then it may cause one-time disruptions during the upgrade.
+  preallocate-bpf-maps: "true"
+
+  # Name of the cluster. Only relevant when building a mesh of clusters.
+  cluster-name: "default"
+  # Unique ID of the cluster. Must be unique across all connected clusters and
+  # in the range of 1 and 255. Only relevant when building a mesh of clusters.
+  cluster-id: "0"
+
+  # Encapsulation mode for communication between nodes
+  # Possible values:
+  #   - disabled
+  #   - vxlan (default)
+  #   - geneve
+
+  routing-mode: "tunnel"
+  tunnel-protocol: "vxlan"
+  tunnel-source-port-range: "0-0"
+  service-no-backend-response: "reject"
+  policy-deny-response: "none"
+
+
+  # Enables L7 proxy for L7 policy enforcement and visibility
+  enable-l7-proxy: "true"
+  enable-ipv4-masquerade: "true"
+  enable-ipv4-big-tcp: "false"
+  enable-ipv6-big-tcp: "false"
+  enable-ipv6-masquerade: "true"
+  enable-tunnel-big-tcp: "false"
+  enable-tcx: "true"
+  datapath-mode: "netkit"
+  enable-bpf-masquerade: "true"
+  enable-masquerade-to-route-source: "false"
+
+  enable-xt-socket-fallback: "true"
+  install-no-conntrack-iptables-rules: "false"
+  iptables-random-fully: "false"
+
+  auto-direct-node-routes: "false"
+  direct-routing-skip-unreachable: "false"
+
+
+
+  kube-proxy-replacement: "true"
+  kube-proxy-replacement-healthz-bind-address: ""
+  enable-no-service-endpoints-routable: "true"
+  bpf-lb-sock: "false"
+  nodeport-addresses: ""
+  enable-health-check-nodeport: "true"
+  enable-health-check-loadbalancer-ip: "false"
+  node-port-bind-protection: "true"
+  enable-auto-protect-node-port-range: "true"
+  bpf-lb-acceleration: "disabled"
+  enable-service-topology: "false"
+  enable-l2-neigh-discovery: "false"
+  k8s-require-ipv4-pod-cidr: "false"
+  k8s-require-ipv6-pod-cidr: "false"
+  enable-k8s-networkpolicy: "true"
+  enable-endpoint-lockdown-on-policy-overflow: "false"
+  # Tell the agent to generate and write a CNI configuration file
+  write-cni-conf-when-ready: /host/etc/cni/net.d/05-cilium.conflist
+  cni-exclusive: "true"
+  cni-log-file: "/var/run/cilium/cilium-cni.log"
+  enable-endpoint-health-checking: "true"
+  enable-health-checking: "true"
+  health-check-icmp-failure-threshold: "3"
+  enable-well-known-identities: "false"
+  enable-node-selector-labels: "false"
+  synchronize-k8s-nodes: "true"
+  operator-api-serve-addr: "127.0.0.1:9234"
+
+  enable-hubble: "false"
+  ipam: "cluster-pool"
+  ipam-cilium-node-update-rate: "15s"
+  cluster-pool-ipv4-cidr: "10.0.0.0/8"
+  cluster-pool-ipv4-mask-size: "24"
+  enable-node-ipam: "true"
+
+  default-lb-service-ipam: "lbipam"
+  egress-gateway-reconciliation-trigger-interval: "1s"
+  enable-vtep: "false"
+  vtep-endpoint: ""
+  vtep-cidr: ""
+  vtep-mask: ""
+  vtep-mac: ""
+  enable-pmtu-discovery: "true"
+
+  packetization-layer-pmtud-mode: "blackhole"
+  procfs: "/host/proc"
+  bpf-root: "/sys/fs/bpf"
+  cgroup-root: "/run/cilium/cgroupv2"
+
+  identity-management-mode: "agent"
+  enable-sctp: "false"
+  remove-cilium-node-taints: "true"
+  set-cilium-node-taints: "true"
+  set-cilium-is-up-condition: "true"
+  unmanaged-pod-watcher-interval: "15s"
+  # default DNS proxy to transparent mode in non-chaining modes
+  dnsproxy-enable-transparent-mode: "true"
+  dnsproxy-socket-linger-timeout: "10"
+  tofqdns-dns-reject-response-code: "refused"
+  tofqdns-enable-dns-compression: "true"
+  tofqdns-endpoint-max-ip-per-hostname: "1000"
+  tofqdns-idle-connection-grace-period: "0s"
+  tofqdns-max-deferred-connection-deletes: "10000"
+  tofqdns-proxy-response-max-delay: "100ms"
+  tofqdns-preallocate-identities:  "true"
+  agent-not-ready-taint-key: "node.cilium.io/agent-not-ready"
+
+  mesh-auth-enabled: "false"
+  mesh-auth-queue-size: "1024"
+  mesh-auth-rotated-identities-queue-size: "1024"
+  mesh-auth-gc-interval: "5m0s"
+
+  proxy-xff-num-trusted-hops-ingress: "0"
+  proxy-xff-num-trusted-hops-egress: "0"
+  proxy-connect-timeout: "2"
+  proxy-initial-fetch-timeout: "30"
+  proxy-max-active-downstream-connections: "50000"
+  proxy-max-requests-per-connection: "0"
+  proxy-max-connection-duration-seconds: "0"
+  proxy-idle-timeout-seconds: "60"
+  proxy-max-concurrent-retries: "128"
+  proxy-use-original-source-address: "true"
+  proxy-cluster-max-connections: "1024"
+  proxy-cluster-max-requests: "1024"
+  http-retry-count: "3"
+  http-stream-idle-timeout: "300"
+
+  external-envoy-proxy: "false"
+  envoy-base-id: "0"
+  envoy-access-log-buffer-size: "4096"
+  envoy-keep-cap-netbindservice: "false"
+  max-connected-clusters: "255"
+  clustermesh-cache-ttl: "0s"
+  clustermesh-enable-endpoint-sync: "false"
+  clustermesh-enable-mcs-api: "false"
+  clustermesh-mcs-api-install-crds: "true"
+  policy-default-local-cluster: "true"
+
+  nat-map-stats-entries: "32"
+  nat-map-stats-interval: "30s"
+  enable-lb-ipam: "true"
+  enable-non-default-deny-policies: "true"
+  enable-source-ip-verification: "true"
+
+# Extra config allows adding arbitrary properties to the cilium config.
+# By putting it at the end of the ConfigMap, it's also possible to override existing properties.
+---
+# Source: cilium/templates/cilium-agent/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cilium
+  labels:
+    app.kubernetes.io/part-of: cilium
+rules:
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - services
+  - pods
+  - endpoints
+  - nodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
+  - watch
+  # This is used when validating policies in preflight. This will need to stay
+  # until we figure out how to avoid "get" inside the preflight, and then
+  # should be removed ideally.
+  - get
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumloadbalancerippools
+  - ciliumbgpnodeconfigs
+  - ciliumbgpadvertisements
+  - ciliumbgppeerconfigs
+  - ciliumclusterwideenvoyconfigs
+  - ciliumclusterwidenetworkpolicies
+  - ciliumegressgatewaypolicies
+  - ciliumendpoints
+  - ciliumendpointslices
+  - ciliumenvoyconfigs
+  - ciliumidentities
+  - ciliumlocalredirectpolicies
+  - ciliumnetworkpolicies
+  - ciliumnodes
+  - ciliumnodeconfigs
+  - ciliumcidrgroups
+  - ciliuml2announcementpolicies
+  - ciliumpodippools
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumidentities
+  - ciliumendpoints
+  - ciliumnodes
+  verbs:
+  - create
+- apiGroups:
+  - cilium.io
+  # To synchronize garbage collection of such resources
+  resources:
+  - ciliumidentities
+  verbs:
+  - update
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumendpoints
+  verbs:
+  - delete
+  - get
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumnodes
+  - ciliumnodes/status
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumendpoints/status
+  - ciliumendpoints
+  - ciliuml2announcementpolicies/status
+  - ciliumbgpnodeconfigs/status
+  verbs:
+  - patch
+---
+# Source: cilium/templates/cilium-operator/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cilium-operator
+  labels:
+    app.kubernetes.io/part-of: cilium
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+  # to automatically delete [core|kube]dns pods so that are starting to being
+  # managed by Cilium
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  resourceNames:
+  - cilium-config
+  verbs:
+   # allow patching of the configmap to set annotations
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  # To remove node taints
+  - nodes
+  # To set NetworkUnavailable false on startup
+  - nodes/status
+  verbs:
+  - patch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  # to perform LB IP allocation for BGP
+  - services/status
+  verbs:
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  # to check apiserver connectivity
+  - namespaces
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  # to perform the translation of a CNP that contains `ToGroup` to its endpoints
+  - services
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumnetworkpolicies
+  - ciliumclusterwidenetworkpolicies
+  verbs:
+  # Create auto-generated CNPs and CCNPs from Policies that have 'toGroups'
+  - create
+  - update
+  - deletecollection
+  # To update the status of the CNPs and CCNPs
+  - patch
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumnetworkpolicies/status
+  - ciliumclusterwidenetworkpolicies/status
+  verbs:
+  # Update the auto-generated CNPs and CCNPs status.
+  - patch
+  - update
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumendpoints
+  - ciliumidentities
+  verbs:
+  # To perform garbage collection of such resources
+  - delete
+  - list
+  - watch
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumidentities
+  verbs:
+  # To synchronize garbage collection of such resources
+  - update
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumnodes
+  verbs:
+  - create
+  - update
+  - get
+  - list
+  - watch
+    # To perform CiliumNode garbage collector
+  - delete
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumnodes/status
+  verbs:
+  - update
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumendpointslices
+  - ciliumenvoyconfigs
+  - ciliumbgppeerconfigs
+  - ciliumbgpadvertisements
+  - ciliumbgpnodeconfigs
+  verbs:
+  - create
+  - update
+  - get
+  - list
+  - watch
+  - delete
+  - patch
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumbgpclusterconfigs/status
+  - ciliumbgppeerconfigs/status
+  verbs:
+  - update
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - update
+  resourceNames:
+  - ciliumloadbalancerippools.cilium.io
+  - ciliumbgpclusterconfigs.cilium.io
+  - ciliumbgppeerconfigs.cilium.io
+  - ciliumbgpadvertisements.cilium.io
+  - ciliumbgpnodeconfigs.cilium.io
+  - ciliumbgpnodeconfigoverrides.cilium.io
+  - ciliumclusterwideenvoyconfigs.cilium.io
+  - ciliumclusterwidenetworkpolicies.cilium.io
+  - ciliumegressgatewaypolicies.cilium.io
+  - ciliumendpoints.cilium.io
+  - ciliumendpointslices.cilium.io
+  - ciliumenvoyconfigs.cilium.io
+  - ciliumidentities.cilium.io
+  - ciliumlocalredirectpolicies.cilium.io
+  - ciliumnetworkpolicies.cilium.io
+  - ciliumnodes.cilium.io
+  - ciliumnodeconfigs.cilium.io
+  - ciliumcidrgroups.cilium.io
+  - ciliuml2announcementpolicies.cilium.io
+  - ciliumpodippools.cilium.io
+  - ciliumgatewayclassconfigs.cilium.io
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumloadbalancerippools
+  - ciliumpodippools
+  - ciliumbgpclusterconfigs
+  - ciliumbgpnodeconfigoverrides
+  - ciliumbgppeerconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+    - cilium.io
+  resources:
+    - ciliumpodippools
+  verbs:
+    - create
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumloadbalancerippools/status
+  verbs:
+  - patch
+# For cilium-operator running in HA mode.
+#
+# Cilium operator running in HA mode requires the use of ResourceLock for Leader Election
+# between multiple running instances.
+# The preferred way of doing this is to use LeasesResourceLock as edits to Leases are less
+# common and fewer objects in the cluster watch "all Leases".
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
+  - cilium.io
+  resources:
+  - ciliumendpointslices
+  verbs:
+  - deletecollection
+---
+# Source: cilium/templates/cilium-agent/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cilium
+  labels:
+    app.kubernetes.io/part-of: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cilium
+subjects:
+- kind: ServiceAccount
+  name: "cilium"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-operator/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cilium-operator
+  labels:
+    app.kubernetes.io/part-of: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cilium-operator
+subjects:
+- kind: ServiceAccount
+  name: "cilium-operator"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-agent/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cilium-config-agent
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/part-of: cilium
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: cilium/templates/cilium-agent/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cilium-tlsinterception-secrets
+  namespace: "cilium-secrets"
+  labels:
+    app.kubernetes.io/part-of: cilium
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: cilium/templates/cilium-operator/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cilium-operator-tlsinterception-secrets
+  namespace: "cilium-secrets"
+  labels:
+    app.kubernetes.io/part-of: cilium
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - update
+  - patch
+---
+# Source: cilium/templates/cilium-operator/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cilium-operator-ztunnel
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/part-of: cilium
+rules:
+# ZTunnel DaemonSet management permissions
+# Note: These permissions must always be granted (not conditional on encryption.type)
+# because the controller needs to clean up stale DaemonSets when ztunnel is disabled.
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+---
+# Source: cilium/templates/cilium-agent/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cilium-config-agent
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/part-of: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cilium-config-agent
+subjects:
+  - kind: ServiceAccount
+    name: "cilium"
+    namespace: kube-system
+---
+# Source: cilium/templates/cilium-agent/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cilium-tlsinterception-secrets
+  namespace: "cilium-secrets"
+  labels:
+    app.kubernetes.io/part-of: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cilium-tlsinterception-secrets
+subjects:
+- kind: ServiceAccount
+  name: "cilium"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-operator/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cilium-operator-tlsinterception-secrets
+  namespace: "cilium-secrets"
+  labels:
+    app.kubernetes.io/part-of: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cilium-operator-tlsinterception-secrets
+subjects:
+- kind: ServiceAccount
+  name: "cilium-operator"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-operator/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cilium-operator-ztunnel
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/part-of: cilium
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cilium-operator-ztunnel
+subjects:
+- kind: ServiceAccount
+  name: "cilium-operator"
+  namespace: kube-system
+---
+# Source: cilium/templates/cilium-agent/daemonset.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cilium
+  namespace: kube-system
+  labels:
+    k8s-app: cilium
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: cilium-agent
+spec:
+  selector:
+    matchLabels:
+      k8s-app: cilium
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 2
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        # ensure pods roll when configmap updates
+        cilium.io/cilium-configmap-checksum: "6e8b0bbf5b8b8f5891a38b82320d2eccdec877bd708e9e7efba2f18b9363159d"
+        kubectl.kubernetes.io/default-container: cilium-agent
+      labels:
+        k8s-app: cilium
+        app.kubernetes.io/name: cilium-agent
+        app.kubernetes.io/part-of: cilium
+    spec:
+      securityContext:
+        appArmorProfile:
+          type: Unconfined
+        seccompProfile:
+          type: Unconfined
+      containers:
+      - name: cilium-agent
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        command:
+        - cilium-agent
+        args:
+        - --config-dir=/tmp/cilium/config-map
+        startupProbe:
+          httpGet:
+            host: "127.0.0.1"
+            path: /healthz
+            port: health
+            scheme: HTTP
+            httpHeaders:
+            - name: "brief"
+              value: "true"
+          failureThreshold: 300
+          periodSeconds: 2
+          successThreshold: 1
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet:
+            host: "127.0.0.1"
+            path: /healthz
+            port: health
+            scheme: HTTP
+            httpHeaders:
+            - name: "brief"
+              value: "true"
+            - name: "require-k8s-connectivity"
+              value: "false"
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            host: "127.0.0.1"
+            path: /healthz
+            port: health
+            scheme: HTTP
+            httpHeaders:
+            - name: "brief"
+              value: "true"
+          periodSeconds: 30
+          successThreshold: 1
+          failureThreshold: 3
+          timeoutSeconds: 5
+        env:
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: CILIUM_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: CILIUM_CLUSTERMESH_CONFIG
+          value: /var/lib/cilium/clustermesh/
+        - name: GOMEMLIMIT
+          valueFrom:
+            resourceFieldRef:
+              resource: limits.memory
+              divisor: '1'
+        - name: KUBERNETES_SERVICE_HOST
+          value: "192.168.99.150"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
+        - name: KUBE_CLIENT_BACKOFF_BASE
+          value: "1"
+        - name: KUBE_CLIENT_BACKOFF_DURATION
+          value: "120"
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - "bash"
+              - "-c"
+              - |
+                    set -o errexit
+                    set -o pipefail
+                    set -o nounset
+                    
+                    # When running in AWS ENI mode, it's likely that 'aws-node' has
+                    # had a chance to install SNAT iptables rules. These can result
+                    # in dropped traffic, so we should attempt to remove them.
+                    # We do it using a 'postStart' hook since this may need to run
+                    # for nodes which might have already been init'ed but may still
+                    # have dangling rules. This is safe because there are no
+                    # dependencies on anything that is part of the startup script
+                    # itself, and can be safely run multiple times per node (e.g. in
+                    # case of a restart).
+                    if [[ "$(iptables-save | grep -E -c 'AWS-SNAT-CHAIN|AWS-CONNMARK-CHAIN')" != "0" ]];
+                    then
+                        echo 'Deleting iptables rules created by the AWS CNI VPC plugin'
+                        iptables-save | grep -E -v 'AWS-SNAT-CHAIN|AWS-CONNMARK-CHAIN' | iptables-restore
+                    fi
+                    echo 'Done!'
+                    
+          preStop:
+            exec:
+              command:
+              - /cni-uninstall.sh
+        ports:
+        - name: health
+          containerPort: 9879
+          hostPort: 9879
+          protocol: TCP
+        securityContext:
+          seLinuxOptions:
+            level: s0
+            type: spc_t
+          capabilities:
+            add:
+              - CHOWN
+              - KILL
+              - NET_ADMIN
+              - NET_RAW
+              - IPC_LOCK
+              - SYS_MODULE
+              - SYS_ADMIN
+              - SYS_RESOURCE
+              - DAC_OVERRIDE
+              - FOWNER
+              - SETGID
+              - SETUID
+              - SYSLOG
+            drop:
+              - ALL
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        # Unprivileged containers need to mount /proc/sys/net from the host
+        # to have write access
+        - mountPath: /host/proc/sys/net
+          name: host-proc-sys-net
+        # Unprivileged containers need to mount /proc/sys/kernel from the host
+        # to have write access
+        - mountPath: /host/proc/sys/kernel
+          name: host-proc-sys-kernel
+        - name: bpf-maps
+          mountPath: /sys/fs/bpf
+          # Unprivileged containers can't set mount propagation to bidirectional
+          # in this case we will mount the bpf fs from an init container that
+          # is privileged and set the mount propagation from host to container
+          # in Cilium.
+          mountPropagation: HostToContainer
+        - name: cilium-run
+          mountPath: /var/run/cilium
+        - name: cilium-netns
+          mountPath: /var/run/cilium/netns
+          mountPropagation: HostToContainer
+        - name: etc-cni-netd
+          mountPath: /host/etc/cni/net.d
+        - name: clustermesh-secrets
+          mountPath: /var/lib/cilium/clustermesh
+          readOnly: true
+          # Needed to be able to load kernel modules
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
+        - name: xtables-lock
+          mountPath: /run/xtables.lock
+        - name: tmp
+          mountPath: /tmp
+        
+      initContainers:
+      - name: config
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        command:
+        - cilium-dbg
+        - build-config
+        env:
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: CILIUM_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: KUBERNETES_SERVICE_HOST
+          value: "192.168.99.150"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+            drop:
+              - ALL
+      # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
+      # We use nsenter command with host's cgroup and mount namespaces enabled.
+      - name: mount-cgroup
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: CGROUP_ROOT
+          value: /run/cilium/cgroupv2
+        - name: BIN_PATH
+          value: /opt/cni/bin
+        command:
+        - sh
+        - -ec
+        # The statically linked Go program binary is invoked to avoid any
+        # dependency on utilities like sh and mount that can be missing on certain
+        # distros installed on the underlying host. Copy the binary to the
+        # same directory where we install cilium cni plugin so that exec permissions
+        # are available.
+        - |
+          cp /usr/bin/cilium-mount /hostbin/cilium-mount;
+          nsenter --cgroup=/hostproc/1/ns/cgroup --mount=/hostproc/1/ns/mnt "${BIN_PATH}/cilium-mount" $CGROUP_ROOT;
+          rm /hostbin/cilium-mount
+        volumeMounts:
+        - name: hostproc
+          mountPath: /hostproc
+        - name: cni-path
+          mountPath: /hostbin
+        terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          seLinuxOptions:
+            level: s0
+            type: spc_t
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - SYS_CHROOT
+              - SYS_PTRACE
+            drop:
+              - ALL
+      - name: apply-sysctl-overwrites
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: BIN_PATH
+          value: /opt/cni/bin
+        command:
+        - sh
+        - -ec
+        # The statically linked Go program binary is invoked to avoid any
+        # dependency on utilities like sh that can be missing on certain
+        # distros installed on the underlying host. Copy the binary to the
+        # same directory where we install cilium cni plugin so that exec permissions
+        # are available.
+        - |
+          cp /usr/bin/cilium-sysctlfix /hostbin/cilium-sysctlfix;
+          nsenter --mount=/hostproc/1/ns/mnt "${BIN_PATH}/cilium-sysctlfix";
+          rm /hostbin/cilium-sysctlfix
+        volumeMounts:
+        - name: hostproc
+          mountPath: /hostproc
+        - name: cni-path
+          mountPath: /hostbin
+        terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          seLinuxOptions:
+            level: s0
+            type: spc_t
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - SYS_CHROOT
+              - SYS_PTRACE
+            drop:
+              - ALL
+      # Mount the bpf fs if it is not mounted. We will perform this task
+      # from a privileged container because the mount propagation bidirectional
+      # only works from privileged containers.
+      - name: mount-bpf-fs
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        args:
+        - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
+        command:
+        - /bin/bash
+        - -c
+        - --
+        terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: bpf-maps
+          mountPath: /sys/fs/bpf
+          mountPropagation: Bidirectional
+      - name: clean-cilium-state
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        command:
+        - /init-container.sh
+        env:
+        - name: CILIUM_ALL_STATE
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-config
+              key: clean-cilium-state
+              optional: true
+        - name: CILIUM_BPF_STATE
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-config
+              key: clean-cilium-bpf-state
+              optional: true
+        - name: WRITE_CNI_CONF_WHEN_READY
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-config
+              key: write-cni-conf-when-ready
+              optional: true
+        - name: KUBERNETES_SERVICE_HOST
+          value: "192.168.99.150"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
+        terminationMessagePolicy: FallbackToLogsOnError
+        securityContext:
+          seLinuxOptions:
+            level: s0
+            type: spc_t
+          capabilities:
+            add:
+              - NET_ADMIN
+              - SYS_MODULE
+              - SYS_ADMIN
+              - SYS_RESOURCE
+            drop:
+              - ALL
+        volumeMounts:
+        - name: bpf-maps
+          mountPath: /sys/fs/bpf
+          # Required to mount cgroup filesystem from the host to cilium agent pod
+        - name: cilium-cgroup
+          mountPath: /run/cilium/cgroupv2
+          mountPropagation: HostToContainer
+        - name: cilium-run
+          mountPath: /var/run/cilium # wait-for-kube-proxy
+      # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
+      - name: install-cni-binaries
+        image: "quay.io/cilium/cilium:v1.19.2@sha256:7bc7e0be845cae0a70241e622cd03c3b169001c9383dd84329c59ca86a8b1341"
+        imagePullPolicy: IfNotPresent
+        command:
+          - "/install-plugin.sh"
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 10Mi
+        securityContext:
+          seLinuxOptions:
+            level: s0
+            type: spc_t
+          capabilities:
+            drop:
+              - ALL
+        terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+          - name: cni-path
+            mountPath: /host/opt/cni/bin # .Values.cni.install
+      restartPolicy: Always
+      priorityClassName: system-node-critical
+      serviceAccountName: "cilium"
+      automountServiceAccountToken: true
+      terminationGracePeriodSeconds: 1
+      hostNetwork: true
+      
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                k8s-app: cilium
+            topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      volumes:
+      # For sharing configuration between the "config" initContainer and the agent
+      - name: tmp
+        emptyDir: {}
+        # To keep state between restarts / upgrades
+      - name: cilium-run
+        hostPath:
+          path: /var/run/cilium
+          type: DirectoryOrCreate
+        # To exec into pod network namespaces
+      - name: cilium-netns
+        hostPath:
+          path: /var/run/netns
+          type: DirectoryOrCreate
+        # To keep state between restarts / upgrades for bpf maps
+      - name: bpf-maps
+        hostPath:
+          path: /sys/fs/bpf
+          type: DirectoryOrCreate
+      # To mount cgroup2 filesystem on the host or apply sysctlfix
+      - name: hostproc
+        hostPath:
+          path: /proc
+          type: Directory
+      # To keep state between restarts / upgrades for cgroup2 filesystem
+      - name: cilium-cgroup
+        hostPath:
+          path: /run/cilium/cgroupv2
+          type: DirectoryOrCreate
+      # To install cilium cni plugin in the host
+      - name: cni-path
+        hostPath:
+          path:  /opt/cni/bin
+          type: DirectoryOrCreate
+        # To install cilium cni configuration in the host
+      - name: etc-cni-netd
+        hostPath:
+          path: /etc/cni/net.d
+          type: DirectoryOrCreate
+        # To be able to load kernel modules
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+        # To access iptables concurrently with other processes (e.g. kube-proxy)
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+        # To read the clustermesh configuration
+      - name: clustermesh-secrets
+        projected:
+          # note: the leading zero means this number is in octal representation: do not remove it
+          defaultMode: 0400
+          sources:
+          - secret:
+              name: cilium-clustermesh
+              optional: true
+              # note: items are not explicitly listed here, since the entries of this secret
+              # depend on the peers configured, and that would cause a restart of all agents
+              # at every addition/removal. Leaving the field empty makes each secret entry
+              # to be automatically projected into the volume as a file whose name is the key.
+          - secret:
+              name: clustermesh-apiserver-remote-cert
+              optional: true
+              items:
+              - key: tls.key
+                path: common-etcd-client.key
+              - key: tls.crt
+                path: common-etcd-client.crt
+              - key: ca.crt
+                path: common-etcd-client-ca.crt
+          # note: we configure the volume for the kvstoremesh-specific certificate
+          # regardless of whether KVStoreMesh is enabled or not, so that it can be
+          # automatically mounted in case KVStoreMesh gets subsequently enabled,
+          # without requiring an agent restart.
+          - secret:
+              name: clustermesh-apiserver-local-cert
+              optional: true
+              items:
+              - key: tls.key
+                path: local-etcd-client.key
+              - key: tls.crt
+                path: local-etcd-client.crt
+              - key: ca.crt
+                path: local-etcd-client-ca.crt
+      - name: host-proc-sys-net
+        hostPath:
+          path: /proc/sys/net
+          type: Directory
+      - name: host-proc-sys-kernel
+        hostPath:
+          path: /proc/sys/kernel
+          type: Directory
+---
+# Source: cilium/templates/cilium-operator/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cilium-operator
+  namespace: kube-system
+  labels:
+    io.cilium/app: operator
+    name: cilium-operator
+    app.kubernetes.io/part-of: cilium
+    app.kubernetes.io/name: cilium-operator
+spec:
+  # See docs on ServerCapabilities.LeasesResourceLock in file pkg/k8s/version/version.go
+  # for more details.
+  replicas: 1
+  selector:
+    matchLabels:
+      io.cilium/app: operator
+      name: cilium-operator
+  # ensure operator update on single node k8s clusters, by using rolling update with maxUnavailable=100% in case
+  # of one replica and no user configured Recreate strategy.
+  # otherwise an update might get stuck due to the default maxUnavailable=50% in combination with the
+  # podAntiAffinity which prevents deployments of multiple operator replicas on the same node.
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 100%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "9963"
+        prometheus.io/scrape: "true"
+      labels:
+        io.cilium/app: operator
+        name: cilium-operator
+        app.kubernetes.io/part-of: cilium
+        app.kubernetes.io/name: cilium-operator
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: cilium-operator
+        image: "quay.io/cilium/operator-generic:v1.19.2@sha256:e363f4f634c2a66a36e01618734ea17e7b541b949b9a5632f9c180ab16de23f0"
+        imagePullPolicy: IfNotPresent
+        command:
+        - cilium-operator-generic
+        args:
+        - --config-dir=/tmp/cilium/config-map
+        - --debug=$(CILIUM_DEBUG)
+        env:
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: CILIUM_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: CILIUM_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              key: debug
+              name: cilium-config
+              optional: true
+        - name: KUBERNETES_SERVICE_HOST
+          value: "192.168.99.150"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "6443"
+        ports:
+        - name: health
+          containerPort: 9234
+          hostPort: 9234
+        - name: prometheus
+          containerPort: 9963
+          hostPort: 9963
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            host: "127.0.0.1"
+            path: /healthz
+            port: health
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            host: "127.0.0.1"
+            path: /healthz
+            port: health
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 5
+        volumeMounts:
+        - name: cilium-config-path
+          mountPath: /tmp/cilium/config-map
+          readOnly: true
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        terminationMessagePolicy: FallbackToLogsOnError
+      hostNetwork: true
+      restartPolicy: Always
+      priorityClassName: system-cluster-critical
+      serviceAccountName: "cilium-operator"
+      automountServiceAccountToken: true
+      # In HA mode, cilium-operator pods must not be scheduled on the same
+      # node as they will clash with each other.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                io.cilium/app: operator
+            topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+        - key: node.cloudprovider.kubernetes.io/uninitialized
+          operator: Exists
+        - key: node.cilium.io/agent-not-ready
+          operator: Exists
+      
+      volumes:
+        # To read the configuration from the config map
+      - name: cilium-config-path
+        configMap:
+          name: cilium-config
+
+---
+# Source: flux-operator/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: flux-operator
+  namespace: flux-system
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: flux-operator/templates/crds.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
+  labels:
+    app.kubernetes.io/instance: 'flux-operator'
+    app.kubernetes.io/managed-by: 'Helm'
+    app.kubernetes.io/name: 'flux-operator'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
+  name: fluxinstances.fluxcd.controlplane.io
+spec:
+  group: fluxcd.controlplane.io
+  names:
+    kind: FluxInstance
+    listKind: FluxInstanceList
+    plural: fluxinstances
+    singular: fluxinstance
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      type: string
+    - jsonPath: .status.lastAttemptedRevision
+      name: Revision
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: FluxInstance is the Schema for the fluxinstances API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FluxInstanceSpec defines the desired state of FluxInstance
+            properties:
+              cluster:
+                description: Cluster holds the specification of the Kubernetes cluster.
+                properties:
+                  domain:
+                    default: cluster.local
+                    description: |-
+                      Domain is the cluster domain used for generating the FQDN of services.
+                      Defaults to 'cluster.local'.
+                    type: string
+                  multitenant:
+                    default: false
+                    description: Multitenant enables the multitenancy lockdown. Defaults
+                      to false.
+                    type: boolean
+                  multitenantWorkloadIdentity:
+                    default: false
+                    description: |-
+                      MultitenantWorkloadIdentity enables the multitenancy lockdown for
+                      workload identity. Defaults to false.
+                    type: boolean
+                  networkPolicy:
+                    default: true
+                    description: |-
+                      NetworkPolicy restricts network access to the current namespace.
+                      Defaults to true.
+                    type: boolean
+                  objectLevelWorkloadIdentity:
+                    description: |-
+                      ObjectLevelWorkloadIdentity enables the feature gate
+                      required for object-level workload identity.
+                      This feature is only available in Flux v2.6.0 and later.
+                    type: boolean
+                  size:
+                    description: |-
+                      Size defines the vertical scaling profile of the Flux controllers.
+                      The size is used to determine the concurrency and CPU/Memory limits for the Flux controllers.
+                      Accepted values are: 'small', 'medium' and 'large'.
+                    enum:
+                    - small
+                    - medium
+                    - large
+                    type: string
+                  tenantDefaultDecryptionServiceAccount:
+                    description: |-
+                      TenantDefaultDecryptionServiceAccount is the name of the service account
+                      to use as default for kustomize-controller SOPS decryption when the
+                      multitenant lockdown for workload identity is enabled. Defaults to the
+                      'default' service account from the tenant namespace.
+                    type: string
+                  tenantDefaultKubeConfigServiceAccount:
+                    description: |-
+                      TenantDefaultKubeConfigServiceAccount is the name of the service account
+                      to use as default for kustomize-controller and helm-controller remote
+                      cluster access via spec.kubeConfig.configMapRef when the multitenant
+                      lockdown for workload identity is enabled. Defaults to the 'default'
+                      service account from the tenant namespace.
+                    type: string
+                  tenantDefaultServiceAccount:
+                    description: |-
+                      TenantDefaultServiceAccount is the name of the service account
+                      to use as default when the multitenant lockdown is enabled, for
+                      kustomize-controller and helm-controller.
+                      This field will also be used for multitenant workload identity
+                      lockdown for source-controller, notification-controller,
+                      image-reflector-controller and image-automation-controller.
+                      Defaults to the 'default' service account from the tenant namespace.
+                    type: string
+                  type:
+                    default: kubernetes
+                    description: |-
+                      Type specifies the distro of the Kubernetes cluster.
+                      Defaults to 'kubernetes'.
+                    enum:
+                    - kubernetes
+                    - openshift
+                    - aws
+                    - azure
+                    - gcp
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: .objectLevelWorkloadIdentity must be set to true when .multitenantWorkloadIdentity
+                    is set to true
+                  rule: (has(self.objectLevelWorkloadIdentity) && self.objectLevelWorkloadIdentity)
+                    || !has(self.multitenantWorkloadIdentity) || !self.multitenantWorkloadIdentity
+              commonMetadata:
+                description: |-
+                  CommonMetadata specifies the common labels and annotations that are
+                  applied to all resources. Any existing label or annotation will be
+                  overridden if its key matches a common one.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations to be added to the object's metadata.
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels to be added to the object's metadata.
+                    type: object
+                type: object
+              components:
+                description: |-
+                  Components is the list of controllers to install.
+                  Defaults to the core Flux controllers:
+                    - source-controller
+                    - kustomize-controller
+                    - helm-controller
+                    - notification-controller
+                items:
+                  description: Component is the name of a controller to install.
+                  enum:
+                  - source-controller
+                  - kustomize-controller
+                  - helm-controller
+                  - notification-controller
+                  - image-reflector-controller
+                  - image-automation-controller
+                  - source-watcher
+                  type: string
+                type: array
+              distribution:
+                description: Distribution specifies the version and container registry
+                  to pull images from.
+                properties:
+                  artifact:
+                    description: |-
+                      Artifact is the URL to the OCI artifact containing
+                      the latest Kubernetes manifests for the distribution,
+                      e.g. 'oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:latest'.
+                    pattern: ^oci://.*$
+                    type: string
+                  artifactPullSecret:
+                    description: |-
+                      ArtifactPullSecret is the name of the Kubernetes secret
+                      to use for pulling the Kubernetes manifests for the distribution specified in the Artifact field.
+                    type: string
+                  imagePullSecret:
+                    description: |-
+                      ImagePullSecret is the name of the Kubernetes secret
+                      to use for pulling images.
+                    type: string
+                  registry:
+                    description: |-
+                      Registry address to pull the distribution images from
+                      e.g. 'ghcr.io/fluxcd'.
+                    type: string
+                  variant:
+                    description: |-
+                      Variant specifies the Flux distribution flavor stored
+                      in the registry.
+                    enum:
+                    - upstream-alpine
+                    - enterprise-alpine
+                    - enterprise-distroless
+                    - enterprise-distroless-fips
+                    type: string
+                  version:
+                    description: Version semver expression e.g. '2.x', '2.3.x'.
+                    type: string
+                required:
+                - registry
+                - version
+                type: object
+              kustomize:
+                description: |-
+                  Kustomize holds a set of patches that can be applied to the
+                  Flux installation, to customize the way Flux operates.
+                properties:
+                  patches:
+                    description: |-
+                      Strategic merge and JSON patches, defined as inline YAML objects,
+                      capable of targeting objects based on kind, label and annotation selectors.
+                    items:
+                      description: |-
+                        Patch contains an inline StrategicMerge or JSON6902 patch, and the target the patch should
+                        be applied to.
+                      properties:
+                        patch:
+                          description: |-
+                            Patch contains an inline StrategicMerge patch or an inline JSON6902 patch with
+                            an array of operation objects.
+                          type: string
+                        target:
+                          description: Target points to the resources that the patch
+                            document should be applied to.
+                          properties:
+                            annotationSelector:
+                              description: |-
+                                AnnotationSelector is a string that follows the label selection expression
+                                https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                It matches with the resource annotations.
+                              type: string
+                            group:
+                              description: |-
+                                Group is the API group to select resources from.
+                                Together with Version and Kind it is capable of unambiguously identifying and/or selecting resources.
+                                https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                              type: string
+                            kind:
+                              description: |-
+                                Kind of the API Group to select resources from.
+                                Together with Group and Version it is capable of unambiguously
+                                identifying and/or selecting resources.
+                                https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                              type: string
+                            labelSelector:
+                              description: |-
+                                LabelSelector is a string that follows the label selection expression
+                                https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#api
+                                It matches with the resource labels.
+                              type: string
+                            name:
+                              description: Name to match resources with.
+                              type: string
+                            namespace:
+                              description: Namespace to select resources from.
+                              type: string
+                            version:
+                              description: |-
+                                Version of the API Group to select resources from.
+                                Together with Group and Kind it is capable of unambiguously identifying and/or selecting resources.
+                                https://github.com/kubernetes/community/blob/master/contributors/design-proposals/api-machinery/api-group.md
+                              type: string
+                          type: object
+                      required:
+                      - patch
+                      type: object
+                    type: array
+                type: object
+              migrateResources:
+                default: true
+                description: |-
+                  MigrateResources instructs the controller to migrate the Flux custom resources
+                  from the previous version to the latest API version specified in the CRD.
+                  Defaults to true.
+                type: boolean
+              sharding:
+                description: Sharding holds the specification of the sharding configuration.
+                properties:
+                  key:
+                    default: sharding.fluxcd.io/key
+                    description: Key is the label key used to shard the resources.
+                    type: string
+                  shards:
+                    description: Shards is the list of shard names.
+                    items:
+                      type: string
+                    minItems: 1
+                    type: array
+                  storage:
+                    description: |-
+                      Storage defines if the source-controller shards
+                      should use an emptyDir or a persistent volume claim for storage.
+                      Accepted values are 'ephemeral' or 'persistent', defaults to 'ephemeral'.
+                      For 'persistent' to take effect, the '.spec.storage' field must be set.
+                    enum:
+                    - ephemeral
+                    - persistent
+                    type: string
+                required:
+                - shards
+                type: object
+              storage:
+                description: |-
+                  Storage holds the specification of the source-controller
+                  persistent volume claim.
+                properties:
+                  class:
+                    description: Class is the storage class to use for the PVC.
+                    type: string
+                  size:
+                    description: Size is the size of the PVC.
+                    type: string
+                required:
+                - class
+                - size
+                type: object
+              sync:
+                description: |-
+                  Sync specifies the source for the cluster sync operation.
+                  When set, a Flux source (GitRepository, OCIRepository or Bucket)
+                  and Flux Kustomization are created to sync the cluster state
+                  with the source repository.
+                properties:
+                  interval:
+                    default: 1m
+                    description: Interval is the time between syncs.
+                    pattern: ^([0-9]+(\.[0-9]+)?(ms|s|m|h))+$
+                    type: string
+                  kind:
+                    description: Kind is the kind of the source.
+                    enum:
+                    - OCIRepository
+                    - GitRepository
+                    - Bucket
+                    type: string
+                  name:
+                    description: |-
+                      Name is the name of the Flux source and kustomization resources.
+                      When not specified, the name is set to the namespace name of the FluxInstance.
+                    maxLength: 63
+                    type: string
+                    x-kubernetes-validations:
+                    - message: Sync name is immutable
+                      rule: self == oldSelf
+                  path:
+                    description: |-
+                      Path is the path to the source directory containing
+                      the kustomize overlay or plain Kubernetes manifests.
+                    type: string
+                  provider:
+                    description: |-
+                      Provider specifies OIDC provider for source authentication.
+                      For OCIRepository and Bucket the provider can be set to 'aws', 'azure' or 'gcp'.
+                      for GitRepository the accepted value can be set to 'azure' or 'github'.
+                      To disable OIDC authentication the provider can be set to 'generic' or left empty.
+                    enum:
+                    - generic
+                    - aws
+                    - azure
+                    - gcp
+                    - github
+                    type: string
+                  pullSecret:
+                    description: |-
+                      PullSecret specifies the Kubernetes Secret containing the
+                      authentication credentials for the source.
+                      For Git over HTTP/S sources, the secret must contain username and password fields.
+                      For Git over SSH sources, the secret must contain known_hosts and identity fields.
+                      For OCI sources, the secret must be of type kubernetes.io/dockerconfigjson.
+                      For Bucket sources, the secret must contain accesskey and secretkey fields.
+                    type: string
+                  ref:
+                    description: |-
+                      Ref is the source reference, can be a Git ref name e.g. 'refs/heads/main',
+                      an OCI tag e.g. 'latest' or a bucket name e.g. 'flux'.
+                    type: string
+                  url:
+                    description: |-
+                      URL is the source URL, can be a Git repository HTTP/S or SSH address,
+                      an OCI repository address or a Bucket endpoint.
+                    type: string
+                required:
+                - kind
+                - path
+                - ref
+                - url
+                type: object
+              wait:
+                default: true
+                description: |-
+                  Wait instructs the controller to check the health of all the reconciled
+                  resources. Defaults to true.
+                type: boolean
+            required:
+            - distribution
+            type: object
+          status:
+            description: FluxInstanceStatus defines the observed state of FluxInstance
+            properties:
+              components:
+                description: Components contains the container images used by the
+                  components.
+                items:
+                  description: ComponentImage represents a container image used by
+                    a component.
+                  properties:
+                    digest:
+                      description: Digest of the container image.
+                      type: string
+                    name:
+                      description: Name of the component.
+                      type: string
+                    repository:
+                      description: Repository address of the container image.
+                      type: string
+                    tag:
+                      description: Tag of the container image.
+                      type: string
+                  required:
+                  - name
+                  - repository
+                  - tag
+                  type: object
+                type: array
+              conditions:
+                description: Conditions contains the readiness conditions of the object.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              history:
+                description: |-
+                  History contains the reconciliation history of the FluxInstance
+                  as a list of snapshots ordered by the last reconciled time.
+                items:
+                  description: |-
+                    Snapshot represents a point-in-time record of a group of resources reconciliation,
+                    including timing information, status, and a unique digest identifier.
+                  properties:
+                    digest:
+                      description: Digest is the checksum in the format `<algo>:<hex>`
+                        of the resources in this snapshot.
+                      type: string
+                    firstReconciled:
+                      description: FirstReconciled is the time when this revision
+                        was first reconciled to the cluster.
+                      format: date-time
+                      type: string
+                    lastReconciled:
+                      description: LastReconciled is the time when this revision was
+                        last reconciled to the cluster.
+                      format: date-time
+                      type: string
+                    lastReconciledDuration:
+                      description: LastReconciledDuration is time it took to reconcile
+                        the resources in this revision.
+                      type: string
+                    lastReconciledStatus:
+                      description: LastReconciledStatus is the status of the last
+                        reconciliation.
+                      type: string
+                    metadata:
+                      additionalProperties:
+                        type: string
+                      description: Metadata contains additional information about
+                        the snapshot.
+                      type: object
+                    totalReconciliations:
+                      description: TotalReconciliations is the total number of reconciliations
+                        that have occurred for this snapshot.
+                      format: int64
+                      type: integer
+                  required:
+                  - digest
+                  - firstReconciled
+                  - lastReconciled
+                  - lastReconciledDuration
+                  - lastReconciledStatus
+                  - totalReconciliations
+                  type: object
+                type: array
+              inventory:
+                description: |-
+                  Inventory contains a list of Kubernetes resource object references
+                  last applied on the cluster.
+                properties:
+                  entries:
+                    description: Entries of Kubernetes resource object references.
+                    items:
+                      description: ResourceRef contains the information necessary
+                        to locate a resource within a cluster.
+                      properties:
+                        id:
+                          description: |-
+                            ID is the string representation of the Kubernetes resource object's metadata,
+                            in the format '<namespace>_<name>_<group>_<kind>'.
+                          type: string
+                        v:
+                          description: Version is the API version of the Kubernetes
+                            resource object's kind.
+                          type: string
+                      required:
+                      - id
+                      - v
+                      type: object
+                    type: array
+                required:
+                - entries
+                type: object
+              lastAppliedRevision:
+                description: |-
+                  LastAppliedRevision is the version and digest of the
+                  distribution config that was last reconcile.
+                type: string
+              lastArtifactRevision:
+                description: |-
+                  LastArtifactRevision is the digest of the last pulled
+                  distribution artifact.
+                type: string
+              lastAttemptedRevision:
+                description: |-
+                  LastAttemptedRevision is the version and digest of the
+                  distribution config that was last attempted to reconcile.
+                type: string
+              lastHandledForceAt:
+                description: |-
+                  LastHandledForceAt holds the value of the most recent
+                  force request value, so a change of the annotation value
+                  can be detected.
+                type: string
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile request value, so a change of the annotation value
+                  can be detected.
+                type: string
+            type: object
+        type: object
+        x-kubernetes-validations:
+        - message: the only accepted name for a FluxInstance is 'flux'
+          rule: self.metadata.name == 'flux'
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+# Source: flux-operator/templates/crds.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
+  labels:
+    app.kubernetes.io/instance: 'flux-operator'
+    app.kubernetes.io/managed-by: 'Helm'
+    app.kubernetes.io/name: 'flux-operator'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
+  name: fluxreports.fluxcd.controlplane.io
+spec:
+  group: fluxcd.controlplane.io
+  names:
+    kind: FluxReport
+    listKind: FluxReportList
+    plural: fluxreports
+    singular: fluxreport
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.distribution.entitlement
+      name: Entitlement
+      priority: 10
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].lastTransitionTime
+      name: LastUpdated
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: FluxReport is the Schema for the fluxreports API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FluxReportSpec defines the observed state of a Flux installation.
+            properties:
+              cluster:
+                description: Cluster is the version information of the Kubernetes
+                  cluster.
+                properties:
+                  nodes:
+                    description: Nodes is the number of nodes in the Kubernetes cluster.
+                    type: integer
+                  platform:
+                    description: Platform is the os/arch of the Kubernetes control
+                      plane.
+                    type: string
+                  serverVersion:
+                    description: ServerVersion is the version of the Kubernetes API
+                      server.
+                    type: string
+                required:
+                - platform
+                - serverVersion
+                type: object
+              components:
+                description: ComponentsStatus is the status of the Flux controller
+                  deployments.
+                items:
+                  description: FluxComponentStatus defines the observed state of a
+                    Flux component.
+                  properties:
+                    image:
+                      description: Image is the container image of the Flux component.
+                      type: string
+                    name:
+                      description: Name is the name of the Flux component.
+                      type: string
+                    ready:
+                      description: Ready is the readiness status of the Flux component.
+                      type: boolean
+                    status:
+                      description: |-
+                        Status is a human-readable message indicating details
+                        about the Flux component observed state.
+                      type: string
+                  required:
+                  - image
+                  - name
+                  - ready
+                  - status
+                  type: object
+                type: array
+              distribution:
+                description: Distribution is the version information of the Flux installation.
+                properties:
+                  entitlement:
+                    description: Entitlement is the entitlement verification status.
+                    type: string
+                  managedBy:
+                    description: ManagedBy is the name of the operator managing the
+                      Flux instance.
+                    type: string
+                  status:
+                    description: |-
+                      Status is a human-readable message indicating details
+                      about the distribution observed state.
+                    type: string
+                  version:
+                    description: Version is the version of the Flux instance.
+                    type: string
+                required:
+                - entitlement
+                - status
+                type: object
+              operator:
+                description: Operator is the version information of the Flux Operator.
+                properties:
+                  apiVersion:
+                    description: APIVersion is the API version of the Flux Operator.
+                    type: string
+                  platform:
+                    description: Platform is the os/arch of Flux Operator.
+                    type: string
+                  version:
+                    description: Version is the version number of Flux Operator.
+                    type: string
+                required:
+                - apiVersion
+                - platform
+                - version
+                type: object
+              reconcilers:
+                description: |-
+                  ReconcilersStatus is the list of Flux reconcilers and
+                  their statistics grouped by API kind.
+                items:
+                  description: FluxReconcilerStatus defines the observed state of
+                    a Flux reconciler.
+                  properties:
+                    apiVersion:
+                      description: APIVersion is the API version of the Flux resource.
+                      type: string
+                    kind:
+                      description: Kind is the kind of the Flux resource.
+                      type: string
+                    stats:
+                      description: Stats is the reconcile statics of the Flux resource
+                        kind.
+                      properties:
+                        failing:
+                          description: |-
+                            Failing is the number of reconciled
+                            resources in the Failing state and not Suspended.
+                          type: integer
+                        running:
+                          description: |-
+                            Running is the number of reconciled
+                            resources in the Running state.
+                          type: integer
+                        suspended:
+                          description: |-
+                            Suspended is the number of reconciled
+                            resources in the Suspended state.
+                          type: integer
+                        totalSize:
+                          description: TotalSize is the total size of the artifacts
+                            in storage.
+                          type: string
+                      required:
+                      - failing
+                      - running
+                      - suspended
+                      type: object
+                  required:
+                  - apiVersion
+                  - kind
+                  type: object
+                type: array
+              sync:
+                description: |-
+                  SyncStatus is the status of the cluster sync
+                  Source and Kustomization resources.
+                properties:
+                  id:
+                    description: ID is the identifier of the sync.
+                    type: string
+                  path:
+                    description: Path is the kustomize path of the sync.
+                    type: string
+                  ready:
+                    description: Ready is the readiness status of the sync.
+                    type: boolean
+                  source:
+                    description: Source is the URL of the source repository.
+                    type: string
+                  status:
+                    description: |-
+                      Status is a human-readable message indicating details
+                      about the sync observed state.
+                    type: string
+                required:
+                - id
+                - ready
+                - status
+                type: object
+            required:
+            - distribution
+            type: object
+          status:
+            description: FluxReportStatus defines the readiness of a FluxReport.
+            properties:
+              conditions:
+                description: Conditions contains the readiness conditions of the object.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile request value, so a change of the annotation value
+                  can be detected.
+                type: string
+            type: object
+        type: object
+        x-kubernetes-validations:
+        - message: the only accepted name for a FluxReport is 'flux'
+          rule: self.metadata.name == 'flux'
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+# Source: flux-operator/templates/crds.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
+  labels:
+    app.kubernetes.io/instance: 'flux-operator'
+    app.kubernetes.io/managed-by: 'Helm'
+    app.kubernetes.io/name: 'flux-operator'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
+  name: resourcesetinputproviders.fluxcd.controlplane.io
+spec:
+  group: fluxcd.controlplane.io
+  names:
+    kind: ResourceSetInputProvider
+    listKind: ResourceSetInputProviderList
+    plural: resourcesetinputproviders
+    shortNames:
+    - rsip
+    singular: resourcesetinputprovider
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ResourceSetInputProvider is the Schema for the ResourceSetInputProviders
+          API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ResourceSetInputProviderSpec defines the desired state of
+              ResourceSetInputProvider
+            properties:
+              certSecretRef:
+                description: |-
+                  CertSecretRef specifies the Kubernetes Secret containing either or both of
+
+                  - a PEM-encoded CA certificate (`ca.crt`)
+                  - a PEM-encoded client certificate (`tls.crt`) and private key (`tls.key`)
+
+                  When connecting to a Git, OCI, or ExternalService provider that uses self-signed certificates,
+                  the CA certificate must be set in the Secret under the 'ca.crt' key to establish the trust relationship.
+                  When connecting to a provider that supports client certificates (mTLS), the client certificate
+                  and private key must be set in the Secret under the 'tls.crt' and 'tls.key' keys, respectively.
+                properties:
+                  name:
+                    description: Name of the referent.
+                    type: string
+                required:
+                - name
+                type: object
+              defaultValues:
+                additionalProperties:
+                  x-kubernetes-preserve-unknown-fields: true
+                description: |-
+                  DefaultValues contains the default values for the inputs.
+                  These values are used to populate the inputs when the provider
+                  response does not contain them.
+                type: object
+              filter:
+                description: Filter defines the filter to apply to the input provider
+                  response.
+                properties:
+                  excludeBranch:
+                    description: |-
+                      ExcludeBranch specifies the regular expression to filter the branches
+                      that the input provider should exclude.
+                    type: string
+                  excludeEnvironment:
+                    description: |-
+                      ExcludeEnvironment specifies the regular expression to filter the environments
+                      that the input provider should exclude.
+                    type: string
+                  excludeTag:
+                    description: |-
+                      ExcludeTag specifies the regular expression to filter the tags
+                      that the input provider should exclude.
+                    type: string
+                  includeBranch:
+                    description: |-
+                      IncludeBranch specifies the regular expression to filter the branches
+                      that the input provider should include.
+                    type: string
+                  includeEnvironment:
+                    description: |-
+                      IncludeEnvironment specifies the regular expression to filter the environments
+                      that the input provider should include.
+                    type: string
+                  includeTag:
+                    description: |-
+                      IncludeTag specifies the regular expression to filter the tags
+                      that the input provider should include.
+                    type: string
+                  labels:
+                    description: Labels specifies the list of labels to filter the
+                      input provider response.
+                    items:
+                      type: string
+                    type: array
+                  limit:
+                    default: 100
+                    description: |-
+                      Limit specifies the maximum number of input sets to return.
+                      When not set, the default limit is 100.
+                    type: integer
+                  semver:
+                    description: |-
+                      Semver specifies a semantic version range to filter and sort the tags.
+                      If this field is not specified, the tags will be sorted in reverse
+                      alphabetical order.
+                      Supported only for tags at the moment.
+                    type: string
+                type: object
+              insecure:
+                description: |-
+                  Insecure allows connecting to an ExternalService or OCIArtifactTag provider
+                  over plain HTTP without TLS. When not set, the URL must use HTTPS.
+                type: boolean
+              schedule:
+                description: Schedule defines the schedules for the input provider
+                  to run.
+                items:
+                  description: Schedule defines a schedule for something to run.
+                  properties:
+                    cron:
+                      description: Cron specifies the cron expression for the schedule.
+                      type: string
+                    timeZone:
+                      default: UTC
+                      description: TimeZone specifies the time zone for the cron schedule.
+                        Defaults to UTC.
+                      type: string
+                    window:
+                      default: 0s
+                      description: |-
+                        Window defines the time window during which the execution is allowed.
+                        Defaults to 0s, meaning no window is applied.
+                      pattern: ^([0-9]+(\.[0-9]+)?(ms|s|m|h))+$
+                      type: string
+                  required:
+                  - cron
+                  type: object
+                type: array
+              secretRef:
+                description: |-
+                  SecretRef specifies the Kubernetes Secret containing the credentials
+                  to access the input provider.
+                  When connecting to a Git provider, the secret must contain the keys
+                  'username' and 'password', and the password should be a personal access token
+                  that grants read-only access to the repository.
+                  When connecting to an OCI provider, the secret must contain a Kubernetes
+                  Image Pull Secret, as if created by `kubectl create secret docker-registry`.
+                  When connecting to an ExternalService provider, the secret must contain either
+                  a 'token' key for bearer token authentication, or 'username' and 'password'
+                  keys for basic authentication.
+                properties:
+                  name:
+                    description: Name of the referent.
+                    type: string
+                required:
+                - name
+                type: object
+              serviceAccountName:
+                description: |-
+                  ServiceAccountName specifies the name of the Kubernetes ServiceAccount
+                  used for authentication with AWS, Azure or GCP services through
+                  workload identity federation features. If not specified, the
+                  authentication for these cloud providers will use the ServiceAccount
+                  of the operator (or any other environment authentication configuration).
+                type: string
+              skip:
+                description: Skip defines whether we need to skip input provider response
+                  updates.
+                properties:
+                  labels:
+                    description: |-
+                      Labels specifies list of labels to skip input provider response when any of the label conditions matched.
+                      When prefixed with !, input provider response will be skipped if it does not have this label.
+                    items:
+                      type: string
+                    type: array
+                type: object
+              type:
+                description: Type specifies the type of the input provider.
+                enum:
+                - Static
+                - GitHubBranch
+                - GitHubTag
+                - GitHubPullRequest
+                - GitLabBranch
+                - GitLabTag
+                - GitLabMergeRequest
+                - GitLabEnvironment
+                - AzureDevOpsBranch
+                - AzureDevOpsTag
+                - AzureDevOpsPullRequest
+                - GiteaBranch
+                - GiteaTag
+                - GiteaPullRequest
+                - OCIArtifactTag
+                - ACRArtifactTag
+                - ECRArtifactTag
+                - GARArtifactTag
+                - ExternalService
+                type: string
+              url:
+                description: |-
+                  URL specifies the HTTP/S or OCI address of the input provider API.
+                  When connecting to a Git provider, the URL should point to the repository address.
+                  When connecting to an OCI provider, the URL should point to the OCI repository address.
+                pattern: ^((http|https|oci)://.*){0,1}$
+                type: string
+            required:
+            - type
+            type: object
+            x-kubernetes-validations:
+            - message: spec.url must be empty when spec.type is 'Static'
+              rule: self.type != 'Static' || !has(self.url)
+            - message: spec.url must not be empty when spec.type is not 'Static'
+              rule: self.type == 'Static' || has(self.url)
+            - message: spec.url must start with 'http://' or 'https://' when spec.type
+                is a Git provider
+              rule: '!self.type.startsWith(''Git'') || self.url.startsWith(''http'')'
+            - message: spec.url must start with 'http://' or 'https://' when spec.type
+                is a Git provider
+              rule: '!self.type.startsWith(''AzureDevOps'') || self.url.startsWith(''http'')'
+            - message: spec.url must start with 'oci://' when spec.type is an OCI
+                provider
+              rule: '!self.type.endsWith(''ArtifactTag'') || self.url.startsWith(''oci'')'
+            - message: spec.url must start with 'http://' or 'https://' when spec.type
+                is 'ExternalService'
+              rule: self.type != 'ExternalService' || self.url.startsWith('http')
+            - message: spec.insecure can only be set when spec.type is 'ExternalService'
+                or 'OCIArtifactTag'
+              rule: '!has(self.insecure) || !self.insecure || self.type == ''ExternalService''
+                || self.type == ''OCIArtifactTag'''
+            - message: spec.url must use 'https://' unless spec.insecure is true
+              rule: self.type != 'ExternalService' || !self.url.startsWith('http://')
+                || (has(self.insecure) && self.insecure)
+            - message: cannot specify spec.serviceAccountName when spec.type is not
+                one of AzureDevOps* or *ArtifactTag
+              rule: '!has(self.serviceAccountName) || self.type.startsWith(''AzureDevOps'')
+                || self.type.endsWith(''ArtifactTag'')'
+            - message: cannot specify spec.certSecretRef when spec.type is one of
+                Static, AzureDevOps*, ACRArtifactTag, ECRArtifactTag or GARArtifactTag
+              rule: '!has(self.certSecretRef) || !(self.url == ''Static'' || self.type.startsWith(''AzureDevOps'')
+                || (self.type.endsWith(''ArtifactTag'') && self.type != ''OCIArtifactTag''))'
+            - message: cannot specify spec.secretRef when spec.type is one of Static,
+                ACRArtifactTag, ECRArtifactTag or GARArtifactTag
+              rule: '!has(self.secretRef) || !(self.url == ''Static'' || (self.type.endsWith(''ArtifactTag'')
+                && self.type != ''OCIArtifactTag''))'
+          status:
+            description: ResourceSetInputProviderStatus defines the observed state
+              of ResourceSetInputProvider.
+            properties:
+              conditions:
+                description: Conditions contains the readiness conditions of the object.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              exportedInputs:
+                description: ExportedInputs contains the list of inputs exported by
+                  the provider.
+                items:
+                  additionalProperties:
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: ResourceSetInput defines the key-value pairs of the
+                    ResourceSet input.
+                  type: object
+                type: array
+              lastExportedRevision:
+                description: |-
+                  LastExportedRevision is the digest of the
+                  inputs that were last reconcile.
+                type: string
+              lastHandledForceAt:
+                description: |-
+                  LastHandledForceAt holds the value of the most recent
+                  force request value, so a change of the annotation value
+                  can be detected.
+                type: string
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile request value, so a change of the annotation value
+                  can be detected.
+                type: string
+              nextSchedule:
+                description: NextSchedule is the next schedule when the input provider
+                  will run.
+                properties:
+                  cron:
+                    description: Cron specifies the cron expression for the schedule.
+                    type: string
+                  timeZone:
+                    default: UTC
+                    description: TimeZone specifies the time zone for the cron schedule.
+                      Defaults to UTC.
+                    type: string
+                  when:
+                    description: When is the next time the schedule will run.
+                    format: date-time
+                    type: string
+                  window:
+                    default: 0s
+                    description: |-
+                      Window defines the time window during which the execution is allowed.
+                      Defaults to 0s, meaning no window is applied.
+                    pattern: ^([0-9]+(\.[0-9]+)?(ms|s|m|h))+$
+                    type: string
+                required:
+                - cron
+                - when
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+# Source: flux-operator/templates/crds.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.0
+    helm.sh/resource-policy: keep
+  labels:
+    app.kubernetes.io/instance: 'flux-operator'
+    app.kubernetes.io/managed-by: 'Helm'
+    app.kubernetes.io/name: 'flux-operator'
+    app.kubernetes.io/version: 'v0.48.0'
+    helm.sh/chart: 'flux-operator-0.48.0'
+  name: resourcesets.fluxcd.controlplane.io
+spec:
+  group: fluxcd.controlplane.io
+  names:
+    kind: ResourceSet
+    listKind: ResourceSetList
+    plural: resourcesets
+    shortNames:
+    - rset
+    singular: resourceset
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].message
+      name: Status
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ResourceSet is the Schema for the ResourceSets API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ResourceSetSpec defines the desired state of ResourceSet
+            properties:
+              commonMetadata:
+                description: |-
+                  CommonMetadata specifies the common labels and annotations that are
+                  applied to all resources. Any existing label or annotation will be
+                  overridden if its key matches a common one.
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: Annotations to be added to the object's metadata.
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels to be added to the object's metadata.
+                    type: object
+                type: object
+              dependsOn:
+                description: |-
+                  DependsOn specifies the list of Kubernetes resources that must
+                  exist on the cluster before the reconciliation process starts.
+                items:
+                  description: Dependency defines a ResourceSet dependency on a Kubernetes
+                    resource.
+                  properties:
+                    apiVersion:
+                      description: APIVersion of the resource to depend on.
+                      type: string
+                    kind:
+                      description: Kind of the resource to depend on.
+                      type: string
+                    name:
+                      description: Name of the resource to depend on.
+                      type: string
+                    namespace:
+                      description: Namespace of the resource to depend on.
+                      type: string
+                    ready:
+                      description: Ready checks if the resource Ready status condition
+                        is true.
+                      type: boolean
+                    readyExpr:
+                      description: |-
+                        ReadyExpr checks if the resource satisfies the given CEL expression.
+                        The expression replaces the default readiness check and
+                        is only evaluated if Ready is set to 'true'.
+                      type: string
+                  required:
+                  - apiVersion
+                  - kind
+                  - name
+                  type: object
+                type: array
+              inputStrategy:
+                description: |-
+                  InputStrategy defines how the inputs are combined when multiple
+                  input provider objects are used. Defaults to flattening all inputs
+                  from all providers into a single list of input sets.
+                properties:
+                  includeEmptyProviders:
+                    description: |-
+                      IncludeEmptyProviders controls how input providers that export no
+                      inputs are treated. Only applies when Name is Permute. When true, if
+                      any provider has zero inputs the resulting permutation set is empty
+                      (mathematically correct Cartesian product behavior). When false or
+                      unset (default), providers with zero inputs are silently skipped and
+                      the remaining providers still permute among themselves.
+                    type: boolean
+                  name:
+                    description: |-
+                      Name defines how the inputs are combined when multiple
+                      input provider objects are used. Supported values are:
+                      - Flatten: all inputs sets from all input provider objects are
+                        flattened into a single list of input sets.
+                      - Permute: all inputs sets from all input provider objects are
+                        combined using a Cartesian product, resulting in a list of input sets
+                        that contains every possible combination of input values.
+                        For example, if provider A has inputs [{x: 1}, {x: 2}] and provider B has
+                        inputs [{y: "a"}, {y: "b"}], the resulting input sets will be:
+                        [{x: 1, y: "a"}, {x: 1, y: "b"}, {x: 2, y: "a"}, {x: 2, y: "b"}].
+                        This strategy can lead to a large number of input sets and should be
+                        used with caution. Users should use filtering features from
+                        ResourceSetInputProvider to limit the amount of exported inputs.
+                    enum:
+                    - Flatten
+                    - Permute
+                    type: string
+                required:
+                - name
+                type: object
+                x-kubernetes-validations:
+                - message: includeEmptyProviders only applies when name is Permute
+                  rule: '!has(self.includeEmptyProviders) || self.name == ''Permute'''
+              inputs:
+                description: Inputs contains the list of ResourceSet inputs.
+                items:
+                  additionalProperties:
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: ResourceSetInput defines the key-value pairs of the
+                    ResourceSet input.
+                  type: object
+                type: array
+              inputsFrom:
+                description: |-
+                  InputsFrom contains the list of references to input providers.
+                  When set, the inputs are fetched from the providers and concatenated
+                  with the in-line inputs defined in the ResourceSet.
+                items:
+                  description: |-
+                    InputProviderReference defines a reference to an input provider resource
+                    in the same namespace as the ResourceSet.
+                  properties:
+                    apiVersion:
+                      description: |-
+                        APIVersion of the input provider resource.
+                        When not set, the APIVersion of the ResourceSet is used.
+                      enum:
+                      - fluxcd.controlplane.io/v1
+                      type: string
+                    kind:
+                      description: Kind of the input provider resource.
+                      enum:
+                      - ResourceSetInputProvider
+                      type: string
+                    name:
+                      description: |-
+                        Name of the input provider resource. Cannot be set
+                        when the Selector field is set.
+                      type: string
+                    selector:
+                      description: |-
+                        Selector is a label selector to filter the input provider resources
+                        as an alternative to the Name field.
+                      properties:
+                        matchExpressions:
+                          description: matchExpressions is a list of label selector
+                            requirements. The requirements are ANDed.
+                          items:
+                            description: |-
+                              A label selector requirement is a selector that contains values, a key, and an operator that
+                              relates the key and values.
+                            properties:
+                              key:
+                                description: key is the label key that the selector
+                                  applies to.
+                                type: string
+                              operator:
+                                description: |-
+                                  operator represents a key's relationship to a set of values.
+                                  Valid operators are In, NotIn, Exists and DoesNotExist.
+                                type: string
+                              values:
+                                description: |-
+                                  values is an array of string values. If the operator is In or NotIn,
+                                  the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                  the values array must be empty. This array is replaced during a strategic
+                                  merge patch.
+                                items:
+                                  type: string
+                                type: array
+                                x-kubernetes-list-type: atomic
+                            required:
+                            - key
+                            - operator
+                            type: object
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        matchLabels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                            map is equivalent to an element of matchExpressions, whose key field is "key", the
+                            operator is "In", and the values array contains only "value". The requirements are ANDed.
+                          type: object
+                      type: object
+                      x-kubernetes-map-type: atomic
+                  type: object
+                  x-kubernetes-validations:
+                  - message: at least one of name or selector must be set for input
+                      provider references
+                    rule: has(self.name) || has(self.selector)
+                  - message: cannot set both name and selector for input provider
+                      references
+                    rule: '!has(self.name) || !has(self.selector)'
+                type: array
+              resources:
+                description: Resources contains the list of Kubernetes resources to
+                  reconcile.
+                items:
+                  x-kubernetes-preserve-unknown-fields: true
+                type: array
+              resourcesTemplate:
+                description: |-
+                  ResourcesTemplate is a Go template that generates the list of
+                  Kubernetes resources to reconcile. The template is rendered
+                  as multi-document YAML, the resources should be separated by '---'.
+                  When both Resources and ResourcesTemplate are set, the resulting
+                  objects are merged and deduplicated, with the ones from Resources taking precedence.
+                type: string
+              serviceAccountName:
+                description: |-
+                  The name of the Kubernetes service account to impersonate
+                  when reconciling the generated resources.
+                type: string
+              wait:
+                description: |-
+                  Wait instructs the controller to check the health
+                  of all the reconciled resources.
+                type: boolean
+            type: object
+          status:
+            description: ResourceSetStatus defines the observed state of ResourceSet.
+            properties:
+              conditions:
+                description: Conditions contains the readiness conditions of the object.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              externalChecksumRefs:
+                description: |-
+                  ExternalChecksumRefs lists the ConfigMap and Secret references
+                  discovered in checksumFrom annotations on the last reconciliation
+                  that point to objects not rendered by this ResourceSet. Each entry
+                  has the form "Kind/namespace/name". It is used to trigger a
+                  reconciliation when one of the referenced objects changes.
+                items:
+                  type: string
+                type: array
+              history:
+                description: |-
+                  History contains the reconciliation history of the ResourceSet
+                  as a list of snapshots ordered by the last reconciled time.
+                items:
+                  description: |-
+                    Snapshot represents a point-in-time record of a group of resources reconciliation,
+                    including timing information, status, and a unique digest identifier.
+                  properties:
+                    digest:
+                      description: Digest is the checksum in the format `<algo>:<hex>`
+                        of the resources in this snapshot.
+                      type: string
+                    firstReconciled:
+                      description: FirstReconciled is the time when this revision
+                        was first reconciled to the cluster.
+                      format: date-time
+                      type: string
+                    lastReconciled:
+                      description: LastReconciled is the time when this revision was
+                        last reconciled to the cluster.
+                      format: date-time
+                      type: string
+                    lastReconciledDuration:
+                      description: LastReconciledDuration is time it took to reconcile
+                        the resources in this revision.
+                      type: string
+                    lastReconciledStatus:
+                      description: LastReconciledStatus is the status of the last
+                        reconciliation.
+                      type: string
+                    metadata:
+                      additionalProperties:
+                        type: string
+                      description: Metadata contains additional information about
+                        the snapshot.
+                      type: object
+                    totalReconciliations:
+                      description: TotalReconciliations is the total number of reconciliations
+                        that have occurred for this snapshot.
+                      format: int64
+                      type: integer
+                  required:
+                  - digest
+                  - firstReconciled
+                  - lastReconciled
+                  - lastReconciledDuration
+                  - lastReconciledStatus
+                  - totalReconciliations
+                  type: object
+                type: array
+              inventory:
+                description: |-
+                  Inventory contains a list of Kubernetes resource object references
+                  last applied on the cluster.
+                properties:
+                  entries:
+                    description: Entries of Kubernetes resource object references.
+                    items:
+                      description: ResourceRef contains the information necessary
+                        to locate a resource within a cluster.
+                      properties:
+                        id:
+                          description: |-
+                            ID is the string representation of the Kubernetes resource object's metadata,
+                            in the format '<namespace>_<name>_<group>_<kind>'.
+                          type: string
+                        v:
+                          description: Version is the API version of the Kubernetes
+                            resource object's kind.
+                          type: string
+                      required:
+                      - id
+                      - v
+                      type: object
+                    type: array
+                required:
+                - entries
+                type: object
+              lastAppliedRevision:
+                description: |-
+                  LastAppliedRevision is the digest of the
+                  generated resources that were last reconcile.
+                type: string
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile request value, so a change of the annotation value
+                  can be detected.
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+# Source: flux-operator/templates/aggregate-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-operator-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups:
+      - fluxcd.controlplane.io
+    resources:
+      - resourcesets
+      - resourcesetinputproviders
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - patch
+      - update
+---
+# Source: flux-operator/templates/aggregate-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-operator-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups:
+      - fluxcd.controlplane.io
+    resources:
+      - resourcesets
+      - resourcesetinputproviders
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Source: flux-operator/templates/web-standard-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-web-user
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: flux-operator/templates/web-standard-roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: flux-web-admin
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups:
+      - fluxcd.controlplane.io
+      - source.toolkit.fluxcd.io
+      - source.extensions.fluxcd.io
+      - kustomize.toolkit.fluxcd.io
+      - helm.toolkit.fluxcd.io
+      - image.toolkit.fluxcd.io
+      - notification.toolkit.fluxcd.io
+    resources: ["*"]
+    verbs:
+      - patch
+      - reconcile
+      - suspend
+      - resume
+      - download
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+    verbs:
+      - patch
+      - restart
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+      - jobs
+    verbs:
+      - create
+      - restart
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
+---
+# Source: flux-operator/templates/admin-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flux-operator
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: flux-operator
+    namespace: flux-system
+---
+# Source: flux-operator/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: flux-operator
+  namespace: flux-system
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  ports:
+    - port: 8080
+      targetPort: http-metrics
+      protocol: TCP
+      name: http
+    - port: 9080
+      targetPort: http-web
+      protocol: TCP
+      name: http-web
+  selector:
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+---
+# Source: flux-operator/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flux-operator
+  namespace: flux-system
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flux-operator
+      app.kubernetes.io/instance: flux-operator
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+      labels:
+        helm.sh/chart: flux-operator-0.48.0
+        app.kubernetes.io/name: flux-operator
+        app.kubernetes.io/instance: flux-operator
+        app.kubernetes.io/version: "v0.48.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: flux-operator
+      containers:
+        - name: manager
+          args:
+            - --log-level=info
+          env:
+            - name: RUNTIME_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: REPORTING_INTERVAL
+              value: 5m
+            - name: WEB_SERVER_PORT
+              value: "9080"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          image: "ghcr.io/controlplaneio-fluxcd/flux-operator:v0.48.0"
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - name: http-metrics
+              containerPort: 8080
+              protocol: TCP
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+            - name: http-web
+              containerPort: 9080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          volumeMounts:
+            - name: temp
+              mountPath: /tmp
+      volumes:
+        - name: temp
+          emptyDir: {}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+---
+# Source: flux-operator/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: flux-operator
+  namespace: flux-system
+  labels:
+    helm.sh/chart: flux-operator-0.48.0
+    app.kubernetes.io/name: flux-operator
+    app.kubernetes.io/instance: flux-operator
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  namespaceSelector:
+    matchNames:
+      - "flux-system"
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flux-operator
+      app.kubernetes.io/instance: flux-operator
+  endpoints:
+    - targetPort: 8080
+      path: /metrics
+      interval: 60s
+      scrapeTimeout: 30s
+
+---
+# Source: flux-instance/templates/instance.yaml
+apiVersion: fluxcd.controlplane.io/v1
+kind: FluxInstance
+metadata:
+  name: flux
+  namespace: flux-system
+  labels:
+    helm.sh/chart: flux-instance-0.48.0
+    app.kubernetes.io/name: flux-instance
+    app.kubernetes.io/instance: flux-instance
+    app.kubernetes.io/version: "v0.48.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  distribution:
+    version: "2.x"
+    registry: ghcr.io/fluxcd
+    artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.43.0
+  components: 
+    - source-controller
+    - kustomize-controller
+    - helm-controller
+    - notification-controller
+  cluster:
+    domain: cluster.local
+    multitenant: false
+    networkPolicy: false
+    tenantDefaultServiceAccount: default
+    type: kubernetes
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: flux
+  kustomize: 
+    patches:
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --concurrent=10
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --requeue-dependency=5s
+      target:
+        kind: Deployment
+        name: (kustomize-controller|helm-controller|source-controller)
+    - patch: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: all
+        spec:
+          template:
+            spec:
+              containers:
+                - name: manager
+                  resources:
+                    limits:
+                      memory: 2Gi
+      target:
+        kind: Deployment
+        name: (kustomize-controller|helm-controller|source-controller)
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --concurrent=20
+        - op: replace
+          path: /spec/template/spec/volumes/0
+          value:
+            name: temp
+            emptyDir:
+              medium: Memory
+      target:
+        kind: Deployment
+        name: kustomize-controller
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --helm-cache-max-size=10
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --helm-cache-ttl=60m
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --helm-cache-purge-interval=5m
+      target:
+        kind: Deployment
+        name: source-controller
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --feature-gates=OOMWatch=true
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --oom-watch-memory-threshold=95
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --oom-watch-interval=500ms
+      target:
+        kind: Deployment
+        name: helm-controller
+    - patch: |
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --feature-gates=DisableChartDigestTracking=true
+      target:
+        kind: Deployment
+        name: helm-controller
+    - patch: |-
+        - op: add
+          path: /spec/template/spec/containers/0/args/-
+          value: --feature-gates=CancelHealthCheckOnNewRevision=true
+      target:
+        kind: Deployment
+        name: kustomize-controller
+  sync:
+    kind: GitRepository
+    interval: 1h
+    url: https://github.com/lucadev/LFM-Team-Blue
+    ref: refs/heads/main
+    path: k8s/flux/cluster
+

@@ -1,1 +1,5 @@
 .idea/workspace.xml
+k8s/talos/machineconfig/
+.serena/
+.vscode/
+.DS_STORE
