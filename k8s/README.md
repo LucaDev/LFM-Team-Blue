@@ -88,6 +88,14 @@ Individuell (in unserem fall vmbr1)
 
 Optional: VirtIO RNG Device hinzufügen für bessere entropie
 
+PK enorllen:
+Choose the second option on the TALOS boot screen "Reboot into firmware interface".
+From there, go to Device manager > Secure boot configuration > secure boot mode > custom mode - press enter.
+Then go one menu option down to "custom secure boot options" > PK options > enroll pk > enroll pk using file - press enter.
+From there choose the first EFI disk > EFI > KEYS > uki-signing-cert.der - press enter.
+Choose "Commit changes and exit".
+Press ESC til you're back at the top level menu, then choose "Reset".
+
 Erstellen, dann 2x Klonen (k8s-02 und k8s-03)
 
 TalosCTL downloaden: https://docs.siderolabs.com/talos/v1.13/getting-started/talosctl
@@ -101,7 +109,7 @@ In unserem Fall
 
 Alternativ: auch mit DNS ansprechbar, wenn lokales DNS eingerichtet ist
 
-talosctl gen config k8s-cluster https://192.168.99.150:6443 --output-dir machineconfig -t talosconfig,controlplane --install-image factory.talos.dev/installer/1d9b01f30f1822446f7f123b3f2d95bffb99b9cad3467807a9308408b58dedda:v1.13.0 --config-patch @patch/cluster.yaml
+talosctl gen config k8s-cluster https://192.168.99.150:6443 --output-dir machineconfig -t talosconfig,controlplane --install-image factory.talos.dev/installer-secureboot/1d9b01f30f1822446f7f123b3f2d95bffb99b9cad3467807a9308408b58dedda:v1.13.0 --config-patch @patch/cluster.yaml
 
 talosctl apply-config --insecure --nodes 192.168.99.150,192.168.99.151,192.168.99.152 --file machineconfig/controlplane.yaml
 

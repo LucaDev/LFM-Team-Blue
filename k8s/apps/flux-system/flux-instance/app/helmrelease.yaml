@@ -23,7 +23,7 @@ spec:
       sync:
         kind: GitRepository
         url: https://github.com/lucadev/LFM-Team-Blue
-        ref: refs/heads/main
+        ref: "refs/heads/k8s"
         path: k8s/flux/cluster
         interval: 1h
       commonMetadata:

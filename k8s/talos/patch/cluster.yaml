@@ -3,12 +3,27 @@ cluster:
   allowSchedulingOnControlPlanes: true
   # A list of urls that point to additional manifests. We will use this to deploy Flux and the CNI (Cilium) initially, but we will later switch to using the manifests provided by Flux. This is because we want to have a single source of truth for our manifests and we want to be able to easily update them without having to update the Talos configuration.
   extraManifests:
-    - https://github.com/LucaDev/LFM-Team-Blue/raw/k8s/bootstrap/bootstrap.yaml
+    - https://raw.githubusercontent.com/LucaDev/LFM-Team-Blue/refs/heads/k8s/k8s/bootstrap/bootstrap.yaml
   # We disable the CNI and kube-proxy because we will use the ones provided by Flux.
   network:
     cni:
       name: none
   proxy:
     disabled: true
+machine:
+  systemDiskEncryption:
+    ephemeral:
+      provider: luks2
+      keys:
+        - slot: 0
+          tpm: {}
+    state:
+      provider: luks2
+      keys:
+        - slot: 0
+          tpm: {}
   # See: https://github.com/siderolabs/talos/pull/9200 TODO: test if this is still needed with the latest Talos version
-  forwardKubeDNSToHost: false
+  features:
+    hostDNS:
+      enabled: true
+      forwardKubeDNSToHost: false
