@@ -1,14 +1,8 @@
----
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ./namespace.yaml
-  - ./esphome/ks.yaml
   - ./homepage/ks.yaml
   - ./mosquitto/ks.yaml
   - ./homeassistant/ks.yaml
-  - ./zigbee2mqtt/ks.yaml
-  - ./whisper/ks.yaml
-  - ./homeassistant-maria/ks.yaml
-  - ./n8n/ks.yaml
