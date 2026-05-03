@@ -1,2 +1,170 @@
 \section{Krypto}
 \label{Krypto}
+Die Krypto-Architektur ergibt sich aus der Anforderung, Bitcoin-Transaktionen automatisiert durchführen zu können und gleichzeitig ein hohes Sicherheitsniveau sicherzustellen. 
+Die besondere Schweirigkeit besteht darin das Hot-Wallet direkt auf das Internet zurgreifen können muss und dementsprechend als internetexponiertes System einem erhöhten Risiko ausgesetzt ist.
+Dieses gilt es ausreichend vor Kompromittierung zu schützen da bei eben diesem Fall potenziell unmittelbar auf kryptographische Schlüssel zugegriffen werden könnte und dre Wallet-Inhalt transferiert werden könnte.  
+Aus diesem Grund wurde ein etabliertes Hot-/Cold-Wallet-Architekturmodell gewählt, wie es im institutionellen und betrieblichen Umfeld als Best Practice eingesetzt wird \cite{knowingbitcoin_hotcold, nadcab_custodial_arch}. Dieses Modell kombiniert operative Verfügbarkeit und Schlüsseltrennung und stellt die nötige Sicherheitsfunktion zur Anforderung des Mandanten dar.
+
+\subsection{Hot- und Cold-Wallet Architektur}
+
+Im Sinne einer klassischen Hot- und Cold-Wallet-Architektur hält das Hot-Wallet lediglich einen begrenzten Anteil der monetären Mittel (ca.\ 5\,\%), während der überwiegende Teil der Assets in Cold-Wallets verwahrt wird. Dieses Modell reduziert den potenziellen Schaden bei einer Kompromittierung des Online-Systems erheblich \cite{riskpublishing_hotcold}.  
+
+Während das Hot-Wallet für automatisierte Transaktionen genutzt wird, erfolgen Transfers aus dem Cold-Wallet ausschließlich kontrolliert und mit manueller Freigabe. Insbesondere Cold-to-Hot-Transfers werden bewusst nicht vollautomatisiert, da sie größere Wertbeträge betreffen \cite{knowingbitcoin_multisig_airgap}.
+
+\subsection{Hot-Wallet}
+
+Da die Hot-Wallet dauerhaft mit dem Internet verbunden ist, stellt sie die am stärksten exponierte Komponente der Architektur dar. Entsprechend wird dieses System besonders gehärtet und folgt strikt dem Prinzip der \emph{Segregation of Duties}. Ziel ist es, zu verhindern, dass ein einzelner Dienst Transaktionen eigenständig aufbauen, autorisieren und signieren kann \cite{nadcab_custodial_arch}.
+
+\subsubsection{Bitcoin Core Node}
+
+Bitcoin Core wird ausschließlich als Full Node ohne aktivierte Wallet-Funktion betrieben. Die Node übernimmt die Validierung von Blöcken und Transaktionen, Mempool-Verwaltung sowie Gebührenschätzungen, besitzt jedoch keine kryptographischen Schlüssel \cite{bitcoin_core_arch}.  
+
+Durch die Trennung von Node- und Wallet-Funktionalität wird verhindert, dass ein Angreifer nach einer Kompromittierung der Node Transaktionen direkt signieren oder veröffentlichen kann \cite{bitcoin_core_disablewallet}.
+
+\subsubsection{Transaktionsaufbau und Orchestrierung}
+
+Der Transaktionsaufbau erfolgt in einer dedizierten Orchestrierungs- und Middleware-Komponente. Diese überwacht den Wallet-Zustand, evaluiert definierte Thresholds und erstellt auf dieser Basis Transaktionsentwürfe (PSBTs oder Raw-TXs).  
+Sicherheitsrelevante Entscheidungen trifft diese Komponente nicht selbst, sondern übergibt Transaktions-Intents an eine dedizierte Policy-Instanz.
+
+\subsubsection{Open Policy Agent}
+
+Die autorisierende Entscheidung über Transaktionen erfolgt zentral über den Open Policy Agent (OPA). OPA evaluiert Transaktionsanfragen anhand konfigurierbarer Regeln wie Betragslimits, Whitelists, Zeitfenstern oder Velocity-Checks. Die Policy-Logik ist dabei vollständig von der Applikationslogik entkoppelt \cite{opa_docs, opa_microservices}.  
+
+OPA übernimmt die Policy‑Entscheidung (PDP), während die Middleware als Enforcement Point (PEP) die Ausführung strikt an das Ergebnis koppelt; Policy‑Entscheidungen werden revisionsfähig protokolliert.
+
+Diese Trennung erhöht die Wartbarkeit, Revisionssicherheit und Nachvollziehbarkeit sicherheitskritischer Entscheidungen.
+
+Folgende OPA Policies wurden im Zuge der System-operationalisierung erstellt, können jedoch anhand des use cases des Mandanten angepasst werden
+=====================================
+GUI script hierfür????
+
+
+\subsubsection{Signer-Instanz}
+
+Die Signer-Instanz stellt eine eigene Sicherheitsdomäne dar und hält keine Bitcoin-Private-Keys. Stattdessen erzeugt sie kryptographisch signierte Freigaben für Transaktionen.  
+Jede Freigabe ist eindeutig an den Hash der zugehörigen PSBT gebunden und dient als formaler Autorisierungsnachweis für die nachfolgenden Signaturschritte im Cold-Bereich.
+
+\subsubsection{Monitoring}
+
+Ein zentrales Monitoring überwacht den vollständigen Transaktions-Lifecycle sowie den Zustand der Hot-Wallet. Erfasst werden unter anderem Wallet-Balances, ausstehende Transaktionen und definierte Sicherheits-Thresholds.  
+Auffälligkeiten oder Grenzwertverletzungen werden automatisiert gemeldet und ermöglichen eine schnelle operationelle Reaktion.
+
+\subsubsection{Key Holder???}
+
+\subsection{Cold-Wallet}
+
+\subsubsection{Architektur}
+
+Das Cold-Wallet ist vollständig air-gapped und besitzt keinerlei Netzwerkverbindung. Die Systeme werden auf dedizierten virtuellen Maschinen betrieben, deren Netzwerkfunktionen sowohl auf Betriebssystem- als auch auf Hypervisor-Ebene deaktiviert sind \cite{airgap_psbt_guide}.  
+
+Als Betriebssystem kommt NixOS zum Einsatz, um reproduzierbare und minimalistische Konfigurationen zu gewährleisten. Sparrow Wallet fungiert als Multisig-Koordinator und PSBT-Handler oder als key Holder. Eine Instanz hält nicht beide Rollen gleichzeitig, wodurch eine weitere Sicherheitsschicht implementiert werden kann.  \cite{sparrow_docs, sparrow_multisig}.
+
+Das Cold-Wallet besteht aus drei separaten virtuellen Maschinen: zwei Key-Holder-Instanzen (Key\~B und Key\~C) sowie einer Koordinator-Instanz. Das Multisignature-Wallet ist als 2-aus-3-Modell konfiguriert. 
+
+Der Schlüssel des Hot-Wallets (Key\~A) ist integraler Bestandteil des operativen Prozesses. Transaktionen werden im Hot-System erzeugt und bereits initial mit Key\~A signiert. Die resultierende PSBT ist somit bei Eintritt in den Cold-Bereich bereits kryptographisch an den Hot-Wallet Schlüssel gebunden.
+
+Die in BIP‑174 definierten Rollen (Creator, Updater, Signer) beschreiben logische Verarbeitungsschritte, nicht zwingend getrennte Akteure. Dabei wird explizit erwähnt, dass Creator und Updator und Updator und Signer zusammengelegt werden dürfen. Dies impliziert die erlaubt Zusammenlegung von Creator und Signer, wie es hier designed wurde.
+Die Spezifikation sowie Referenzimplementierungen wie Bitcoin Core sehen ausdrücklich vor, dass eine einzelne Instanz mehrere dieser Rollen gleichzeitig übernehmen kann. Entsprechend ist es zulässig, dass das Hot‑Wallet eine PSBT nicht nur erstellt, sondern diese auch unmittelbar teilweise signiert, bevor sie an weitere Signer weitergegeben wird \textbackslash{}cite\{bip174, bitcoincore\_psbt\}.
+
+\begin{table}
+\centering
+
+\begin{tabular}{c c c}
+\textbf{Key} & \textbf{Ort} & \textbf{Rolle} \\
+\textbf{Key A} & Hot‑System & Operatives Signing \\
+\textbf{Key B} & Cold‑VM (air‑gapped) & Sicherheitsanker \\
+\textbf{Key C} & Cold‑VM (air‑gapped)& Recovery \\
+
+\end{tabular}
+
+\end{table}
+Durch dieses Vorgehen kann die Authentizität der Transaktion bereits vor der Koordination im Cold-Wallet nachgewiesen werden. Die nachgelagerten Cold-Signaturen durch Key\~B und Key\~C ergänzen diese initiale Signatur gemäß dem PSBT-Workflow \textbackslash{}cite\{bip174, bitcoincore\_psbt, sparrow\_multisig\}.
+
+Außerdem kann der Mandant nach Übergabe des simulierten System sich entscheiden dediziert Hardware Wallets anstatt der Key-Holder NixOS VM zu verwenden und dementsprechend das Aufsetzen von Schlüssel B und C abändern. Diese reinen hardware-Wallets können sich als sicherer als die von uns erstellten VM erweisen, jedoch war es uns nicht möglich aufgrund der Virtualisierung und Simulation als lab-Umgebung dies zu implementieren.
+
+Zur Wiederherstellung werden Seeds der Offline‑Signer (KeyB/KeyC) sowie der Wallet‑Descriptor/Xpub‑Satz separat und redundant gesichert. Durch das 2‑aus‑3‑Multisig‑Modell bleibt die Spend‑Fähigkeit auch bei Ausfall eines einzelnen Keys erhalten.
+
+\subsubsection{Rolle von Sparrow Wallet im Cold-Wallet}
+
+Sparrow Wallet fungiert im Cold-Wallet ausschließlich als Multisignature-Koordinator und PSBT-Handler. Die Applikation verwaltet keine vollständige Blockchain und besitzt keine Netzwerkverbindung. Private Keys verbleiben ausschließlich auf den jeweiligen Cold-Key-Systemen.
+
+Sparrow übernimmt im Cold-Bereich folgende Aufgaben:
+\begin{itemize}
+  \item Import und Anzeige freigegebener PSBTs,
+  \item Koordination der Multisignature-Signaturen,
+  \item Überprüfung der Skript- und Adressstruktur,
+  \item Zusammenführung und Finalisierung der Signaturen.
+\end{itemize}
+
+Durch die ausschließliche Nutzung von PSBTs wird sichergestellt, dass sensitive Schlüsselmaterialien das air-gapped System niemals verlassen und keine impliten Signaturschritte außerhalb der expliziten Benutzerinteraktion erfolgen.
+
+Sparrow multisig, nachverflogbarkeit und sicherheits features
+https://www.sparrowwallet.com/features/
+
+Anzuführen ist ebenfalls, dass sparrow im stable release im Nix-Store Probleme mit der JavaFX Bibliothek hatte und verschiedene Fenster nicht anzeigte (Panes omitted).
+Aufgrund dessen hatten wir uns für sparrow für die unstable Version entschieden, die Java25 nativ unterstütze und diese Probleme aufhob.
+
+\subsubsection{Sicherheitsmodell}
+
+Das Cold-Wallet ist als 2-aus-3-Multisignature-Wallet implementiert. Die erforderlichen Private Keys befinden sich auf voneinander isolierten Systemen.  
+Der Austausch von Transaktionsdaten erfolgt ausschließlich über PSBTs gemäß BIP-174, wodurch Private Keys das air-gapped System niemals verlassen \cite{bip174, psbt_dcentral}.
+
+Vor der Signatur muss jede PSBT eine kryptographisch verifizierte Freigabe der Signer-Instanz enthalten. Erst nach erfolgreicher Verifikation wird die Transaktion in Sparrow signiert \cite{psbt_workflows}.
+
+\paragraph{Hash-basierte Transaktionsfreigabe (Approval Layer)}
+
+Zusätzlich zur eigentlichen Bitcoin-Multisignature wird eine vorgeschaltete, hashbasierte Freigabeschicht eingesetzt. Diese dient nicht der Autorisierung von Bitcoin-Outputs, sondern der formalen und kryptographischen Freigabe einer Transaktion innerhalb des Systems. Dadurch kann auf Signer-VM kontrolliert werden, dass die Koordinator Instanz diese Transaktion freigegeben hat und sie nicht in-transit bearbeitet wurde.
+
+Dabei kann über scripts/auth/hash-keyGen.sh ein Schlüsselpaar auf der Koordinator Instanz generiert werden und der public key auf einem USB gespeichert werden.
+Dieser separate kryptographischen Schlüssel dient ausschließlich der Freigabe von psbt TX und schützt keine Bitcoin-Private-Keys schützt.
+Der USB wird dann auf der key B und key C VM eingesteckt, gemountet und über \texttt{scripts/auth/hash-keyStore.sh} der public Key extrahiert.
+Als weitere Sicherheitsebene muss der Nutzer die Übereinstimmung Hex-Signatur bei Erstellung des Schlüsselpaars und beim Speichern des public key verifizieren.
+Ohne dies könnte der public Key in transit ausgetauscht werden und die chain-of-trust wäre unterbrochen, was zur Verifizierung von nicht mit dem Koordinator abgestimmten TX genutzt werden könnte.
+
+Key\~A benötigt diese zusätzliche Hash-Verifikation nicht, da die Transaktion bereits initial im Hot-System erzeugt und signiert wird. Die Authentizität der PSBT kann somit bereits vor Eintritt in den Cold-Bereich kryptographisch nachvollzogen werden.
+Der spätere Broadcast im Hot-System stellt keinen sicherheitskritischen Schritt dar. Unvollständige oder manipulierte Transaktionen werden vom Bitcoin-Netzwerk abgewiesen, wodurch der Broadcast-Prozess keine zusätzliche Vertrauensannahme erfordert.
+
+Das script scripts/psbt/psbt-approve kann auf der Koordinator VM ausgeführt werden und erstellt zusätzliche XXX Artfekakte als Sicherheitsebene, welche die Freigabe eindeutig an genau eine PSBT-Version bindet
+Dieses enhält:
+\begin{itemize}
+  \item Metadaten zur Transaktion,
+  \item eine eindeutige Transaktions-ID,
+  \item einen kryptographischen Hash der zugehörigen PSBT.
+\end{itemize}
+  
+Zudem können diese dann auf der Key-Holder VM über \texttt{scripts/auth/hash-verify.sh} auf Übereinstimmung mit dem auf der VM gespeicherten key-material überprüft werden.
+
+Der xpub code zum Ausetzen der keyHolder Instanzen und der public Key für die hash Funktionalität kann beim Aufsetzen der sparrow-Wallets direkt mit transportiert werden.
+
+Die zusätzlcihe Hash-Kontrolle entfällt als nicht-Umsetzbar und meist bereits integriert beim Wechsel zu Hardware-krypto-Wallets.
+
+
+\subsection{Schnittstelle und Workflow}
+
+Der Datenaustausch zwischen Online- und Offline-Systemen erfolgt ausschließlich über ein dediziertes Wechselmedium. Pro Zeitpunkt befindet sich stets nur eine Transaktion auf dem Medium, wodurch Verwechslungen und Zustandsinkonsistenzen vermieden werden.
+
+Der workflowbasierte Ablauf gestaltet sich wie folgt:
+\begin{itemize}
+  \item Erstellung einer PSBT im Hot-System
+  \item Kryptographische Freigabe durch die Signer-Instanz
+  \item Verifikation der Freigabe und Multisig-Signatur im Cold-Wallet
+  \item Zusammenführung und Finalisierung der Signaturen
+  \item Broadcast der finalen Transaktion durch das Hot-System
+
+\end{itemize}
+
+Der Offline‑Workflow basiert auf PSBT gemäß BIP‑174, welches explizit Multi‑Signer- und Air‑gapped‑Signaturen unterstützt.
+
+
+https://bips.xyz/174
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\linewidth]{image.png}
+    \caption{Enter Caption}
+    \label{fig:placeholder}
+\end{figure}
+https://learnmeabitcoin.com/technical/transaction/psbt/
+
+
+Dieser Ansatz kombiniert automatisierte Abläufe mit gezielten manuellen Kontrollpunkten und stellt sicher, dass selbst bei einer vollständigen Kompromittierung des Online-Systems kein unautorisierter Zugriff auf Cold-Assets möglich ist.
