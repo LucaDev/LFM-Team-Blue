@@ -23,6 +23,5 @@ if [[ ! -x "$TARGET_REAL" ]]; then
 fi
 
 # Root-Abfrage + Terminal offen lassen + sichtbares Feedback
-exec pkexec env DISPLAY="${DISPLAY:-}" XAUTHORITY="${XAUTHORITY:-}" \
-  xfce4-terminal --hold --command \
+exec xfce4-terminal --hold --command \
   "bash -lc '\"$TARGET_REAL\"; echo; read -n1 -rsp \"Taste zum Schließen…\"'"

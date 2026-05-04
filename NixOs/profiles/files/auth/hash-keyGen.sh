@@ -33,9 +33,11 @@ umask 077
 # =========================
 # 0. Airgap sanity check (ignoriert)
 # =========================
-if grep -Eq '^\s*airgap\.enable\s*=\s*false\s*;' "$CFG"; then
+if grep -Eq '^\s*airgap\.enable\s*=\s*true\s*;' "$CFG"; then
   echo "airgap enabled"
 else
+  echo "system is online, aborting key generation for security reasons."
+  echo "Setze airgap.enable = true in $CFG und rebuild, um fortzufahren."
   exit 0
 fi
 
