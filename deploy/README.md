@@ -14,7 +14,7 @@
 ### 1.1 Namespaces / Trust Boundaries
 
 *   **`btc-hot` (online, Kubernetes/Talos)**  
-    Enthält: `middleware`, `tx-builder`, `policy-signer`, `opa`, `nats` (+ optional RPC-gateway)
+    Enthält: `middleware`, `tx-builder`, `policy-signer`, `opa`, `nats`, `sparrow` (Watch-Only GUI) (+ optional RPC-gateway)
 *   **`btc-net` (Bitcoin Netz Simulation, Kubernetes/Talos)**  
     Enthält: `bitcoind-regtest` (node-only), `regtest-miner`
 
@@ -72,6 +72,7 @@ repo/
         middleware.yaml
         tx-builder.yaml
         policy-signer.yaml
+        sparrow.yaml
         ntfy.yaml                  # optional ExternalName placeholder
         keycloak-rpc-gateway.yaml  # optional
         networkpolicies.yaml
@@ -94,6 +95,10 @@ repo/
       Dockerfile
       requirements.txt
       src/main.py
+      config/example.env
+    sparrow/
+      Dockerfile
+      src/start.sh
       config/example.env
 
   tools/

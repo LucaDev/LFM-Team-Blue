@@ -7,5 +7,6 @@ TAG="${TAG:-0.1.0}"
 docker push "$REG/middleware:$TAG"
 docker push "$REG/tx-builder:$TAG"
 docker push "$REG/policy-signer:$TAG"
+docker push "$REG/sparrow:$TAG"
 
 echo "Pushed images with TAG=$TAG"
