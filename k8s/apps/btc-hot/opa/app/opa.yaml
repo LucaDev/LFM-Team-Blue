@@ -1,0 +1,217 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-policies
+  namespace: btc-hot
+data:
+  hot.rego: |
+    package policy.hot
+
+    default allow := false
+
+    reasons := {r |
+      r := deny[_]
+    }
+
+    allow {
+      valid_input
+      not deny[_]
+    }
+
+    deny["missing required fields"] {
+      not valid_input
+    }
+
+    valid_input {
+      input.amount_sats > 0
+      input.target_address != ""
+      input.request_id != ""
+      input.tx_hash != ""
+      input.actor == "middleware"
+      input.network != ""
+    }
+
+    deny["network not allowed"] {
+      not data.networks.allowed[input.network]
+    }
+
+    deny["target address not whitelisted"] {
+      not address_whitelisted
+    }
+
+    address_whitelisted {
+      some a
+      a := data.hot.whitelist_addresses[_]
+      a == input.target_address
+    }
+
+    deny["amount exceeds hot max"] {
+      input.amount_sats > data.hot.limits.max_amount_sats
+    }
+
+    deny["missing tag"] {
+      data.hot.require_tag == true
+      not input.meta.tag
+    }
+
+    deny["daily velocity limit exceeded"] {
+      input.velocity.day_spent_sats + input.amount_sats > data.hot.limits.daily_spent_sats
+    }
+
+    deny["reason not allowed"] {
+      data.hot.allowed_reasons != null
+      not reason_allowed
+    }
+
+    reason_allowed {
+      some r
+      r := data.hot.allowed_reasons[_]
+      r == input.reason
+    }
+
+    limits := {
+      "max_amount_sats": data.hot.limits.max_amount_sats,
+      "daily_spent_sats": data.hot.limits.daily_spent_sats
+    }
+
+  refill.rego: |
+    package policy.refill
+
+    default allow_intent := false
+
+    notify_human := true
+
+    reasons := {r |
+      r := deny[_]
+    }
+
+    allow_intent {
+      valid_input
+      not deny[_]
+    }
+
+    deny["missing required fields"] {
+      not valid_input
+    }
+
+    valid_input {
+      input.network != ""
+      input.hot_balance_sats >= 0
+      input.thresholds.min_hot_sats > 0
+      input.thresholds.target_hot_sats >= input.thresholds.min_hot_sats
+      input.actor == "tx-builder"
+    }
+
+    deny["network not allowed"] {
+      not data.networks.allowed[input.network]
+    }
+
+    deny["hot balance not below min threshold"] {
+      input.hot_balance_sats >= input.thresholds.min_hot_sats
+    }
+
+    deny["refill cooldown not elapsed"] {
+      data.refill.cooldown_seconds > 0
+      input.last_refill_age_seconds < data.refill.cooldown_seconds
+    }
+
+    deny["recommended refill would exceed max"] {
+      recommended_amount_sats > data.refill.limits.max_refill_sats
+    }
+
+    recommended_amount_sats := rec {
+      base := input.thresholds.target_hot_sats - input.hot_balance_sats
+      base > 0
+      rec := clamp(base, data.refill.limits.min_refill_sats, data.refill.limits.max_refill_sats)
+    } else := 0
+
+    clamp(x, lo, hi) := y {
+      x < lo
+      y := lo
+    } else := y {
+      x > hi
+      y := hi
+    } else := y {
+      y := x
+    }
+
+  data.json: |
+    {
+      "networks": {
+        "allowed": {
+          "regtest": true,
+          "signet": false,
+          "testnet": false,
+          "mainnet": false
+        }
+      },
+      "hot": {
+        "limits": {
+          "max_amount_sats": 5000000,
+          "daily_spent_sats": 20000000
+        },
+        "require_tag": true,
+        "allowed_reasons": [
+          "external-withdrawal",
+          "ops",
+          "sweep-to-cold"
+        ],
+        "whitelist_addresses": [
+          "bcrt1qexampledestinationaddress000000000000000000000000",
+          "bcrt1qanotherexampledestinationaddress00000000000000000000"
+        ]
+      },
+      "refill": {
+        "cooldown_seconds": 3600,
+        "limits": {
+          "min_refill_sats": 500000,
+          "max_refill_sats": 50000000
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opa
+  namespace: btc-hot
+spec:
+  selector:
+    app: opa
+  ports:
+    - name: http
+      port: 8181
+      targetPort: 8181
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opa
+  namespace: btc-hot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opa
+  template:
+    metadata:
+      labels:
+        app: opa
+    spec:
+      containers:
+        - name: opa
+          image: openpolicyagent/opa:0.63.0
+          args:
+            - "run"
+            - "--server"
+            - "--addr=0.0.0.0:8181"
+            - "/policies"
+          ports:
+            - containerPort: 8181
+          volumeMounts:
+            - name: policies
+              mountPath: /policies
+      volumes:
+        - name: policies
+          configMap:
+            name: opa-policies

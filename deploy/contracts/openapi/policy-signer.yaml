@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: Policy Signer API (Hot auto-sign)
+  version: 0.1.0
+servers:
+  - url: http://policy-signer:8080
+paths:
+  /healthz:
+    get:
+      responses:
+        "200":
+          description: OK
+
+  /api/v1/sign:
+    post:
+      summary: Sign an unsigned PSBT (only if policy allows; binding required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id, unsigned_psbt_base64, tx_hash, policy_input]
+              properties:
+                request_id: { type: string, description: "idempotency key" }
+                unsigned_psbt_base64: { type: string, description: "Base64-encoded unsigned PSBT" }
+                tx_hash: { type: string, description: "canonical hash binding of the unsigned transaction" }
+                policy_input: { type: object, description: "OPA input (amount, dest, tags, etc.)" }
+      responses:
+        "200":
+          description: Signed PSBT
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [signed_psbt_base64]
+                properties:
+                  signed_psbt_base64: { type: string }
+        "403":
+          description: Denied by policy
+        "409":
+          description: Duplicate request_id (idempotent replay)
