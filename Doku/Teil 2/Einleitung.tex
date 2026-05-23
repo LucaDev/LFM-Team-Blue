@@ -1,0 +1,18 @@
+\chapter{KI-Evaluation - Ersetzen LLMs den Sicherheitsberater?}
+\section{Einleitung}
+
+Der Mandant wünscht eine kritische Evaluierung der Frage, ob KI-Modelle menschliche Sicherheitsberater in Zukunft zuverlässig bei der Konzeption und Konfiguration von Infrastrukturen ersetzen können. Um diese Fragestellung wissenschaftlich fundiert untersuchen zu können, wurden mehrere wissenschaftliche Arbeiten aus den Bereichen Software Engineering, Infrastructure-as-Code und Konfigurationssicherheit herangezogen. Diese Arbeiten evaluieren den Einsatz von \ac{LLMs} in  Szenarien, die mit der vorliegenden Aufgabenstellung vergleichbar sind. Die eigene Evaluation orientiert sich methodisch an diesen Arbeiten, wird jedoch an die eigene Fragestellung angepasst.
+
+Eine besonders relevante Arbeit ist \glqq Deployability-Centric Infrastructure-as-Code Generation: Fail, Learn, Refine, and Succeed through LLM-Empowered DevOps Simulation\grqq von Zhang et al. Die Autoren kritisieren, dass frühere Evaluationen durch \acs{LLMS}  generierten Infrastructure-as-Code lediglich die syntaktische Korrektheit der erzeugten Dateien betrachteten. Für den Einsatz von Infrastructture-as-Code reicht dies jedoch nicht aus. Ein Template kann syntaktisch korrekt sein und trotzdem beim tatsächlichen Deployment scheitern oder sicherheitskritische Fehlkonfigurationen enthalten. Aus diesem Grund entwickeln Zhang et al. mit DPIaC-Eval einen eigenen Benchmark, bei dem die Evaluation von durch \acs{LLMs}-generierten Infrastructure-as-Code mehrschrittig erfolgt. \cite{zhang2026deployabilitycentricinfrastructureascodegenerationfail}
+
+Die Prüfung läuft dabei in mehreren Schritten ab:
+
+\begin{enumerate}
+\item Prüfung auf Formatfehler
+\item Prüfung auf syntaktische Korrektheit
+\item Überprüfung durch ein tatsächliches Live-Deployment
+\end{enumerate}
+
+Zusätzlich untersuchen die Autoren, inwiefern die erzeugten Templates mit der ursprünglichen Anforderungen des Nutzers übereinstimmen und ob sie sicherheitsrelevante Anforderungen erfüllen. Damit bewerten sie nicht nur, ob der generierte Code formal korrekt ist, sondern auch, ob er deploybar und sicherheitskonform ist und die Anforderungen erfüllt. Die Ergebnisse zeigen, dass \acs{LLMs} in den ersten Versuchen nur geringe Erfolgsquoten erzielen. Viele erzeugte Templates waren entweder nicht deploybar, entsprachen nicht vollständig den Nutzeranforderungen oder verletzten Sicherheitsrichtlinien. \cite{zhang2026deployabilitycentricinfrastructureascodegenerationfail}
+
+Für die eigene Evaluationsmethode ist diese Arbeit besonders interessant, weil sie mehrere Qualitätsmerkmale getrennt voneinander betrachtet und damit den realen Entwicklungsprozess einer Infrastruktur besser nachbildet als eine reine Syntaxprüfung. Zentral sind dabei die Bereiche Deployability, User-Intent-Matching und Security-Compliance. Diese Trennung ist auch für die vorliegende Arbeit entscheidend: Ein LLM-Vorschlag für die Self-Hosted-Infrastruktur muss praktisch umsetzbar sein, die Anforderungen des Threat Models erfüllen und darf keine sicherheitskritischen Fehlkonfigurationen enthalten. Die Methodik von Zhang et al. ist daher eine wichtige Grundlage für die eigene Evaluation, muss jedoch auf den konkreten Kontext dieser Aufgabe übertragen werden.
