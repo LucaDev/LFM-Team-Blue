@@ -1,7 +1,7 @@
 from typing import Dict, Set
 from . import db
 from .bitcoind import get_height, get_block_hash, get_block_verbose2
-from .metrics import INDEX_HEIGHT
+from .metrics import INTENTS_TOTAL_HEIGHT
 
 def _script_hex_from_vout(vout: dict) -> str:
     spk = vout.get("scriptPubKey", {})
@@ -41,5 +41,5 @@ async def sync_chain(network: str):
                     db.upsert_utxo(txid, i, value_sats, script_hex, h)
 
         db.set_chain_state(network, h, bh)
-        INDEX_HEIGHT.labels(network=network).set(h)
+        INTENTS_TOTAL_HEIGHT.labels(network=network).set(h)
         h += 1

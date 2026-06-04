@@ -7,6 +7,8 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
+from typing import Optional
+import anyio
 
 from embit.psbt import PSBT
 
@@ -16,6 +18,9 @@ from .db import (
     upsert_psbt_artifact,
     update_intent_state,
 )
+
+class BroadcastRequest(BaseModel):
+    signed_rawtx_hex: str
 
 app = FastAPI()
 
@@ -256,9 +261,3 @@ async def get_psbt(intent_id: str, format: str = "base64"):
             raise HTTPException(404, "psbt not ready")
         r.raise_for_status()
         return r.json()
-
-@app.post("/api/v1/broadcast")
-async def broadcast(req: BroadcastRequest):
-    # Nur signierte TXs von Policy-Signer akzeptieren
-    if not verify_signer_signature(req.signed_rawtx_hex):
-        raise HTTPException(403, "invalid signature")

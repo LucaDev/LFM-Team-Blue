@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-import anyio
+import asyncio
 from fastapi import FastAPI, HTTPException
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import Response
@@ -89,7 +89,7 @@ async def periodic_chain_sync():
             UTXO_UNSPENT_GAUGE.labels(label="cold").set(unspent)
         except Exception as e:
             log.error("chain_sync_failed", extra={"service": SERVICE_NAME, "error": str(e)})
-        await anyio.sleep(5)
+        await asyncio.sleep(5)
 
 
 async def build_refill_psbt(intent: dict) -> Optional[bytes]:
@@ -178,14 +178,17 @@ async def startup():
     setup_logging(SERVICE_NAME)
     ensure_dir(Path(WORK_ROOT))
 
-    # start chain sync background task
-    anyio.create_task_group().start_soon(periodic_chain_sync)
+    asyncio.create_task(periodic_chain_sync())
 
-    # NATS subscribe
+    # NATS setup
     global nc
     nc = NATS()
     await nc.connect(servers=[NATS_URL])
-    await nc.subscribe(SUBJECT_REFILL_INTENT, cb=handle_refill_intent)
+
+    await nc.subscribe(
+        SUBJECT_REFILL_INTENT,
+        cb=handle_refill_intent
+    )
 
 
 @app.on_event("shutdown")
