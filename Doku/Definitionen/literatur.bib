@@ -202,6 +202,97 @@
 
 
 #Krypto
+@online{nist_zero_trust,
+  author = {Rose, Scott and Borchert, Oliver and Mitchell, Stu and Connelly, Sean},
+  title = {Zero Trust Architecture},
+  institution = {National Institute of Standards and Technology},
+  year = {2020},
+  doi = {10.6028/NIST.SP.800-207}
+}
+
+%Tools
+@online{bitcoin_core_docs,
+  author = {{Bitcoin Core Developers}},
+  title = {Bitcoin Core Documentation},
+  year = {2024},
+  url = {https://bitcoincore.org/en/doc/},
+  urldate = {2026-06-04}
+}
+
+@online{sparrow_quick,
+  author = {{Sparrow Wallets}},
+  title = {Quick Start Guide },
+  year = {202},
+  url = {https://www.sparrowwallet.com/docs/quick-start.html},
+  urldate = {2026-06-04}
+}
+
+@online{nixos_funktionsweise,
+  author = {{How does NixOS work?}},
+  title = {NixOs},
+  year = {},
+  url = {https://nixos.org/guides/how-nix-works/},
+  urldate = {2026-06-04}
+}
+
+@online{Wallets,
+  author = {{Bitcoindeveloper}},
+  title = {Wallets},
+  year = {-},
+  url = {https://developer.bitcoin.org/devguide/wallets.html},
+  urldate = {2026-06-04}
+}
+
+@online{Sparrow_Wallets_Features,
+  author = {{Sparrow Wallets}},
+  title = {Sparrow Wallets Features},
+  year = {2026},
+  url = {https://www.sparrowwallet.com/features/},
+  urldate = {2026-06-04}
+}
+
+@online{sparrow_docs,
+  author    = {{Sparrow Wallet}},
+  title     = {Sparrow Wallet Documentation},
+  year      = {2026},
+  url       = {https://www.sparrowwallet.com/docs/},
+  urlDate   = {2026-05-02}
+}
+
+@online{Sparrow_Wallets_Node_Connect,
+  author = {{Sparrow Wallets}},
+  title = {Connect to Bitcoin Core},
+  year = {2026},
+  url = {https://www.sparrowwallet.com/docs/connect-node.html},
+  urldate = {2026-06-04}
+}
+
+@online{Sparrow_Wallets_Best_Practices,
+  author = {{Sparrow Wallets}},
+  title = {Best Practices},
+  year = {2026},
+  url = {https://www.sparrowwallet.com/docs/best-practices.html},
+  urldate = {2026-06-04}
+}
+
+@misc{opa_docs,
+  author    = {{Open Policy Agent}},
+  title     = {Open Policy Agent Documentation},
+  year      = {2025},
+  url       = {https://www.openpolicyagent.org/docs},
+  urlDate   = {2026-05-02}
+}
+
+@article{opa_microservices,
+  author    = {{InfraCloud Technologies}},
+  title     = {Microservices Authorization with Open Policy Agent},
+  journal   = {InfraCloud Blog},
+  year      = {2020},
+  url       = {https://www.infracloud.io/blogs/opa-microservices-authorization-simplified/},
+  urlDate   = {2026-05-02}
+}
+
+%BTC security + architecture
 @article{knowingbitcoin_hotcold,
   author    = {{Knowing Bitcoin}},
   title     = {Bitcoin Security: Cold vs Hot Wallet Setup},
@@ -209,6 +300,31 @@
   year      = {2026},
   url       = {https://knowingbitcoin.com/bitcoin-cold-vs-hot-wallet-security/},
   urlDate   = {2026-05-02}
+}
+
+@article{knowingbitcoin_airgap,
+  author    = {{Knowing Bitcoin}},
+  title     = {Air-Gapped to Quantum: Bitcoin Security},
+  journal   = {Knowing Bitcoin},
+  year      = {2024},
+  url       = {https://knowingbitcoin.com/bitcoin-air-gapped-quantum-security/},
+  urlDate   = {2026-05-02}
+}
+
+@online{Hardware_VS_Cold-Wallet,
+  author = {{Ledger}},
+  title = {Hardware Wallets Vs Cold Wallets: What’s the Difference?},
+  year = {2022},
+  url = {https://www.ledger.com/academy/hardware-wallets-and-cold-wallets-whats-the-difference},
+  urldate = {2026-06-04}
+}
+
+@online{Hot_VS_Cold-Wallet,
+  author = {{Roy Gaurav}},
+  title = {Hot Wallet vs Cold Crypto Wallet: What’s The Difference?},
+  year = {2023},
+  url = {https://www.ledger.com/academy/topics/security/hot-wallet-vs-cold-crypto-wallet-whats-the-difference},
+  urldate = {2026-06-04}
 }
 
 @article{nadcab_custodial_arch,
@@ -229,6 +345,7 @@
   urlDate   = {2026-05-02}
 }
 
+%nochmal überlegen ob diese gebraucht
 @misc{bitcoin_core_arch,
   author    = {{Bitcoin Core Project}},
   title     = {Bitcoin Core Node Architecture},
@@ -237,32 +354,8 @@
   urlDate   = {2026-05-02}
 }
 
-@misc{bitcoin_core_disablewallet,
-  author    = {{Bitcoin Core Contributors}},
-  title     = {Bitcoin Core Wallet Disablement},
-  year      = {2019},
-  url       = {https://github.com/lightning-power-users/node-launcher/issues/152},
-  urlDate   = {2026-05-02}
-}
-
-@misc{opa_docs,
-  author    = {{Open Policy Agent}},
-  title     = {Open Policy Agent Documentation},
-  year      = {2025},
-  url       = {https://www.openpolicyagent.org/docs/security},
-  urlDate   = {2026-05-02}
-}
-
-@article{opa_microservices,
-  author    = {{InfraCloud Technologies}},
-  title     = {Microservices Authorization with Open Policy Agent},
-  journal   = {InfraCloud Blog},
-  year      = {2020},
-  url       = {https://www.infracloud.io/blogs/opa-microservices-authorization-simplified/},
-  urlDate   = {2026-05-02}
-}
-
-@misc{bip174,
+%psbt-Workflow
+@online{bip174,
   author    = {{Bitcoin Improvement Proposals}},
   title     = {BIP-174: Partially Signed Bitcoin Transactions},
   year      = {2017},
@@ -272,19 +365,10 @@
 
 @article{psbt_dcentral,
   author    = {{D-Central Technologies}},
-  title     = {Partially Signed Bitcoin Transactions Explained},
+  title     = {Partially Signed Bitcoin Transactions (PSBT): The Cypherpunk Standard for Collaborative Bitcoin Security},
   journal   = {D-Central},
   year      = {2026},
   url       = {https://d-central.tech/everything-you-need-to-know-about-partially-signed-bitcoin-transactions/},
-  urlDate   = {2026-05-02}
-}
-
-@article{psbt_workflows,
-  author    = {{CryptoAdventure}},
-  title     = {PSBT Workflows Explained},
-  journal   = {CryptoAdventure},
-  year      = {2026},
-  url       = {https://cryptoadventure.com/psbt-workflows-explained-offline-signing-air-gapped-qr-and-multisig-coordination/},
   urlDate   = {2026-05-02}
 }
 
@@ -294,14 +378,6 @@
   journal   = {BitcoinSafe},
   year      = {2026},
   url       = {https://www.bitcoinsafe.com/en/guides/air-gapped-psbt-basics},
-  urlDate   = {2026-05-02}
-}
-
-@misc{sparrow_docs,
-  author    = {{Sparrow Wallet}},
-  title     = {Sparrow Wallet Documentation},
-  year      = {2026},
-  url       = {https://www.sparrowwallet.com/docs/},
   urlDate   = {2026-05-02}
 }
 
