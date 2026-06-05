@@ -25,3 +25,10 @@ async def sign(req: dict):
 
     # TODO: real signing (HSM/KMS). Currently not implemented.
     raise HTTPException(501, "signing not implemented (placeholder)")
+
+@app.get("/health")
+async def health():
+    return {
+        "service": "middleware",
+        "status": "ok"
+    }

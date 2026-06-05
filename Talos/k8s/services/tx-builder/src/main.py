@@ -28,19 +28,18 @@ NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 WORK_ROOT = os.getenv("WORK_ROOT", "/var/lib/btc-work/psbt-work")
 
-# Refill target output script (scriptPubKey hex for hot deposit)
-HOT_DEPOSIT_SCRIPT_HEX = os.getenv("HOT_DEPOSIT_SCRIPT_HEX", "").lower()
-
-# Change script for cold (watch script) - MVP: you can set to a cold change scriptPubKey
-COLD_CHANGE_SCRIPT_HEX = os.getenv("COLD_CHANGE_SCRIPT_HEX", "").lower()
-
 # Fee estimation config
 FEE_TARGET_BLOCKS = int(os.getenv("FEE_TARGET_BLOCKS", "6"))
 VIN_VB_P2WSH = int(os.getenv("VIN_VB_P2WSH", "104"))
 VOUT_VB = int(os.getenv("VOUT_VB", "31"))
 
-SUBJECT_REFILL_INTENT = "intent.refill.created"
-SUBJECT_REFILL_PSBT_CREATED = "intent.refill.psbt_created"
+SUBJECT_BUILD_INTENT = "intent.psbt.build.requested"
+
+HOT_DEPOSIT_SCRIPT_HEX = os.getenv("HOT_DEPOSIT_SCRIPT_HEX", "").lower()
+COLD_CHANGE_SCRIPT_HEX = os.getenv("COLD_CHANGE_SCRIPT_HEX", "").lower()
+
+MAX_FEE_SATS = int(os.getenv("MAX_FEE_SATS", "50000"))
+MAX_FEE_RATE_SAT_VB = int(os.getenv("MAX_FEE_RATE_SAT_VB", "50"))
 
 log = logging.getLogger("tx-builder")
 
@@ -91,34 +90,34 @@ async def periodic_chain_sync():
             log.error("chain_sync_failed", extra={"service": SERVICE_NAME, "error": str(e)})
         await asyncio.sleep(5)
 
-
-async def build_refill_psbt(intent: dict) -> Optional[bytes]:
-    if not HOT_DEPOSIT_SCRIPT_HEX or not COLD_CHANGE_SCRIPT_HEX:
-        raise RuntimeError("HOT_DEPOSIT_SCRIPT_HEX and COLD_CHANGE_SCRIPT_HEX must be configured")
-
+async def build_psbt_for_intent(intent: dict) -> Optional[bytes]:
     intent_id = intent["intent_id"]
     amount_sats = int(intent.get("amount_sats", 0))
     if amount_sats <= 0:
         return None
 
-    # Get UTXOs for cold label
     utxos = db.list_unspent("cold", limit=500)
 
-    # Estimate fee rate
     sat_vb = await estimate_sat_per_vb(FEE_TARGET_BLOCKS)
 
-    # coin selection loops fee estimation
-    # assume 2 outputs: hot deposit + change
     chosen, total = select_utxos(utxos, amount_sats)
     if not chosen:
         return None
 
-    # compute fee with chosen inputs
     n_in = len(chosen)
     vbytes = estimate_vbytes(n_in, 2, VIN_VB_P2WSH, VOUT_VB)
-    fee = sat_vb * vbytes
 
-    # re-select with fee
+    #Absolute fee
+    fee = sat_vb * vbytes
+    if fee > MAX_FEE_SATS:
+        log.error("fee_too_high", extra={"fee": fee})
+        return None
+
+    #fee rate
+    fee_rate = fee / vbytes
+    if fee_rate > MAX_FEE_RATE_SAT_VB:
+        return None
+
     chosen, total = select_utxos(utxos, amount_sats + fee)
     if not chosen:
         return None
@@ -132,12 +131,17 @@ async def build_refill_psbt(intent: dict) -> Optional[bytes]:
         return None
 
     outputs = [(HOT_DEPOSIT_SCRIPT_HEX, amount_sats)]
-    psbt_bytes = build_psbt(chosen, outputs, COLD_CHANGE_SCRIPT_HEX, change_sats=change)
-    return psbt_bytes
+
+    return build_psbt(chosen, outputs, COLD_CHANGE_SCRIPT_HEX, change_sats=change)
 
 
-async def handle_refill_intent(msg):
+#Called from middleware
+async def handle_intent_build(msg):
     global nc
+    if not nc or not nc.is_connected:
+        log.error("nats_not_initialized")
+        return
+        
     try:
         intent = json.loads(msg.data.decode("utf-8"))
         intent_id = intent.get("intent_id")
@@ -147,10 +151,20 @@ async def handle_refill_intent(msg):
         INTENTS_TOTAL.labels(type="refill", result="received").inc()
 
         # build psbt
-        psbt_bytes = await build_refill_psbt(intent)
+        psbt_bytes = await build_psbt_for_intent(intent)
         if not psbt_bytes:
             PSBT_BUILT_TOTAL.labels(result="failed").inc()
             INTENTS_TOTAL.labels(type="refill", result="no-psbt").inc()
+
+            evt = {
+                "intent_id": intent_id,
+                "created_utc": utc_now_iso(),
+                "error": "psbt_build_failed"
+            }
+
+            if nc:
+                await nc.publish("intent.psbt.failed", json.dumps(evt).encode())
+
             return
 
         meta = {
@@ -164,13 +178,19 @@ async def handle_refill_intent(msg):
         INTENTS_TOTAL.labels(type="refill", result="psbt-created").inc()
 
         evt = {"intent_id": intent_id, "created_utc": utc_now_iso(), "psbt_ready": True}
-        if nc:
-            await nc.publish(SUBJECT_REFILL_PSBT_CREATED, json.dumps(evt).encode("utf-8"))
 
-        log.info("refill_psbt_created", extra={"service": SERVICE_NAME, "intent_id": intent_id})
+        if nc:
+            await nc.publish(
+                "intent.psbt.created",
+                json.dumps({
+                    "intent_id": intent_id,
+                    "psbt_ready": True,
+                    "created_utc": utc_now_iso()
+                }).encode()
+            )
 
     except Exception as e:
-        log.error("refill_intent_handler_failed", extra={"service": SERVICE_NAME, "error": str(e)})
+        log.error("intent_handler_failed", extra={"service": SERVICE_NAME, "error": str(e)})
 
 
 @app.on_event("startup")
@@ -185,10 +205,27 @@ async def startup():
     nc = NATS()
     await nc.connect(servers=[NATS_URL])
 
-    await nc.subscribe(
-        SUBJECT_REFILL_INTENT,
-        cb=handle_refill_intent
+    log.info(
+        "nats_connected",
+        extra={
+            "service": SERVICE_NAME,
+            "nats_url": NATS_URL
+        }
     )
+
+    await nc.subscribe(
+        SUBJECT_BUILD_INTENT,
+        cb=handle_intent_build
+    )
+
+    log.info(
+        "nats_subscribed",
+        extra={
+            "subject": SUBJECT_BUILD_INTENT
+        }
+    )
+
+    log.info("tx-builder_started")
 
 
 @app.on_event("shutdown")
@@ -196,3 +233,4 @@ async def shutdown():
     global nc
     if nc:
         await nc.drain()
+    log.info("tx-shutdown")

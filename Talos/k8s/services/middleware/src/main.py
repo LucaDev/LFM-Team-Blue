@@ -8,7 +8,12 @@ import httpx
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
-import anyio
+import asyncio
+
+from .opa_client import OPAClient
+from .opa_mapper import to_opa_input
+
+from .db import update_intent_state
 
 from embit.psbt import PSBT
 
@@ -56,10 +61,6 @@ def is_hex(s: str) -> bool:
     except Exception:
         return False
     
-# middleware/src/main.py — fehlt:
-async def subscribe_nats():
-    await nc.subscribe("tx_hot_requested", cb=handle_hot_tx)
-
 class PsbtExtractRequest(BaseModel):
     psbt_base64: str
 
@@ -232,10 +233,10 @@ async def archive_broadcasted(
     )
 
     # psycopg is sync -> run in thread
-    await anyio.to_thread.run_sync(upsert_archived_tx, rec)
+    await asyncio.to_thread(upsert_archived_tx, rec)
 
     if intent_id:
-        await anyio.to_thread.run_sync(
+        await asyncio.to_thread(
             upsert_psbt_artifact,
             intent_id,
             "final",
@@ -243,7 +244,6 @@ async def archive_broadcasted(
             sha256_hex(psbt_bytes),
             len(psbt_bytes),
         )
-        await anyio.to_thread.run_sync(update_intent_state, intent_id, "BROADCAST")
 
     return {"stored": True, "archive_path": archive_path}
 from typing import Optional
@@ -261,3 +261,80 @@ async def get_psbt(intent_id: str, format: str = "base64"):
             raise HTTPException(404, "psbt not ready")
         r.raise_for_status()
         return r.json()
+
+@app.get("/health")
+async def health():
+    return {
+        "service": "middleware",
+        "status": "ok"
+    }
+
+@app.on_event("startup")
+async def startup():
+    global nc
+    nc = NATS()
+    await nc.connect(servers=[os.getenv("NATS_URL")])
+
+    async def message_handler(msg):
+        data = json.loads(msg.data.decode())
+        await handle_intent(data, nc)
+
+    await nc.subscribe(
+        "intent.created",
+        cb=message_handler
+    )
+
+
+#OPA Interface
+opa = OPAClient()
+async def handle_intent(intent: dict, nc):
+    opa_input = to_opa_input(intent)
+
+    await asyncio.to_thread(
+        update_intent_state,
+        intent["intent_id"],
+        "RECEIVED",
+        {"received_at": utc_now_iso(), "source": "middleware"}
+    )
+
+    decision = await opa.evaluate_hot_intent(opa_input)
+
+    result = decision.get("result", {})
+    allowed = result.get("allow", False)
+    reasons = result.get("reasons", [])
+
+    if not allowed:
+        await asyncio.to_thread(
+            update_intent_state,
+            intent["intent_id"],
+            "OPA_REJECTED",
+            decision
+        )
+
+        await nc.publish(
+            "intent.rejected",
+            json.dumps({
+                "intent_id": intent.get("intent_id"),
+                "reasons": reasons
+            }).encode()
+        )
+        return
+
+    await asyncio.to_thread(
+        update_intent_state,
+        intent["intent_id"],
+        "OPA_APPROVED",
+        decision
+    )
+    await nc.publish(
+        "intent.build.requested",
+        json.dumps({
+            "intent_id": intent["intent_id"],
+            "network": intent.get("network"),
+            "amount_sats": intent.get("amount_sats"),
+            "target_address": intent.get("target_address"),
+            "reason": intent.get("reason"),
+            "meta": intent.get("meta", {}),
+            "approved_at": utc_now_iso()
+    }).encode()
+)
