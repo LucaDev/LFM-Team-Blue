@@ -67,22 +67,22 @@ export GNUPGHOME
 # 3. GPG Key erzeugen (nur wenn noch keiner existiert)
 # =========================
 if gpg --list-secret-keys --with-colons 2>/dev/null | grep -q '^sec:'; then
-  die "Es existiert bereits ein GPG Private Key in $GNUPGHOME. Abbruch."
-fi
+  echo "Es existiert bereits ein GPG Private Key in $GNUPGHOME. skipping Erstellung."
+else
+  info "Erzeuge neuen GPG Key (offline)…"
 
-info "Erzeuge neuen GPG Key (offline)…"
-
-cat > "$STATE_DIR/keyparams" <<EOF
-%no-protection
-Key-Type: RSA
-Key-Length: $KEY_BITS
-Name-Real: $KEY_NAME_REAL
-Name-Email: $KEY_NAME_EMAIL
-Expire-Date: 0
-%commit
+  cat > "$STATE_DIR/keyparams" <<EOF
+  %no-protection
+  Key-Type: RSA
+  Key-Length: $KEY_BITS
+  Name-Real: $KEY_NAME_REAL
+  Name-Email: $KEY_NAME_EMAIL
+  Expire-Date: 0
+  %commit
 EOF
 
-gpg --batch --gen-key "$STATE_DIR/keyparams"
+  gpg --batch --gen-key "$STATE_DIR/keyparams"
+fi
 
 # =========================
 # 4. Public Key + Fingerprint exportieren

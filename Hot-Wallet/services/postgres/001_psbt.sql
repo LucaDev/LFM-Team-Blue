@@ -1,6 +1,3 @@
--- Schema: btc
--- Target: PostgreSQL >= 13
-
 BEGIN;
 
 CREATE SCHEMA IF NOT EXISTS btc;
@@ -11,7 +8,7 @@ CREATE SCHEMA IF NOT EXISTS btc;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'psbt_type') THEN
-    CREATE TYPE btc.psbt_type AS ENUM ('hot-tx', 'refill');
+    CREATE TYPE btc.psbt_type AS ENUM ('hot', 'cold');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'psbt_state') THEN
@@ -19,21 +16,24 @@ BEGIN
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'wallet_type') THEN
-    CREATE TYPE btc.wallet_type AS ENUM ('hot', 'cold');
+    CREATE TYPE btc.wallet_type AS ENUM ('hot', 'cold', 'ext');
   END IF;
 END $$;
 
 CREATE TABLE IF NOT EXISTS btc.wallet (
     wallet_id        TEXT PRIMARY KEY,
+    wallet_name        TEXT NOT NULL,
     wallet_type      btc.wallet_type NOT NULL,
     network          TEXT NOT NULL,
 
-    xpub             TEXT NOT NULL,
+    xpub             TEXT,
 
     derivation_path  TEXT,
     master_fingerprint TEXT,
 
     active           BOOLEAN NOT NULL DEFAULT true,
+    next_scan_index  INTEGER DEFAULT 0, 
+    descriptor        TEXT NOT NULL,
 
     created_utc      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -73,13 +73,11 @@ CREATE TABLE IF NOT EXISTS btc.opa_decision (
   reasons          TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 
   input            JSONB NOT NULL,             -- exact OPA input
-  result           JSONB NOT NULL,             -- exact OPA result
+  result           JSONB NOT NULL,             -- exact OPA output
 
   created_utc      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_policy_psbt_created ON btc.policy_decision (psbt_id, created_utc DESC);
-CREATE INDEX IF NOT EXISTS idx_policy_name_created ON btc.policy_decision (policy_name, created_utc DESC);
 
 -- gen_random_uuid() needs pgcrypto
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

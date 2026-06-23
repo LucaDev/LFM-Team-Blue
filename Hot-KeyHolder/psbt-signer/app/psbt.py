@@ -1,5 +1,7 @@
-import io
+#!/usr/bin/env python3
+
 from embit.psbt import PSBT
+import base64
 
 class PSBTError(Exception):
     pass
@@ -12,17 +14,26 @@ def load_psbt(psbt_bytes: bytes) -> PSBT:
         raise PSBTError(f"INVALID_PSBT: {e}")
 
 
-def serialize_psbt(psbt) -> bytes:
-    return psbt.serialize()
+def encode_psbt(psbt: PSBT) -> str:
+    try:
+        return base64.b64encode(psbt.serialize()).decode()
+    except Exception as e:
+        raise PSBTError(f"ENCODE_FAILED: {e}")
 
-def finalize_psbt(psbt_bytes: bytes) -> PSBT:
-    psbt = PSBT.parse(psbt_bytes)
-
-    psbt.finalize()  # important step
-
-    return psbt
+def decode_psbt(psbt_b64: str) -> PSBT:
+    try:
+        raw = base64.b64decode(psbt_b64)
+        return PSBT.parse(raw)
+    except Exception as e:
+        raise PSBTError(f"DECODE_FAILED: {e}")
+    
 
 def extract_rawtx(psbt: PSBT) -> str:
-    tx = psbt.extract_tx()
-
-    return tx.serialize().hex()
+    try:
+        tx = psbt.psbt.tx                        #Ist final kontrolle, failed, wenn es nciht funktioniert
+        return tx.serialize().hex()
+    except Exception as e:
+        raise PSBTError(f"EXTRACT_FAILED: {e}")
+    
+def psbt_serialize(psbt: PSBT) -> str:
+        return psbt.serialize()

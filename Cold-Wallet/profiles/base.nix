@@ -56,6 +56,10 @@
     source = ./files/setup/mnt-USB.sh;
     mode   = "0755";
   };
+  environment.etc."scripts/setup/umnt-USB.sh" = {
+    source = ./files/setup/umnt-USB.sh;
+    mode   = "0755";
+  };
   environment.etc."scripts/setup/format-USB.sh" = {
     source = ./files/setup/format-USB.sh;
     mode   = "0755";
@@ -107,6 +111,10 @@
     source = ./files/wrappers/mnt-USB.sh;
     mode   = "0755";
   };
+  environment.etc."scripts/wrappers/umnt-USB.sh" = {
+    source = ./files/wrappers/umnt-USB.sh;
+    mode   = "0755";
+  };
   environment.etc."scripts/wrappers/format-USB.sh" = {
     source = ./files/wrappers/format-USB.sh;
     mode   = "0755";
@@ -132,7 +140,6 @@
   #Legt Ordner beim Boot an (oder beim tmpfiles-setup)
   systemd.tmpfiles.rules = [
     "d /home/user/Desktop 0750 user users - -"
-    "d /home/user/Desktop/psbt 0750 user users - -"
     "d /home/user/bin 0750 user users - -"
     "d /home/user/Desktop/scripts 0750 user users - -"
     "d /home/user/Desktop/scripts/auth 0750 user users - -"
@@ -148,6 +155,7 @@
     "L+ /home/user/Desktop/scripts/setup/setup.sh - - - - /etc/scripts/wrappers/setup.sh"
     "L+ /home/user/Desktop/scripts/setup/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
+    "L+ /home/user/Desktop/scripts/setup/umnt-USB.sh - - - - /etc/scripts/wrappers/umnt-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/setup/README.md"
 
     "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/wrappers/psbt-approve.sh"

@@ -11,6 +11,9 @@
     ./profiles/network.nix
   ];
 
+
+  nix.settings.download-buffer-size = 268435456; # 256MB
+  
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   

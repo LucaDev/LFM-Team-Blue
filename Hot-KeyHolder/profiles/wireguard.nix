@@ -4,11 +4,8 @@
   systemd.services.wg-keygen = {
     description = "Generate WireGuard keypair on first boot";
 
-    wantedBy = [ "multi-user.target" ];
-
-    before = [
-      "network.target"
-    ];
+    wantedBy = [ "wireguard-wg0.service" ];
+    before = [ "wireguard-wg0.service" ];
 
     serviceConfig = {
       Type = "oneshot";
@@ -16,26 +13,26 @@
     };
 
     script = ''
-      mkdir -p /etc/wireguard
+      umask 077
+      mkdir -p /var/lib/wireguard/
+      
+      PRIVATE_KEY_FILE="/var/lib/wireguard/private.key"
+      PUBLIC_KEY_FILE="/var/lib/wireguard/public.key"
 
-      if [ ! -f /etc/wireguard/private.key ]; then
-        umask 077
-
+      if [ ! -f "$PRIVATE_KEY_FILE" ]; then
         ${pkgs.wireguard-tools}/bin/wg genkey \
-          | tee /etc/wireguard/private.key \
+          | tee "$PRIVATE_KEY_FILE" \
           | ${pkgs.wireguard-tools}/bin/wg pubkey \
-          > /etc/wireguard/public.key
+          > "$PUBLIC_KEY_FILE"
       fi
+      
     '';
   };
 
   networking.wireguard.interfaces.wg0 = {
     ips = [ "10.10.0.2/24" ];
-
     listenPort = 51820;
 
-    privateKeyFile = "/etc/wireguard/private.key";
-
-    peers = [ ];
+    privateKeyFile = "/var/lib/wireguard/private.key";
   };
 }

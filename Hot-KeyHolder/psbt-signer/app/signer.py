@@ -1,14 +1,35 @@
-from fastapi import FastAPI, Request, HTTPException
+#!/usr/bin/env python3
 
-from app.auth import verify_request, AuthError
-from app.psbt import decode_psbt, encode_psbt, extract_rawtx, finalize_psbt
-from app.engine import sign_psbt
+from fastapi import FastAPI, Request, HTTPException
+import json
+import base64
+import logging
+from .auth import verify_request, AuthError
+from .psbt import (
+    decode_psbt,
+    encode_psbt,
+    extract_rawtx,
+    psbt_serialize,
+    PSBTError
+)
+from .db import insert_psbt
+from .engine import sign_psbt
 import hashlib
-from Ttpm2.PyTpm2 import TPMError
+from psycopg.errors import UniqueViolation
 
 app = FastAPI()
 
-SIGNING_SECRET = open("/run/keys/signer_secret").read().strip()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
+
+log = logging.getLogger(__name__)
+
+SIGNER_HMAC_SECRET = "/psbt-signer/run/secrets/hmac.secret"
+
+with open(SIGNER_HMAC_SECRET, "r") as f:
+    SIGNING_SECRET = bytes.fromhex(f.read().strip())
 
 
 @app.post("/sign")
@@ -19,45 +40,96 @@ async def sign(request: Request):
     nonce = request.headers.get("X-Nonce")
     sig = request.headers.get("X-Signature")
 
+    log.info(
+        "received psbt",
+        extra={
+            "ts": ts,
+            "nonce": nonce,
+            "sig": sig,
+        }
+    )
+
+    #Verify HMAC key
     try:
         verify_request(SIGNING_SECRET, body, ts, nonce, sig)
     except AuthError as e:
         raise HTTPException(401, str(e))
 
-    data = await request.json()
 
-    psbt_b64 = data["psbt_base64"]
+    #extract data
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(400, "Invalid JSON body")
 
-    psbt_bytes = decode_psbt(psbt_b64)
-    response = {"intent_id": data.get("intent_id"),}
+    psbt_b64 = data.get("psbt")
+
+    if not psbt_b64:
+        raise HTTPException(400, "missing psbt_base64")
+    
+    psbt_bytes = base64.b64decode(psbt_b64)
+
+    #sha256 check. gegen manipulationd der psbt
+    if hashlib.sha256(psbt_bytes).hexdigest() != data.get("sha256"):
+        raise HTTPException(
+            status_code=400,
+            detail="sha256 mismatch (PSBT tampering detected)"
+        )
 
     try:
-        signed = sign_psbt(psbt_bytes)
-    except TPMError as e:
-        raise HTTPException(503, str(e))
+        insert_psbt(data)
+    except UniqueViolation:
+        return {
+            "status": "ALREADY_PROCESSED",
+            "psbt_id": data.get("psbt_id")
+        }
+
+    response = {
+        "psbt_id": data.get("psbt_id")
+    }
+    
+
+    #Decode
+    try:
+        psbt = decode_psbt(psbt_b64)
+    except PSBTError as e:
+        raise HTTPException(400, str(e))
+
+
+    #Sign
+    try:
+        psbt_signed = sign_psbt(psbt)
     except Exception as e:
         raise HTTPException(500, str(e))
     
-    if data.get("type") == "hot-tx":
+
+    #Hot-Tx worfflow
+    if data.get("wallet_type") == "hot":
         # FINALIZE PSBT
         try:
-            finalized = finalize_psbt(signed)
-        except Exception as e:
-            raise HTTPException(500, f"finalize failed: {e}")
+            #extract directly
+            raw_tx_final = extract_rawtx(psbt_signed)
 
-        # EXTRACT RAW TX
-        try:
-            psbt_out = extract_rawtx(finalized)
-            response["psbt_type"] = "rawtx"
-            response["rawtx_hex"] = psbt_out
-            response["sha256"] = hashlib.sha256(psbt_out.encode()).hexdigest()
-        except Exception as e:
-            raise HTTPException(500, f"extract tx failed: {e}")
+        except PSBTError as e:
+            raise HTTPException(500, f"FINALIZE_OR_EXTRACT_FAILED: {e}")
         
+        response.update({
+            "wallet_type": data.get("wallet_type"),
+            "rawtx_hex": raw_tx_final,
+            "sha256": hashlib.sha256(bytes.fromhex(raw_tx_final)).hexdigest()
+        })
+    
+    #Refill workflow
     else:
-        # refill = 2-of-3 / not finalizable here
-        response["signed_psbt_base64"] = encode_psbt(signed)
-        response["psbt_type"] = "psbt"
+        #refill = 2-of-3 / not finalizable here
+        try:
+            response.update({
+                "wallet_type": data.get("wallet_type"),
+                "signed_psbt_base64": encode_psbt(psbt_signed),
+                "sha256": hashlib.sha256(psbt_serialize(psbt_signed)).hexdigest()
+            })
+        except PSBTError as e:
+            raise HTTPException(500, str(e))
 
 
     return response

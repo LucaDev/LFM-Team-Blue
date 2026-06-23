@@ -1,20 +1,31 @@
-from app.psbt import load_psbt, serialize_psbt
-from app.wallet import Wallet
+from .psbtPolicy import validate
+from .tpm import get_entropy_from_tpm
+from embit import bip39
+from embit.psbt import PSBT
+from embit.bip32 import HDKey
 
-def sign_psbt(psbt_bytes: bytes):
-    psbt = load_psbt(psbt_bytes)
+def sign_psbt(psbt: PSBT):
 
-    wallet = Wallet()
+    # 1. POLICY CHECK (SECURITY GATE)
+    validate(psbt)
 
-    my_fingerprint = wallet.fingerprint()
+    entropy = get_entropy_from_tpm()
+    mnemonic = bip39.mnemonic_from_bytes(entropy)
+    seed = bip39.mnemonic_to_seed(mnemonic)
 
-    for index, inp in enumerate(psbt.inputs):
+    root = HDKey.from_seed(seed)
 
-        if not wallet.input_belongs_to_me(inp):
+    fingerprint = root.fingerprint
+
+    #Kontrolle, dass die psbt zum keymaterial gehört
+    for inp in psbt.inputs:
+        if not inp.bip32_derivations:
             continue
+        for derivation in inp.bip32_derivations.items():
 
-        key = wallet.derive_for_input(inp)
+            if derivation.fingerprint != fingerprint:
+                return psbt
 
-        psbt.sign_input(index, key)
+    psbt.sign_with(root)
 
-    return serialize_psbt(psbt)
+    return psbt

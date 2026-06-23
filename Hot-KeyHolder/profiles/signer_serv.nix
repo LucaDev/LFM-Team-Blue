@@ -1,48 +1,69 @@
 { config, pkgs, ... }:
 
 let
-  appDir = "/psbt-signer";
+  appDir = "/etc/nixos/";
 in
 {
-  systemd.services.psbt-signer = {
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" "tpm-unseal.service" ];
+
+  systemd.services.signer-init = {
+    description = "Initialize signer identity";
+    wantedBy = [ "multi-user.target" "graphical.target" ];
+
+    before = [ "graphical.target" ];
+
+    after = [ 
+      "docker.service"
+      "wireguard-wg0.service"
+      "network-online.target"
+    ];
+    requires = [ 
+      "wireguard-wg0.service"
+      "docker.service"
+      "network-online.target"
+      "nss-lookup.target"
+    ];
+    wants = [
+      "network-online.target"
+    ];
 
     serviceConfig = {
-      Type = "simple";
-      Restart = "always";
-
-      # isolation (keep from earlier)
-      DynamicUser = true;
-      NoNewPrivileges = true;
-      PrivateTmp = true;
-      PrivateDevices = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      ProtectKernelTunables = true;
-      ProtectKernelModules = true;
-      ProtectControlGroups = true;
-      RestrictSUIDSGID = true;
-      LockPersonality = true;
-      MemoryDenyWriteExecute = true;
-      RestrictAddressFamilies = [ "AF_INET" "AF_INET6" ];
-
+      Type = "oneshot";
+      RemainAfterExit = true;
       WorkingDirectory = appDir;
-
-      ExecStart = ''
-        ${appDir}/venv/bin/uvicorn app.signer:app \
-          --host 0.0.0.0 \
-          --port 8080
-      '';
     };
 
-    preStart = ''
-      if [ ! -d "${appDir}/venv" ]; then
-        ${pkgs.python311}/bin/python -m venv ${appDir}/venv
-      fi
+    
+    script = ''
 
-      ${appDir}/venv/bin/pip install --upgrade pip
-      ${appDir}/venv/bin/pip install -r ${appDir}/requirements.txt
+      STATE=/var/lib/signer/initialized
+
+      sleep 20
+
+      if [ -f "$STATE" ]; then
+        echo "[*] already initialized"
+        exit 0
+      fi
+      mkdir -p /var/lib/signer
+      mkdir -p /var/lib/signer/tpm
+      echo "[*] building signer container"
+      ${pkgs.docker}/bin/docker compose build
+
+      echo "[*] switching to locked mode"
+      #${pkgs.nftables}/bin/nft -f /etc/nixos/profiles/nftables-locked.conf
+
+      ${pkgs.docker}/bin/docker compose up -d
+
+      #Wallet init
+      ${pkgs.docker}/bin/docker exec psbt-signer python3 /psbt-signer/scripts/setup/genSeed.py
+      ${pkgs.docker}/bin/docker exec psbt-signer python3 /psbt-signer/scripts/setup/genWallet.py
+
+      ${pkgs.docker}/bin/docker cp psbt-signer:/psbt-signer/tpm/seal.pub /var/lib/signer/tpm/
+      ${pkgs.docker}/bin/docker cp psbt-signer:/psbt-signer/tpm/seal.priv /var/lib/signer/tpm/
+      ${pkgs.docker}/bin/docker cp psbt-signer:/psbt-signer/tpm/sealed.ctx /var/lib/signer/tpm/
+      ${pkgs.docker}/bin/docker cp psbt-signer:/psbt-signer/tpm/pcr.policy /var/lib/signer/tpm/
+      
+      touch "$STATE"
     '';
+
   };
 }

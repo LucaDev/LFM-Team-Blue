@@ -1,0 +1,24 @@
+{
+  "networks": {
+    "allowed": {
+      "regtest": true,
+      "signet": false,
+      "testnet": false,
+      "mainnet": false
+    }
+  },
+
+  "hot": {
+    "limits": {
+      "max_amount_sats": 5000000,
+
+      "max_fee_rate_sat_vb": 100,
+      "min_fee_rate_sat_vb": 25,
+
+      "max_fee_sats": 20000
+    },
+
+    "require_tag": false,
+    "require_sha256": true
+  }
+}

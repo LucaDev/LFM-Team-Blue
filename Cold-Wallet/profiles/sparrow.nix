@@ -7,6 +7,8 @@ let
     else throw "No sparrow package found in nixpkgs-unstable";
 
   sparrowExec = lib.getExe sparrowPkg;
+
+  sparrowNetwork = "regtest";  #mainnet for later (or removal altogether)
 in
 {
   environment.systemPackages = [
@@ -18,7 +20,7 @@ in
     text = ''
       [Desktop Entry]
       Name=Sparrow Wallet
-      Exec=${sparrowExec}
+      Exec=${sparrowExec} --network ${sparrowNetwork}
       Type=Application
       Categories=Finance;
       Terminal=false
