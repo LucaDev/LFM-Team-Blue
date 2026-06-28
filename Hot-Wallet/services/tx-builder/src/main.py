@@ -27,23 +27,6 @@ WORK_ROOT = os.getenv("WORK_ROOT", "/var/lib/btc-work/psbt-work")
 
 MIDDLEWARE_URL= os.getenv("MIDDLEWARE_URL","http://middleware:8080")
 
-#BTC config
-HOT_WALLET_DESC = ""
-HOT_WALLET_NAME = "keyA"
-COLD_WALLET_DESC = ""
-COLD_WALLET_NAME = "cormorant"
-
-# Fee estimation default config
-DEFAULT_INPUT_VBYTES = int(os.getenv("VIN_VB_P2WSH", "104"))
-DEFAULT_OUTPUT_VBYTES = int(os.getenv("VOUT_VB", "31"))
-FEE_TOLERANCE_SATS = int(os.getenv("FEE_TOLERANCE_SATS", "10"))
-
-#Standard values für TXs
-FEE_TARGET_BLOCKS = int(os.getenv("FEE_TARGET_BLOCKS", "6"))
-MAX_FEE_SATS = int(os.getenv("MAX_FEE_SATS", "50000"))
-MAX_FEE_RATE_SAT_VB = int(os.getenv("MAX_FEE_RATE_SAT_VB", "50"))
-DUST_LIMIT = int(os.getenv("DUST_LIMIT", "50")) 
-
 log = logging.getLogger("tx-builder")
 
 nc: Optional[NATS] = None
@@ -82,7 +65,7 @@ async def handle_intent_build(msg):
         log.error("nats_not_initialized")
         return
     
-    intent = await create_paymentIntent_msg(msg.data.decode())
+    intent = await create_paymentIntent_msg(json.loads(msg.data.decode()))
 
     try:
         if not intent.id:
@@ -132,31 +115,35 @@ async def handle_intent_build(msg):
 async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     intent_id = intent.id
     target_address = intent.target_address
-    #change_desc = None
+
+    confirmation_blocks = 6
+    estimate_mode = "economical"
 
     #Variieren nach auszuführender Aktion
     if intent.type == "refill":
-        changeWallet_name = COLD_WALLET_NAME
         wallet_type = "cold"
-        target_address = get_outputAddress(HOT_WALLET_NAME)
+        target_address = get_outputAddress(intent.target_address)
+        confirmation_blocks = intent.meta.get("confirmation_blocks")
+        estimate_mode = intent.meta.get("estimate_mode")
         
     elif intent.type == "hot-tx":
-        #change_desc = HOT_WALLET_DESC
-        changeWallet_name = HOT_WALLET_NAME
         wallet_type = "hot"
-        target_address = intent.target_address
+        if intent.rail == "OPA":
+            target_address = get_outputAddress(intent.target_address)
+
 
     else:
         return await create_psbt(
             psbt_id = intent.id,
+            rail=intent.rail,
             wallet_type = wallet_type,
             psbt =  "",
             network = intent.network,
             amount_sats = intent.amount_sats,
             target_address = target_address,
-            source_address = changeWallet_name,
+            source_address = intent.source_address,
             state = "PSBT_FAILED",
-            meta = intent.meta | {"success=False"},
+            meta = intent.meta | {"success":False},
             error_code = "UNKNOWN_INTENT_TYPE"
         )
 
@@ -170,17 +157,17 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
         return await create_psbt(
             psbt_id = intent.id,
             wallet_type = wallet_type,
+            rail=intent.rail,
             psbt =  "",
             network = intent.network,
             amount_sats = intent.amount_sats,
             target_address = target_address,
-            source_address = changeWallet_name,
+            source_address = intent.source_address,
             state = "PSBT_FAILED",
-            meta = intent.meta | {"success=False"},
+            meta = intent.meta | {"success": False},
             error_code = "INVALID_AMOUNT"
         )
 
-    #change_address = get_changeAddress(changeWallet_name)
     
     #sats -> BTC
     amount_btc = amount_sats / 1e8
@@ -192,19 +179,20 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     #früher manuell fee stabilisierung + block abgragung bei RPC
     #Dann direkte Methode gefunden
     try:
-        result = get_psbt(outputs, changeWallet_name)
+        result = get_psbt(outputs, intent.source_address, confirmation_blocks, estimate_mode)
         
     except Exception as e:
         return await create_psbt(
             psbt_id = intent.id,
             wallet_type = wallet_type,
+            rail=intent.rail,
             psbt =  "",
             network = intent.network,
             amount_sats = intent.amount_sats,
             target_address = target_address,
-            source_address = changeWallet_name,
+            source_address = intent.source_address,
             state = "PSBT_FAILED",
-            meta = intent.meta | {"success=False"} | {"message": str(e)},
+            meta = intent.meta | {"success": False} | {"message": str(e)},
             error_code = "RPC_ERROR"
         )
     
@@ -233,6 +221,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     return await create_psbt(
         psbt_id = intent.id,
         wallet_type = wallet_type,
+        rail=intent.rail,
         psbt =  psbt_str,
         network = intent.network,
         amount_sats = intent.amount_sats,
@@ -240,7 +229,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
         fee_rate = None,
         changepos = changepos,
         target_address = target_address,
-        source_address = changeWallet_name,
+        source_address = intent.source_address,
         sha256=check_sha256,
         state = "PSBT_CREATED",
         meta = intent.meta,
@@ -248,26 +237,6 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     )
 
 
-async def handle_newWallet(msg):
-    wallet = json.loads(msg.data.decode("utf-8"))
-    if wallet["wallet_type"] == "hot":
-        global HOT_WALLET_DESC
-        HOT_WALLET_DESC = wallet["desc"]
-        global HOT_WALLET_NAME
-        HOT_WALLET_NAME = wallet["name"]
-    elif wallet["wallet_type"] == "cold": 
-        global COLD_WALLET_DESC
-        COLD_WALLET_DESC = wallet["desc"]
-        global COLD_WALLET_NAME
-        COLD_WALLET_NAME = wallet["name"]
-
-    log.info(
-        "wallet_created",
-        extra={
-            "wallet_id": wallet["wallet_id"],
-        }
-    )
-    
 
 @app.on_event("startup")
 async def startup():
@@ -290,11 +259,6 @@ async def startup():
     await nc.subscribe(
         "psbt.build.requested",
         cb=handle_intent_build
-    )
-
-    await nc.subscribe(
-        "newWallet.registered",
-        cb=handle_newWallet
     )
 
     log.info(

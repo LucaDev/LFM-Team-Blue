@@ -3,7 +3,7 @@ import logging
 import os
 
 
-from .db import insert_psbt, get_ext_walletNames
+from .db import insert_psbt, get_walletName
 from .models import PSBTModel
 from .api.btc_core import address_wallet_match
 
@@ -56,13 +56,14 @@ async def handle_psbt_created(psbt: PSBTModel):
         insert_psbt, psbt
     )
 
-async def whitelist_check(address: str) -> bool:
-    wallet_names = get_ext_walletNames()
+async def whitelist_check(address: str, rail: str) -> bool:
+    
+    if rail == "OPA_hot": wallet_names = get_walletName("cold")
+    elif rail == "OPA_cold": wallet_names = get_walletName("hot")
+    else: wallet_names = get_walletName("ext")
+
     for walletName in wallet_names:
         if address_wallet_match(walletName, address):
             return True
-
+    log.info(f"Address does not belong to whitelisted wallet: {address}")
     return False
-
-
-

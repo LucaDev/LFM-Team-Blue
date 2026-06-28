@@ -3,7 +3,7 @@ import json
 import psycopg
 from psycopg.rows import dict_row
 
-from .models import PSBTModel
+from .models import PSBTModel, isModel
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
@@ -18,35 +18,7 @@ def rollback():
     with conn() as c:
         c.rollback()
 
-#UTXOs
-       
-
-#Für ZMQ-listener
-def insert_watchScript(script_pubkey_hex: str, wallet_id: str, index: int, input_type: str = "p2wpkh"):
-    with conn() as c:
-        with c.cursor() as cur:
-            cur.execute("""
-                INSERT INTO btc.watch_script (
-                    script_pubkey_hex,
-                    wallet_id,
-                    input_type,
-                    address_index,
-                    is_change
-                )
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (script_pubkey_hex)
-                DO NOTHING
-            """, (
-                script_pubkey_hex,
-                wallet_id,
-                input_type,
-                index,
-                False
-            ))
-        c.commit()
-
    
-    
 
 
 #wallet
@@ -79,8 +51,7 @@ def fetch_all(query: str, params: tuple = ()):
             cur.execute(query, params)
             return cur.fetchall()
         
-        
-def get_ext_walletNames() -> list[str]:
+def get_walletName(type: str) -> str:
     with conn() as c:
         with c.cursor() as cur:
             cur.execute("""
@@ -88,7 +59,7 @@ def get_ext_walletNames() -> list[str]:
                 FROM btc.wallet
                 WHERE wallet_type = %s
                 AND active = TRUE
-            """, ("ext",))
+            """, (type,))
             return [row["wallet_name"] for row in cur.fetchall()]
 
 #One time pro wallet
@@ -137,9 +108,45 @@ def create_wallet(
 
         c.commit()
 
-def archive_psbt(psbt: PSBTModel):
-    return
-
+def archive_psbt(data: dict):
+    with conn() as c:
+        with c.cursor() as cur:
+            cur.execute("""
+                INSERT INTO btc.psbt_archive (
+                    psbt_id,
+                    wallet_type,
+                    network,
+                    signed_psbt,
+                    raw_tx,
+                    txid,
+                    source_address,
+                    target_address,
+                    amount_sats,
+                    fee_sats,
+                    fee_rate,
+                    sha256,
+                    meta
+                )
+                VALUES (
+                    %s,%s,%s,%s,%s,%s,%s,%s,
+                    %s,%s,%s,%s,%s
+                )
+            """, (
+                data.get("psbt_id"),
+                data.get("wallet_type"),
+                data.get("network", "regtest"),
+                data.get("psbt"),
+                data.get("final_tx"),
+                data.get("txid"),
+                data.get("source_address"),
+                data.get("target_address"),
+                data.get("amount_sats"),
+                data.get("fee_sats"),
+                data.get("fee_rate"),
+                data.get("sha256"),
+                json.dumps(data.get("meta", {}))
+            ))
+        c.commit()
 
 #State logging für psbts (unterscheidung zu intent möglcih, aber unnötig kompliziert)
 def insert_psbt(psbt: PSBTModel):
@@ -171,6 +178,77 @@ def insert_psbt(psbt: PSBTModel):
             ))
         c.commit()
 
+
+def get_pending_PSBT():
+    with conn() as c:
+        with c.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT ON (psbt_id)
+                    psbt_id,
+                    psbt_type,
+                    psbt_state,
+                    network,
+                    amount_sats,
+                    source_address,
+                    target_address,
+                    meta
+                FROM btc.psbt
+                WHERE psbt_state = 'WAITING_HUMAN'
+                ORDER BY psbt_id, id DESC;
+            """)
+
+            row = cur.fetchone()
+
+    if not row:
+        return None
+
+    return {
+        "psbt_id": row["psbt_id"],
+        "wallet_type": row["psbt_type"],
+        "state": row["psbt_state"],
+        "network": row["network"],
+        "amount_sats": row["amount_sats"],
+        "source_address": row["source_address"],
+        "target_address": row["target_address"],
+        "meta": row["meta"],
+    }
+
+
+def get_psbt_byID(psbt_id: str):
+    with conn() as c:
+        with c.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT on (psbt_id)
+                    psbt_id,
+                    psbt_type,
+                    psbt_state,
+                    network,
+                    amount_sats,
+                    source_address,
+                    target_address,
+                    meta
+                FROM btc.psbt
+                WHERE psbt_id = %s
+                ORDER BY psbt_id, id DESC
+            """, (psbt_id,))
+
+            row = cur.fetchone()
+
+    if not row:
+        return None
+
+    return {
+        "psbt_id": row["psbt_id"],
+        "wallet_type": row["psbt_type"],
+        "state": row["psbt_state"],
+        "network": row["network"],
+        "amount_sats": row["amount_sats"],
+        "source_address": row["source_address"],
+        "target_address": row["target_address"],
+        "meta": row["meta"],
+    }
+
+
 def psbt_id_exists(psbt_id: str) -> bool:
     with conn() as c:
         with c.cursor() as cur:
@@ -189,18 +267,24 @@ def insert_opa_decision(
     psbt_id: str,
     policy_name: str,
     actor: str,
-    allow: bool,
+    action: bool,
     reasons: list,
-    input_data: dict,
+    input_data: str,
     result: dict
 ):
     with conn() as c:
         with c.cursor() as cur:
 
             # 1. resolve internal psbt DB id
-            db_psbt_id = get_psbt_db_id(psbt_id)
-            if db_psbt_id is None:
-                raise RuntimeError(f"psbt_id not found: {psbt_id}")
+            if psbt_id != "refill_check":
+                db_psbt_id = get_psbt_db_id(psbt_id)
+                if db_psbt_id is None:
+                    raise RuntimeError(f"psbt_id not found: {psbt_id}")
+            else: db_psbt_id = psbt_id
+
+            reasons = normalize(result)
+            input_data = normalize(input_data)
+            result = normalize(result)
 
             # 2. insert policy decision
             cur.execute("""
@@ -208,7 +292,7 @@ def insert_opa_decision(
                     psbt_id,
                     policy_name,
                     actor,
-                    allow,
+                    allowed,
                     reasons,
                     input,
                     result
@@ -218,13 +302,21 @@ def insert_opa_decision(
                 db_psbt_id,
                 policy_name,
                 actor,
-                allow,
-                reasons,
-                json.dumps(input_data.model_dump()),
-                json.dumps(result)
+                action,
+                json.dumps(reasons),
+                input_data,
+                result
             ))
 
         c.commit()
+
+def normalize(value):
+    if isModel(value):
+        return value.model_dump_json()
+    elif isinstance(value, (dict, list)):
+        return json.dumps(value)
+    else:
+        return str(value)
 
 #Hilfsfunktion psbt_id zu letzter id (unique) für referenzen auflösen
 def get_psbt_db_id(psbt_id: str) -> int | None:

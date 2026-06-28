@@ -2,6 +2,10 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Literal,Any
 import json
 import hashlib
+import base64
+
+from embit.psbt import PSBT
+from embit.networks import NETWORKS
 
 
 class PaymentIntent(BaseModel):
@@ -9,12 +13,11 @@ class PaymentIntent(BaseModel):
 
     type: Literal["hot-tx", "refill"]
 
-    rail: Literal["bip21", "psbt"]
+    rail: Literal["bip21", "psbt", "OPA_hot", "OPA_cold"]
 
     network: str
 
     amount_sats: Optional[int] = None
-    amount_msat: Optional[int] = None
 
     source_address: Optional[str] = None
     target_address: Optional[str] = None
@@ -26,13 +29,13 @@ class PaymentIntent(BaseModel):
 
 async def create_paymentIntent(
     *,
-    id: str,
+    id: str | None = None,
     type: str,
     rail: str,
     network: str,
-    amount_sats: int,
-    target_address: str,
-    source_address: str,
+    amount_sats: int | None = None,
+    source_address: str | None = None,
+    target_address: str | None = None,
     meta: dict | None = None,
 ) -> PaymentIntent:
         
@@ -43,15 +46,14 @@ async def create_paymentIntent(
         rail=rail,
         network=network,
         amount_sats=amount_sats,
-        source_address=source_address,
+        source_address=source_address or None,
         target_address=target_address,
         meta=meta
     )
 
 async def create_paymentIntent_msg(
-    msg,
+    data,
 ) -> PaymentIntent:
-    data = json.loads(msg)
 
     return await create_paymentIntent(
         id=data.get("id"),
@@ -59,7 +61,7 @@ async def create_paymentIntent_msg(
         rail=data["rail"],
         network=data.get("network", "regtest"),
         amount_sats=data.get("amount_sats"),
-        source_address=data.get("source_address"),
+        source_address=data.get("source_address", None),
         target_address=data.get("target_address"),
         meta=data.get("meta"),
     )
@@ -69,7 +71,8 @@ async def create_paymentIntent_msg(
 class PSBTModel(BaseModel):
 
     psbt_id: str
-    wallet_type: str
+    wallet_type: Literal["hot", "cold"]
+    rail: Literal["bip21", "psbt", "OPA_hot", "OPA_cold"]
 
     #Core PSBT data
     psbt: str  # base64 PSBT
@@ -98,8 +101,8 @@ async def create_psbt(
     *,
     psbt_id: str | None = None,
     wallet_type: str,
+    rail: str,
     psbt: str,
-    rail: str | None = None,
     network: str,
     amount_sats: int | None = None,
     fee_sats: int | None = None,
@@ -109,14 +112,17 @@ async def create_psbt(
     source_address: str | None = None,
     sha256: str | None = None,
     state: str,
-    meta: dict[str, Any] = Field(default_factory=dict),
-    error_code: dict[str, Any] = Field(default_factory=dict)
+    meta: dict | None = None,
+    error_code: dict | None = None,
 ) -> PSBTModel:
 
+
     if sha256 is None:
-        sha256 = hashlib.sha256(psbt.encode()).hexdigest()
+        psbt_bytes = base64.b64decode(psbt) if isinstance(psbt, str) else psbt
+        sha256 = hashlib.sha256(psbt_bytes).hexdigest()
 
     meta = meta or {}
+    error_code = error_code or {}
 
     if rail is not None:
         meta["rail"] = rail
@@ -124,6 +130,7 @@ async def create_psbt(
     return PSBTModel(
         psbt_id=psbt_id,
         wallet_type=wallet_type,
+        rail=rail,
         psbt=psbt,
         network=network,
         amount_sats=amount_sats,
@@ -138,22 +145,25 @@ async def create_psbt(
         error_code=error_code
     )
 
-async def create_psbt_msg(msg) -> PSBTModel:
-    data = json.loads(msg)
+async def create_psbt_msg(data) -> PSBTModel:
 
     return await create_psbt(
         psbt_id=data.get("psbt_id"),
-        wallet_type=data["wallet_type"],
-        psbt=data["psbt"],
+        wallet_type=data.get("wallet_type"),
+        rail=data.get("rail"),
+        psbt=data.get("psbt"),
         network=data.get("network", "regtest"),
         amount_sats=data.get("amount_sats"),
-        info_sats=data.get("info_sats"),
+        fee_sats=data.get("fee_sats"),
         fee_rate=data.get("fee_rate"),
         changepos=data.get("changepos"),
         target_address=data.get("target_address"),
         source_address=data.get("source_address"),
         sha256=data.get("sha256"),
-        state=data["state"],
+        state=data.get("state"),
         meta=data.get("meta"),
         error_code=data.get("error_code"),
     )
+
+def isModel(data):
+    return isinstance(data, BaseModel)

@@ -2,7 +2,7 @@ import requests
 import json
 import os
 
-BASE = "http://localhost:8080/api/v1/request/importWallet"
+BASE = "http://localhost:8080/api/v1/importWallet"
 from pathlib import Path
 
 def import_external_wallet(
@@ -15,7 +15,7 @@ def import_external_wallet(
 ):
     payload = {
         "wallet_type": "ext",
-        "name": wallet_name,
+        "wallet_name": wallet_name,
         "network": network,
         "xpub": xpub,
         "descriptor": descriptor,
@@ -36,9 +36,9 @@ def import_external_wallet(
 
 
 if __name__ == "__main__":
-    file_path = Path("./data/wallet2.descriptors.json")
+    file_path = Path("./wallet2.descriptors.txt")
     with file_path.open(mode="r", encoding="utf-8") as file:
-        content = file.read()
+        content = file.read().replace("\r", "")
     result = import_external_wallet(
         wallet_name="wallet2",
         network="regtest",

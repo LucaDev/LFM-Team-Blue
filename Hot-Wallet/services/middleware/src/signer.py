@@ -7,9 +7,13 @@ import json
 import httpx
 import logging
 import time
+from pathlib import Path
 
-from .db import insert_psbt
-from .models import PSBTModel
+from .db import insert_psbt,get_pending_PSBT, get_psbt_byID
+from .models import PSBTModel,create_psbt_msg
+
+REFILL_FILE = Path(os.getenv("REFILL_PSBT", "/run/refill.psbt"))
+REFILL_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 SIGNER_URL = os.getenv("SIGNER_URL")
 SIGNER_PORT = os.getenv("SIGNER_PORT")
@@ -48,29 +52,22 @@ async def sign_psbt(psbt: PSBTModel) -> PSBTModel:
         return
     
     #Bei sign ohne direkten error
-    if signed is None:
+    if signed is None or signed.get("psbt") is None:
         psbt.state = "SIGNING_FAILED"
         await asyncio.to_thread(
             insert_psbt, psbt
         )
-        return signed
+        log.info("Signing failed")
+        raise RuntimeError("Signer did not return a signed PSBT.")
     
     #Nach erfolgreichen Signieren
     psbt.state = "SIGNED"
     await asyncio.to_thread(
         insert_psbt, psbt
     )
+    log.info("PSBT signed successfully.")
 
-    # store signed PSBT artifact
-    #await asyncio.to_thread(
-     #   inser_psbt_artifact,
-      #  psbt.get("id"),
-       # "signed",
-        #psbt.get("signed_psbt_ref"),
-        #psbt.get("sha256"),
-        #None
-    #)
-    return signed
+    return signed.get("psbt")
         
     
 
@@ -130,7 +127,7 @@ async def sign_psbt_on_signer(
         f"Sende asynchrone Anfrage an: {url}",
         extra={
             "psbt_id": psbt_id,
-            "psbt_type": psbt_type,
+            "wallet_type": wallet_type,
             "psbt": psbt,
             "sha256": sha256,
         }
@@ -161,3 +158,34 @@ async def sign_psbt_on_signer(
     
     except httpx.HTTPError as e:
         raise RuntimeError(f"Signer request failed: {e}") from e
+    
+
+def save_psbt(psbt: str):
+    psbt_info = get_pending_PSBT()
+    if psbt_info is not None:
+        delete_psbt(psbt_info.get("psbt_id", None))
+
+    REFILL_FILE.write_text(psbt)
+
+def load_psbt():
+    if not REFILL_FILE.exists():
+        return None
+    return REFILL_FILE.read_text()
+
+
+#Löscht nicht, sondern schriebt COLD_STOPPED
+def delete_psbt(psbt_id = None):
+    if psbt_id is not None:
+        psbt_info = get_psbt_byID(psbt_id)
+        psbt_info['rail'] = "OPA_cold"
+        psbt_info['psbt'] = psbt
+        psbt = create_psbt_msg(psbt_info)
+
+        psbt.state = "COLD_STOPPED"
+        psbt.state = "COLD_STARTED"
+        asyncio.to_thread(
+            insert_psbt, psbt
+        )
+
+    if REFILL_FILE.exists():
+        REFILL_FILE.unlink()

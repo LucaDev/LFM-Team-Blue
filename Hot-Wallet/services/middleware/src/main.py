@@ -6,15 +6,14 @@ from nats.aio.client import Client as NATS
 import logging
 
 
-from .opa import opa_evaluate
-from .api.btc_core import broadcast_to_bitcoind
-from .signer import sign_psbt
+from .opa import opa_evaluate, check_walletBalance, handle_refillDecision
+from .api.btc_core import broadcast_to_bitcoind, psbt_finalize
+from .signer import sign_psbt, save_psbt
 from .txBuilder import handle_psbt_created, handle_psbt_failed, whitelist_check
 from .logging_setup import setup_logging
 from .models import create_psbt, create_psbt_msg, create_paymentIntent_msg
-from src.api import payments, wallets, health 
+from src.api import payments, wallets, health, psbt
 from .db import archive_psbt, psbt_created_seen, insert_psbt
-
 
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
@@ -32,6 +31,7 @@ app = FastAPI()
 app.include_router(payments.router)
 app.include_router(wallets.router)
 app.include_router(health.router)
+app.include_router(psbt.router)
     
 
 ############################################################################
@@ -51,7 +51,7 @@ async def startup():
     #Init
     #Weiterleitung zu TX-builder
     async def intent_created_handler(msg):
-        intent = await create_paymentIntent_msg(msg.data.decode())
+        intent = await create_paymentIntent_msg(json.loads(msg.data.decode()))
 
         rail = intent.rail
         log.info(f"intent received: {intent.id} rail={rail}")
@@ -66,6 +66,7 @@ async def startup():
             psbt = await create_psbt(
                 psbt_id=intent.id,
                 wallet_type="hot",
+                rail=intent.rail,
                 psbt="",                                    #nach tx-builder
                 network=intent.network,
                 source_address="keyA",
@@ -112,36 +113,86 @@ async def startup():
     #Erfolgreich
     #Weiterleitung zu Signer
     async def psbt_created_handler(msg):
-        psbt = await create_psbt_msg(msg.data.decode())
+        psbt = await create_psbt_msg(json.loads(msg.data.decode()))
 
         #Inkludiert nur logging
         await handle_psbt_created(psbt)
 
-        if await opa_evaluate(psbt) and await whitelist_check(psbt.target_address):
-            #refill und hot-tx müssen gesigned werden
-            #Weiterleitung zum Signer
-            signed = await sign_psbt(psbt)
-            if signed is not None:
+        if await opa_evaluate(psbt):
+            if await whitelist_check(psbt.target_address, psbt.rail):
+                #refill und hot-tx müssen gesigned werden
+                #Weiterleitung zum Signer
+                psbt_signed = await sign_psbt(psbt)
+                
                 if psbt.wallet_type == "hot":
-                    rawtx_hex = signed.get("rawtx_hex")
+                    #Finalisierung
+                    try:
+                        rawtx_hex = psbt_finalize(psbt_signed)
 
-                    if not rawtx_hex:
-                        raise RuntimeError("Signer did not return rawtx_hex")
+                        psbt.state = "PSBT_FINALIZED"
+                        await asyncio.to_thread(
+                            insert_psbt, psbt
+                        )
+                        log.info("PSBT finalized successfully.")
 
-                    #Broadcasting
-                    txid = await broadcast_to_bitcoind(rawtx_hex)
+                    except Exception as e:
+                        log.exception("Failed to finalize PSBT.")
+                        raise RuntimeError(f"PSBT finalization failed: {e}") from e
 
-                    # to add logging
+                    #Broadcast
+                    try:
+                        txid = broadcast_to_bitcoind(rawtx_hex)
+
+                        if not txid:
+                            raise RuntimeError("Bitcoind returned no transaction id.")
+                        
+                        psbt.state = "BROADCASTED"
+                        await asyncio.to_thread(
+                            insert_psbt, psbt
+                        )
+                        log.info("Transaction broadcasted successfully. txid=%s", txid)
+
+                    except Exception as e:
+                        log.exception("Broadcast failed.")
+                        raise RuntimeError(f"Broadcast failed: {e}") from e
+
+                    #Archíving
                     await asyncio.to_thread(
                         archive_psbt, {
-                            psbt
+                            **psbt.model_dump(),
+                            "final_tx": rawtx_hex,
+                            "txid": txid
                         }
                     )
                     log.info("Broadcast completed")
 
+                    decision = await check_walletBalance(psbt.source_address)
+                    psbt_input = await handle_refillDecision(decision)
+                    
+                    
+                    if psbt_input is not None:
+                        intent = await create_paymentIntent_msg(psbt_input)
+                        await nc.publish(
+                            "psbt.build.requested",
+                            intent.model_dump_json().encode()
+                        )       
+
                 elif psbt.wallet_type == "cold":
-                    #Notify Human via ntfy for start of manual proess
-                    return
+                    await asyncio.to_thread(save_psbt, psbt.psbt)
+
+                    psbt.state = "WAITING_HUMAN"
+                    await asyncio.to_thread(
+                        insert_psbt, psbt
+                    )
+                    log.info("Warten auf Operanten feur cold-worflow")
+                    #Ntfy informieren
+
+            else:
+                #Ntfy about malicious request
+                return
+        else:
+            return
+            #add retry queue log/Ntfy human?
         
 
     #Initial
