@@ -37,7 +37,6 @@ if [[ -z "${SIGNER_ENDPOINT_IP:-}" ]]; then
 fi
 
 
-
 SIGNER_IP="10.10.0.2/32"
 WALLET_IP="10.10.0.1/32"
 

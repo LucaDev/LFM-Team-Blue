@@ -41,7 +41,6 @@ async def sign_psbt(psbt: PSBTModel) -> PSBTModel:
             psbt.psbt_id,
             psbt.psbt,
             psbt.sha256,
-            psbt.wallet_type
         )
     except Exception as e:
         psbt.state = "SIGNING_FAILED"
@@ -75,8 +74,7 @@ async def sign_psbt(psbt: PSBTModel) -> PSBTModel:
 async def sign_psbt_on_signer(
         psbt_id: str,
         psbt: str,
-        sha256: str,
-        wallet_type: str,
+        sha256: str
     ):
     if os.path.isfile(SIGNER_HMAC_SECRET):
         print("Gültige Datei")
@@ -95,7 +93,6 @@ async def sign_psbt_on_signer(
 
     payload = {
         "psbt_id": psbt_id,
-        "wallet_type": wallet_type,
         "psbt": psbt,
         "sha256": sha256,
     }
@@ -127,7 +124,6 @@ async def sign_psbt_on_signer(
         f"Sende asynchrone Anfrage an: {url}",
         extra={
             "psbt_id": psbt_id,
-            "wallet_type": wallet_type,
             "psbt": psbt,
             "sha256": sha256,
         }

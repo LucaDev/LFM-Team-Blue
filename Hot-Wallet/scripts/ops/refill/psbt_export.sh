@@ -30,9 +30,8 @@ info "Fetch PSBT: $URL"
 resp="$(curl -fsSL "$URL")" || die "PSBT fetch failed."
 [[ -n "$resp" ]] || die "Empty response."
 
-# -----------------------------
-# JSON parsen
-# -----------------------------
+
+#JSON parse
 psbt_id="$(echo "$resp" | jq -r '.psbt_id')"
 psbt="$(echo "$resp" | jq -r '.psbt')"
 

@@ -33,7 +33,7 @@ fi
 echo ""
 echo "Checking communication files ..."
 
-# communication (OPTIONAL)
+
 #WG
 WG_JSON="$USB_MOUNT/communication/wireguard/wireguard.signer.json"
 
@@ -97,9 +97,7 @@ EOF
     fi
 
     #restart
-
     wg-quick down "$WG_IF" >/dev/null 2>&1 || true
-
     wg-quick up "$WG_IF"
     
     echo "WireGuard peer applied successfully"
