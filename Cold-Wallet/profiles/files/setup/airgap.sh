@@ -14,7 +14,7 @@ if grep -Eq '^\s*airgap\.enable\s*=\s*true\s*;' "$CFG"; then
   exit 0
 fi
 
-# replace existing setting, if present
+#replace existing setting, if present
 if grep -Eq '^\s*airgap\.enable\s*=' "$CFG"; then
   sed -i -E 's/^\s*airgap\.enable\s*=\s*(true|false)\s*;/  airgap.enable = true;/' "$CFG"
   echo "Set airgap.enable=true"

@@ -30,11 +30,6 @@
   #============================================
   #Echte scripte (referenziert in warpper)
   #============================================
-
-  environment.etc."scripts/psbt/psbt-approve.sh" = {
-    source = ./files/psbt/psbt-approve.sh;
-    mode = "0755";
-  };
   environment.etc."scripts/psbt/README.md" = {
     source = ./files/psbt/README.md;
     mode   = "0644";
@@ -64,37 +59,10 @@
     source = ./files/setup/format-USB.sh;
     mode   = "0755";
   };
-  environment.etc."scripts/setup/README.md" = {
-    source = ./files/setup/README.md;
-    mode   = "0644";
-  };
-
-  environment.etc."scripts/auth/hash-keyGen.sh" = {
-    source = ./files/auth/hash-keyGen.sh;
-    mode   = "0755";
-  };
-  environment.etc."scripts/auth/hash-keyStore.sh" = {
-    source = ./files/auth/hash-keyStore.sh;
-    mode   = "0755";
-  };
-  environment.etc."scripts/auth/hash-verify.sh" = {
-    source = ./files/auth/hash-verify.sh;
-    mode   = "0755";
-  };
-  environment.etc."scripts/auth/README.md" = {
-    source = ./files/auth/README.md;
-    mode   = "0644";
-  };
 
 #===================================
 #Wrappers
 #===================================
-
-  environment.etc."scripts/wrappers/psbt-approve.sh" = {
-    source = ./files/wrappers/psbt-approve.sh;
-    mode = "0755";
-  };
-
   environment.etc."scripts/wrappers/online.sh" = {
     source = ./files/wrappers/online.sh;
     mode   = "0755";
@@ -117,19 +85,6 @@
   };
   environment.etc."scripts/wrappers/format-USB.sh" = {
     source = ./files/wrappers/format-USB.sh;
-    mode   = "0755";
-  };
-
-  environment.etc."scripts/wrappers/hash-keyGen.sh" = {
-    source = ./files/wrappers/hash-keyGen.sh;
-    mode   = "0755";
-  };
-  environment.etc."scripts/wrappers/hash-keyStore.sh" = {
-    source = ./files/wrappers/hash-keyStore.sh;
-    mode   = "0755";
-  };
-  environment.etc."scripts/wrappers/hash-verify.sh" = {
-    source = ./files/wrappers/hash-verify.sh;
     mode   = "0755";
   };
 
@@ -156,15 +111,6 @@
     "L+ /home/user/Desktop/scripts/setup/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/umnt-USB.sh - - - - /etc/scripts/wrappers/umnt-USB.sh"
-    "L+ /home/user/Desktop/scripts/setup/README.md - - - - /etc/scripts/setup/README.md"
-
-    "L+ /home/user/Desktop/scripts/psbt/psbt-approve.sh - - - - /etc/scripts/wrappers/psbt-approve.sh"
-    "L+ /home/user/Desktop/scripts/psbt/README.md - - - - /etc/scripts/psbt/README.md"
-
-    "L+ /home/user/Desktop/scripts/auth/hash-keyGen.sh - - - - /etc/scripts/wrappers/hash-keyGen.sh"
-    "L+ /home/user/Desktop/scripts/auth/hash-keyStore.sh - - - - /etc/scripts/wrappers/hash-keyStore.sh"
-    "L+ /home/user/Desktop/scripts/auth/hash-verify.sh - - - - /etc/scripts/wrappers/hash-verify.sh"
-    "L+ /home/user/Desktop/scripts/auth/README.md - - - - /etc/scripts/auth/README.md"
   ];
       
   #Journald begrenzen (VM-Disk nicht zulaufen lassen)

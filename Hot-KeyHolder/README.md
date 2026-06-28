@@ -1,640 +1,959 @@
-Mensch wurde benachrichtigt, dass Hot leer läuft
-Proxmox Host
-    psbt_usbFlow hot
-
-Auf Hot
-    sudo API_BASE="http://middleware.btc-hot.svc.cluster.local:8080" \
-    API_TOKEN="..." \
-    psbt-export.sh <intent-id>
-Start cold workflow
-
-
-# README — Hot Auto‑Signing + Cold Manual Refill (Air‑gapped)
-
-**Kubernetes/Talos on Proxmox + regtest network simulation + Proxmox USB attach/detach**
-
-> **Zielbild (kurz):**
->
-> *   **Hot‑Flow (extern, vollautomatisch):** Externe Requests → OPA Policy → **Policy‑Signer signiert** → Bitcoin Core (node-only) broadcastet
-> *   **Cold‑Flow (manual refill):** Threshold triggert Refill‑Intent → Notification (ntfy, out-of-scope) → Mensch exportiert PSBT auf USB → **Air‑gapped Approval + Signing** (Signer + KeyB/KeyC) → final PSBT → Broadcast
+# Runbook – Key A VM / Hot-Signer
 
 ***
 
-## 1) Architektur-Übersicht
+## Ziel
 
-### 1.1 Namespaces / Trust Boundaries
+Dieses Runbook beschreibt den operativen Standardprozess für die Key‑A‑VM als automatisierter Hot‑Signer innerhalb der Wallet‑Architektur und deren Installation und Integration ins Basissystem.
+Key A ist Bestandteil des Hot-Kontexts und signiert Transaktionen initial, bevor diese in den Cold‑Wallet‑Prozess übergeben werden.
+Die Key‑A‑VM ist vom Basissystem getrennt und verarbeitet ausschließlich PSBTs.
 
-*   **`btc-hot` (online, Kubernetes/Talos)**  
-    Enthält: `middleware`, `tx-builder`, `policy-signer`, `opa`, `nats` (+ optional RPC-gateway)
-*   **`btc-net` (Bitcoin Netz Simulation, Kubernetes/Talos)**  
-    Enthält: `bitcoind-regtest` (node-only), `regtest-miner`
-
-### 1.2 Offline / Air‑gapped (Proxmox VMs)
-
-*   **`signer` VM (offline)**: GPG Private Key für Approval (kein BTC Key)
-*   **`keyB` VM (offline)**: BTC KeyB (Sparrow), Signer Public Key importiert
-*   **`keyC` VM (offline)**: BTC KeyC (Sparrow), Signer Public Key importiert
-*   **Proxmox Host**: simuliert USB „einstecken/abziehen“ via `psbt_usbFlow` (attach/detach)
+Der Standardmodus ist:
+* Das Basissystem kommuniziert ausschließlich mit der Key‑A‑VM.
+* Die Kommunikation erfolgt über WireGuard.
+* Jede API-Anfrage wird zusätzlich per HMAC authentifiziert.
+* Die Key‑A‑VM akzeptiert ausschließlich PSBTs.
+* Das Schlüsselmaterial verlässt die VM zu keinem Zeitpunkt.
+* Die Entropie für den Private Key ist im TPM versiegelt.
+* Die Signierung erfolgt vollautomatisch in einem Docker‑Container.
+* Bereits verarbeitete PSBTs werden über einen Deduplication Check erkannt.
 
 ***
 
-## 2) Repository-Struktur (Orderstruktur)
+## Rollen und Systeme
+### Key‑A‑VM
 
-```text
-repo/
-  README.md
+Die Key‑A‑VM ist der automatisierte Signer für Key A.
 
-  contracts/
-    openapi/
-      middleware.yaml
-      tx-builder.yaml
-      policy-signer.yaml
-      notifier.yaml
-      rpc-gateway.yaml
-    asyncapi/
-      nats.yaml
-    schemas/
-      intent.json
-      tx_state.json
-      psbt_payload.json
-    examples/
-      http/
-        create_hot_tx.request.json
-        create_hot_tx.response.json
-        get_psbt_base64.response.json
-      nats/
-        intent_refill_created.json
-        tx_hot_requested.json
-    VERSIONING.md
+Aufgaben:
+* Entgegennahme von PSBTs über eine HTTP API
+* HMAC‑Prüfung eingehender Requests
+* SHA256 Überrpüfung der Integrität von übermittelten PSBTs
+* Deduplication Check über gespeicherte PSBT IDs
+* Entsiegelung der Entropie über TPM
+* Ableitung des Privaten Keys im RAM
+* Signierung über embit
+* Rückgabe der signierten PSBT oder finalisierten Hot‑Transaktion
 
-  policies/
-    hot.rego
-    refill.rego
-    data.json
+Die Key‑A‑VM enthält:
+* den Docker‑basierten Signer
+* die TPM‑Artefakte
+* das HMAC Secret
+* WireGuard Konfiguration
+* den internen und öffentlichen öffentlichen Wallet‑Descriptor
+* den Xpub von Key A
+* Wallet‑Metadaten
+* Master FIngerprint
+  
+***
 
-  deploy/
-    k8s/
-      base/
-        namespace.yaml
-        configmap.yaml
-        secrets-template.yaml
-        nats.yaml
-        opa.yaml
-        middleware.yaml
-        tx-builder.yaml
-        policy-signer.yaml
-        ntfy.yaml                  # optional ExternalName placeholder
-        keycloak-rpc-gateway.yaml  # optional
-        networkpolicies.yaml
-      bitcoin-net/
-        bitcoind-regtest.yaml
-        miner.yaml
+### Basissystem
 
-  services/
-    middleware/
-      Dockerfile
-      requirements.txt
-      src/main.py
-      config/example.env
-    tx-builder/
-      Dockerfile
-      requirements.txt
-      src/main.py
-      config/example.env
-    policy-signer/
-      Dockerfile
-      requirements.txt
-      src/main.py
-      config/example.env
+Das Basissystem ist nicht Bestandteil der Key‑A‑VM.
+Es kommuniziert ausschließlich über den definierten WireGuard‑Kanal mit Key A.
 
-  tools/
-    proxmox/
-      psbt_usbFlow
-      README.md
-    operator/
-      usb-export-psbt.sh
-      README.md
-    cold/
-      psbt-approve.sh
-      hash-verify.sh
-      README.md
+Aufgaben:
+* Erstellung der PSBT
+* Übergabe der PSBT an Key A
+* Empfang der signierten PSBT oder finalisierten Hot‑Transaktion
+* Weiterverarbeitung im Hot‑Wallet‑Kontext
 
-  k8s/scripts/
-    build-images.sh
-    push-images.sh
-    deploy.sh
+Regeln:
+* Das Basissystem erhält keinen Zugriff auf private Schlüssel.
+* Das Basissystem kommuniziert nicht direkt mit dem TPM.
+* Das Basissystem tauscht im Setup nur WireGuard-, HMAC- und Wallet-Metadaten aus über ein physisches Wechsel-Medium aus.
+* Im operativen Betrieb werden ausschließlich PSBTs übertragen.
+
+***
+### Docker‑Signer
+Der Signierungsprozess läuft innerhalb eines Docker‑Containers.
+
+Aufgaben:
+* Bereitstellung der `/sign` API
+* Prüfung des HMAC Headers
+* Prüfung des SHA256 Hashes der PSBT
+* Speicherung der PSBT ID zur Deduplikation
+* Policy‑Prüfung
+* TPM‑Unseal
+* Signatur mit Key A
+
+Der Container verwendet:
+* FastAPI für die HTTP API
+* embit für PSBT‑Verarbeitung und Signierung
+* PostgreSQL beziehungsweise die definierte Datenbank für gesehene PSBT IDs
+* TPM Tools für das Entsiegeln der Entropie
+
+***
+
+### TPM
+
+Der TPM dient zur Absicherung der Entropie, aus der der Private Key rekonstruiert wird.
+
+Aufgaben:
+* Versiegelung der 32‑Byte Entropie
+* Bindung der Entsiegelung an PCR 7
+* Freigabe der Entropie nur bei passendem Systemzustand
+
+Das TPM speichert nicht die 24 Wörter.
+Die 24 Wörter werden nur initial zur physischen Sicherung ausgegeben.
+
+***
+
+### Wechselmedium
+
+Das Wechselmedium dient ausschließlich dem kontrollierten Setup‑Austausch zwischen Key‑A‑VM und Basissystem.
+
+Regeln:
+* Nur ein dediziertes Medium verwenden.
+* Vor jedem neuen Setup‑Vorgang alte Daten entfernen.
+* Das Medium nach jedem Schritt sauber aushängen.
+* Operative PSBT‑Signierung erfolgt nicht über das Wechselmedium, sondern über WireGuard und API.
+
+***
+
+## Phase 0 – Einmaliges Setup
+
+### Voraussetzungen
+
+Vor dem Setup müssen folgende Voraussetzungen erfüllt sein:
+
+* NixOS ist auf der Key‑A‑VM installiert.
+* Docker ist verfügbar.
+* WireGuard ist eingerichtet oder wird über die deklarative Konfiguration vorbereitet.
+* Das Wechselmedium ist verfügbar.
+* Das Basissystem besitzt eine eigene WireGuard Peer‑Konfiguration.
+* Die Key‑A‑VM besitzt Zugriff auf einen TPM.
+* Die Signer‑Dateien liegen unter `/etc/nixos/`.
+* Der Docker‑Container kann über `docker compose` gebaut werden.
+
+***
+
+### 0.1 Initialisierung der Key‑A‑VM
+
+Die Initialisierung der Signer‑Identität erfolgt über einen systemd One‑Shot Service vollautomatisiert.
+```bash
+signer-init
+```
+
+Die Manuellen Schritte können wie folgt repliziert werden:
+Der Service wird beim Systemstart ausgeführt und wartet auf:
+* Docker
+* WireGuard
+* Netzwerk
+* DNS / nss-lookup
+
+Der Service prüft zuerst, ob die Initialisierung bereits durchgeführt wurde.
+```bash
+/var/lib/signer/initialized
+```
+
+Wenn diese Datei existiert, wird die Initialisierung nicht erneut ausgeführt.
+Ablauf:
+1. Warten auf abhängige Dienste
+2. Anlegen der Verzeichnisse:
+```bash
+/var/lib/signer
+/var/lib/signer/tpm
+```
+
+3. Build des Docker‑Containers:
+```bash
+docker compose build
+```
+
+4. Start des Docker‑Containers:
+```bash
+docker compose up -d
+```
+
+5. Erzeugung des Seeds:
+```bash
+python3 /psbt-signer/scripts/setup/genSeed.py
+```
+
+6. Erstellung der Walletdaten:
+```bash
+python3 /psbt-signer/scripts/setup/genWallet.py
+```
+
+7. Kopieren der TPM‑Artefakte aus dem Container:
+```bash
+seal.pub
+seal.priv
+sealed.ctx
+pcr.policy
+```
+
+8. Abschluss der Initialisierung:
+```bash
+touch /var/lib/signer/initialized
+```
+
+Hinweis:
+Die Initialisierung ist bewusst als einmaliger Vorgang umgesetzt. Dadurch wird verhindert, dass Seed, Wallet oder TPM‑Artefakte unbeabsichtigt neu erzeugt werden.
+
+***
+
+### 0.2 Seed erzeugen und im TPM versiegeln
+
+Der Seed wird innerhalb des Docker‑Containers über das Setup‑Script erzeugt.
+```bash
+/psbt-signer/scripts/setup/genSeed.py
+```
+
+Ablauf:
+1. Es werden 32 Byte Entropie erzeugt.
+2. Aus dieser Entropie wird eine BIP‑39 Mnemonic mit 24 Wörtern abgeleitet.
+3. Die 24 Wörter werden zur physischen Sicherung ausgegeben.
+4. Die 24 Wörter werden nicht im TPM gespeichert.
+5. Die 32‑Byte Entropie wird im TPM versiegelt.
+
+Hinweis: 
+Eine 24 Wörter Mnemoic seed phrase übersteigt das maximum von 128 byte für TPM.
+Auch kann es sein, das TPM nicht nativ, die Kurve des Bitcoin Algortihmus unterüstzt, weshalb sich für die Speicherung der Entropie entschieden wurde
+
+TPM‑Ablauf:
+1. Erstellung eines Primary Keys
+2. Start einer Trial Authorization Session
+3. Erzeugung einer PCR‑Policy auf Basis von PCR 7
+4. Versiegelung der Entropie
+5. Speichern der TPM‑Artefakte
+
+Ergebnis:
+```bash
+/psbt-signer/tpm/seal.pub
+/psbt-signer/tpm/seal.priv
+/psbt-signer/tpm/sealed.ctx
+/psbt-signer/tpm/pcr.policy
+```
+
+Hinweis:
+Die Entsiegelung ist an den Systemzustand gebunden. Verändert sich der relevante PCR‑Zustand, kann die Entropie nicht erfolgreich entschlüsselt werden.
+
+Empfehlung:
+Der 24 Wörter mnemonic Seed phrase wird in der Doku der one-Shot Initialisierung ausgegeben.
+Es wird empfohlen diese über den Status des service Programs einzusehen und physisch zu notieren:
+```bash
+systemctl status signer-intit
+```
+
+Zudem sollte das Log daraufhin gelöscht werden:
+```bash
+sudo journalctl --vacuum-time=5s
 ```
 
 ***
 
-## 3) Dependencies / Service Map (wer braucht wen)
+### 0.3 Walletdaten erzeugen
 
-### 3.1 Online Services (`btc-hot`)
+Nach der TPM‑Initialisierung wird die Wallet aus der entsiegelten Entropie erzeugt.
 
-#### `middleware` (HTTP API + Orchestration)
+Script:
+```bash
+/psbt-signer/scripts/setup/genWallet.py
+```
 
-**Needs:**
+Ablauf:
+1. Entropie wird über TPM entsiegelt.
+2. Daraus wird die BIP‑39 Mnemonic rekonstruiert.
+3. Daraus wird der Seed gebildet.
+4. Daraus wird der HD Root Key erzeugt.
+5. Der Key wird über folgenden Pfad abgeleitet:
+```bash
+m/84h/1h/0h
+```
 
-*   `OPA_URL` → OPA decision calls
-*   `NATS_URL` → publish/subscribe lifecycle events
-*   `BITCOIND_RPC_URL` + `BITCOIND_RPC_USER/PASS` → broadcast via `sendrawtransaction`
-*   `DATABASE_URL` → external Postgres
-*   `NOTIFIER_URL` → ntfy endpoint (nur Schnittstelle, out-of-scope)
-*   `policy-signer` → Hot auto-sign (HTTP)
+6. Der Xpub wird erzeugt.
+7. Der öffentliche Descriptor wird erstellt.
 
-**Calls:**
+Interner und Externer Descriptor‑Format:
+```bash
+wpkh([fingerprint/84h/1h/0h]xpub/{0,1}/*)
+```
 
-*   **OPA**: `POST /v1/data/policy/hot` und/oder `POST /v1/data/policy/refill`
-*   **Policy‑Signer**: `POST /api/v1/sign`
-*   **bitcoind (node-only)**: JSON-RPC `sendrawtransaction`
-*   **Notifier (ntfy)**: `POST /notify/refill-needed` (placeholder contract)
+Hinweis:
+Der interne und Externe Deskriptor wird benötigt um Transaktion auf und vom dem Wallet kontruieren zu können-
 
-***
+Ergebnis:
+```bash
+/psbt-signer/run/wallets/descriptor.public.txt
+/psbt-signer/run/wallets/xpub.txt
+/psbt-signer/run/wallets/metadata.json
+```
 
-#### `tx-builder` (Wallet‑Logik / PSBT Builder)
+Die Metadata Datei enthält:
+* Network
+* Master Fingerprint
+* Pfad zur Xpub‑Datei
+* öffentlichen Descriptor
 
-**Needs:**
-
-*   `DATABASE_URL` (state, UTXO cache, intents)
-*   `NATS_URL` (consume intents + publish results)
-*   `OPA_URL` (refill-intent allow)
-*   optional: bitcoind RPC read calls (fee estimates, mempool/chain info)
-    *   `BITCOIND_RPC_URL` + creds
-
-**Does:**
-
-*   Builds **Refill PSBT** for cold->hot (transport as base64 via middleware endpoint)
-*   Emits events:
-    *   `intent.refill.created`
-    *   `intent.refill.psbt_created`
-
-***
-
-#### `policy-signer` (Hot Key holder)
-
-**Needs:**
-
-*   `HOT_SIGNING_KEY` (placeholder; later HSM/KMS)
-*   `OPA_URL` (optional: signer re-check / binding checks)
-*   `DATABASE_URL` (optional: idempotency/audit)
-
-**Called by:**
-
-*   `middleware` only (NetworkPolicy blocks others)
-
-**Endpoint:**
-
-*   `POST /api/v1/sign` → returns `signed_rawtx_hex`
+Hinweis:
+Die Konfiguration ist aktuell auf Testnet (selbe Konfiguration wie Regtest) ausgelegt. 
+Für den späteren Produktiven Betrieb muss dies auf mainnet umgestellt werden, wobei dies direkt in der Docker Compose für alle Skripte geändert werden kann.
+```bash
+NETWORK = "test"
+```
 
 ***
 
-#### `opa` (Policy Engine)
+### 0.4 HMAC Secret erzeugen
 
-**Needs:**
+Das HMAC Secret wird durch einen eigenen systemd One‑Shot Service erzeugt.
+```bash
+generate-hmac-secret
+```
 
-*   Policies (`policies/hot.rego`, `policies/refill.rego`, `policies/data.json`) mounted via ConfigMap (MVP)
+Speicherort:
+```bash
+/var/lib/signer/hmac.secret
+```
 
-**Called by:**
+Ablauf:
+1. Prüfen, ob bereits ein Secret existiert.
+2. Falls nicht vorhanden, wird ein neues 32‑Byte Secret erzeugt.
+3. Das Secret wird als Hex‑String gespeichert.
+4. Die Dateirechte werden restriktiv gesetzt.
+```bash
+chown root:1000
+chmod 0440
+```
 
-*   `middleware`
-*   `policy-signer` (optional)
-*   `tx-builder`
-
-***
-
-#### `nats` (Event bus)
-
-**Needs:**
-
-*   none (JetStream optional enabled)
-
-***
-
-### 3.2 Bitcoin Network Simulation (`btc-net`)
-
-#### `bitcoind-regtest` (node-only)
-
-**Needs:**
-
-*   Persistent volume (chainstate)
-*   RPC auth (Basic user/pass for Dev=Prod consistent)
-
-**Exposes:**
-
-*   RPC: `18443` (Cluster internal)
-*   P2P: `18444` (optional)
-
-#### `regtest-miner`
-
-**Needs:**
-
-*   bitcoind RPC creds
-*   mines blocks to confirm TXs automatically (MVP: every 10s)
+Zweck:
+* Authentifizierung eingehender API‑Requests
+* Integritätsprüfung der Kommunikation
+* Absicherung zusätzlich zu WireGuard
 
 ***
 
-### 3.3 Offline / Air‑gapped VMs
+### 0.5 WireGuard Keypair erzeugen
 
-#### Proxmox Host
+Das WireGuard Keypair wird beim ersten Start über einen systemd Service erzeugt.
+```bash
+wg-keygen
+```
 
-*   `psbt_usbFlow` script:
-    *   attaches/detaches `psbt-usb.qcow2` as `scsi2`
-    *   waits for **ENTER** then detaches
+Ergebnis:
+```bash
+/var/lib/wireguard/private.key
+/var/lib/wireguard/public.key
+```
 
-#### Hot Operator VM
+Konfiguration:
+```bash
+wg0
+10.10.0.2/24
+51820
+```
 
-*   `usb-export-psbt.sh`:
-    *   mounts USB
-    *   fetches PSBT base64 from middleware
-    *   writes `/mnt/usb/psbt/unappr.<id>.psbt`
-    *   unmounts USB
-    *   Operator presses **ENTER on Proxmox host**
-
-#### Signer / KeyB / KeyC VMs
-
-*   `psbt-approve.sh` (Signer): generates `approval.json` + `.sig` and `appr.<id>.psbt`, unmounts
-*   `hash-verify.sh` (KeyB/KeyC): verifies approval + hash-binding, keeps USB mounted if OK (for Sparrow)
-
-***
-
-## 4) Data Formats / Contracts
-
-### 4.1 Transport format: **Base64** for PSBT over HTTP/NATS
-
-**Decision:**
-
-*   PSBT is transported as **base64** in JSON payloads (robust for HTTP proxies + logs + NATS messages).
-*   On USB it is stored as **binary `.psbt`** (Sparrow-friendly).
-
-### 4.2 REST API Specs (OpenAPI)
-
-*   `contracts/openapi/middleware.yaml`
-    *   `GET /api/v1/intents/{id}/psbt?format=base64` → `{ psbt_base64 }`
-    *   `POST /api/v1/hot/tx` → start hot tx flow
-    *   `POST /api/v1/broadcast` → broadcast signed rawtx
-*   `contracts/openapi/tx-builder.yaml`
-    *   `POST /api/v1/build/refill-psbt`
-*   `contracts/openapi/policy-signer.yaml`
-    *   `POST /api/v1/sign`
-*   `contracts/openapi/notifier.yaml`
-    *   `POST /notify/refill-needed` (ntfy interface only)
-*   `contracts/openapi/rpc-gateway.yaml`
-    *   optional operator RPC gateway contract
-
-### 4.3 Eventing Specs (AsyncAPI)
-
-*   `contracts/asyncapi/nats.yaml` defines subjects:
-    *   `intent.refill.created`
-    *   `intent.refill.psbt_created`
-    *   `tx.hot.requested`
-    *   `tx.hot.approved`
-    *   `tx.hot.signed`
-    *   `tx.hot.broadcast`
-    *   `tx.hot.confirmed`
+Hinweis:
+Der Private Key verbleibt auf der Key‑A‑VM. Exportiert wird ausschließlich der Public Key.
 
 ***
 
-## 5) Workflows (wer ruft wen wann)
+### 0.6 Netzwerkhärtung
 
-### 5.1 Hot Auto‑Signing (extern, vollautomatisch)
+Die Netzwerkkonfiguration folgt dem Prinzip `policy drop`.
+Erlaubt sind:
+* Loopback
+* bereits etablierte Verbindungen
+* Traffic über `wg0`
+* UDP 51820 für WireGuard Handshake
 
-1.  External system → `middleware: POST /api/v1/hot/tx`
-2.  `middleware` → `OPA` allow check (`policy.hot`)
-3.  `middleware` → `policy-signer: POST /api/v1/sign` (request\_id + tx\_hash binding)
-4.  `middleware` → `bitcoind-regtest: sendrawtransaction`
-5.  `middleware` publishes NATS lifecycle events
+Nicht erlaubt ist:
+* sonstiger eingehender Traffic
+* sonstiger ausgehender Traffic
+
+Regeln:
+```bash
+iif lo accept
+ct state established,related accept
+iifname "wg0" accept
+iifname "eth0" udp dport 51820 accept
+```
+```bash
+oif lo accept
+ct state established,related accept
+oifname "wg0" accept
+oifname "eth0" udp sport 51820 accept
+```
+
+Hinweis:
+Die Key‑A‑VM bleibt damit technisch erreichbar, aber ausschließlich über den definierten WireGuard‑Pfad.
 
 ***
 
-### 5.2 Cold Manual Refill (threshold -> intent -> human)
+### 0.7 Export der Key‑A‑Informationen
 
-1.  `tx-builder` detects threshold breach (or receives balance event)
-2.  `tx-builder` → `OPA` (`policy.refill`) checks allow\_intent + recommended\_amount
-3.  `tx-builder` creates `intent.refill.created` (NATS)
-4.  `tx-builder` builds PSBT and stores it under intent\_id
-5.  `middleware` (or `tx-builder`) triggers **notify\_human** via Notifier interface (**ntfy out-of-scope**)
+Die für das Basissystem benötigten Informationen werden über ein dediziertes Wechselmedium exportiert.
+Genutzt werden kann das vollautomatische Script, welches direkt die später benötigt Nomenklatur und Ordnerstruktur erzeugt:
+```bash
+wgHMAC_export.sh
+```
 
-**Manual part (Operator + air‑gap):**
+Voraussetzungen:
+* USB‑Medium ist vorhanden
+* Label des Mediums ist:
+```bash
+USB
+```
 
-*   Operator exports PSBT to USB with `usb-export-psbt.sh`
-*   Air‑gapped PSBT workflow executes offline signing
+Hinweis:
+Das Medium kann vollautomatisch formatiert und benannt werden über:
+```bash
+psbt/setup/format-USB.sh
+```
+
+* folgende Dateien existieren im Scope des Export-Scripts:
+```bash
+/var/lib/wireguard/public.key
+/var/lib/signer/hmac.secret
+/var/lib/signer/wallets/xpub.txt
+/var/lib/signer/wallets/descriptor.public.txt
+/var/lib/signer/wallets/metadata.json
+```
+
+Ablauf:
+
+1. USB‑Medium einstecken
+2. ggf. wipen
+3. Script ausführen:
+```bash
+sudo wgHMAC_export.sh
+```
+
+3. Das Script mountet das Medium unter:
+```bash
+/mnt/usb
+```
+
+4. Die benötigten Zielverzeichnisse werden erstellt:
+```bash
+/mnt/usb/communication
+/mnt/usb/wallet/hot
+```
+
+5. WireGuard Daten werden geschrieben nach:
+```bash
+/mnt/usb/communication/wireguard/wireguard.signer.json
+```
+
+6. HMAC Secret wird geschrieben nach:
+```bash
+/mnt/usb/communication/signer-hmac.secret
+```
+
+7. Walletdaten werden geschrieben nach:
+```bash
+/mnt/usb/wallet/hot/xpub.txt
+/mnt/usb/wallet/hot/descriptor.public.txt
+/mnt/usb/wallet/hot/metadata.json
+```
+
+8. Das Wechselmedium kann im Basissystem eingehangen werden, um WireGuard Peer, HMAC Secret und Wallet‑Informationen zu extraheiren.
+
+Hinweis:
+Es wird ausschließlich öffentliches Wallet‑Material exportiert. Das HMAC Secret dient nur der API‑Authentifizierung. Private Schlüsselmaterialien werden nicht exportiert.
 
 ***
 
-## 6) Manual Air‑gapped PSBT Workflow (Commands only)
+### 0.8 WireGuard Peer des Basissystems importieren
 
-> Voraussetzung: Signer Public Key ist einmalig verteilt (siehe `tools/cold/README.md`).
+Der WireGuard Peer des Basissystems wird über das Wechselmedium vollautomatisch importiert über.
+```bash
+wgPeer_setup.sh
+```
 
-### 6.1 Export PSBT to USB (Hot Operator)
+Voraussetzung:
+folgende Datei auf dem Wechsel-Medium
+```bash
+/mnt/usb/communication/wireguard/wireguard.wallet.json
+```
 
-**Proxmox Host**
+Hinweis: 
+Diese kann auf dem Basis-System vollautomatisch über wgPeer_export.sh mit der richtigen Nomenklatur und Orderstruktur auf dem USB exportierd werden
+
+Ablauf:
+1. USB‑Medium einstecken
+2. Script ausführen:
+```bash
+sudo wgPeer_setup.sh
+```
+
+3. Das Script liest:
+```bash
+wallet_public_key
+wallet_ip
+```
+
+4. Die WireGuard Konfiguration wird geschrieben nach:
+```bash
+/etc/wireguard/wg0.conf
+```
+
+5. Der Peer wird auf dem Interface gesetzt:
+```bash
+wg set wg0 peer ...
+```
+
+Ergebnis:
+Die Key‑A‑VM akzeptiert danach den definierten WireGuard Peer des Basissystems.
+
+Hinweis:
+Dies kann in folgendem befehl kontrolliert werden. Siehe "latest handshake"
+```bash
+sudo wg show
+```
+
+***
+
+## 1. Signierungsprozess
+
+### 1.1 Empfang der PSBT
+
+Die Key‑A‑VM stellt eine HTTP API bereit.
+Diese wird im Basis-System durch einen die BIP21- oder PSBT-Schnittstelle oder durch einen OPA refill ausgelöst.
+Endpoint:
+```bash
+POST /sign
+```
+
+Der Request enthält:
+* PSBT als Base64
+* SHA256 Hash der PSBT
+* PSBT ID
+* Wallet Type
+* Timestamp
+* Nonce
+* HMAC Signature
+
+Header:
+```bash
+X-Timestamp
+X-Nonce
+X-Signature
+```
+
+Regeln:
+* Requests ohne gültige HMAC Signatur werden abgewiesen.
+* Ungültige JSON Bodies werden abgewiesen.
+* Requests ohne PSBT werden abgewiesen.
+* PSBTs mit abweichendem SHA256 Hash werden abgewiesen.
+
+***
+
+### 1.2 HMAC Prüfung
+
+Das Secret wird im Container geladen aus:
 
 ```bash
-psbt_usbFlow hot
+/psbt-signer/run/secrets/hmac.secret
 ```
 
-**Hot‑VM**
+Die Prüfung erfolgt vor jeder weiteren Verarbeitung.
+Zweck:
+* Authentizität des Senders prüfen
+* Manipulation des Request Body erkennen
+* Replay‑Risiken durch Timestamp und Nonce reduzieren
 
-```bash
-sudo API_BASE="http://middleware.btc-hot.svc.cluster.local:8080" \
-     ./usb-export-psbt.sh <intent-id>
-```
-
-**Proxmox Host**
-
-    ENTER
-
-### 6.2 Approval (Signer)
-
-**Proxmox Host**
-
-```bash
-psbt_usbFlow signer
-```
-
-**Signer‑VM**
-
-```bash
-sudo mount /dev/disk/by-label/USB /mnt/usb
-sudo psbt-approve.sh
-# unmount happens in script
-```
-
-**Proxmox Host**
-
-    ENTER
-
-### 6.3 Verify + BTC Sign (KeyB oder KeyC)
-
-**Proxmox Host**
-
-```bash
-psbt_usbFlow keyb
-```
-
-**KeyB‑VM**
-
-```bash
-sudo mount /dev/disk/by-label/USB /mnt/usb
-sudo hash-verify.sh
-# USB stays mounted for Sparrow
-# Sparrow: import appr.<id>.psbt, sign, export signed.<id>.psbt
-sync
-sudo umount /mnt/usb
-```
-
-**Proxmox Host**
-
-    ENTER
-
-### 6.4 Combine/Finalize (Signer) + Broadcast (Hot)
-
-(analog zu euren bisherigen Runbooks)
+Wenn die Prüfung fehlschlägt, wird der Request mit `401` abgelehnt.
 
 ***
 
-## 7) Policy Setup (OPA)
+### 1.3 SHA256 Prüfung
 
-### Files
+Vor der Signierung wird der Hash der empfangenen PSBT geprüft.
 
-*   `policies/hot.rego` → hot auto-sign allow/deny (whitelist, amount, velocity, network)
-*   `policies/refill.rego` → refill intent allow + recommendation + notify flag
-*   `policies/data.json` → limits, whitelists, allowed networks
+Ablauf:
+1. PSBT Base64 decodieren
+2. SHA256 über die PSBT‑Bytes bilden
+3. Vergleich mit dem gelieferten Hash
 
-### Deployment
-
-OPA loads policies via ConfigMap in `deploy/k8s/base/opa.yaml`.
+Wenn der Hash nicht übereinstimmt:
+```bash
+sha256 mismatch (PSBT tampering detected)
+```
+Die PSBT wird nicht signiert.
 
 ***
 
-## 8. VolSync Backup Setup
+### 1.4 Deduplication Check
 
-### 8.1 Installation (einmalig)
 
+
+Vor der Signierung wird die PSBT ID gespeichert.
+
+Regel:
+* Ist die PSBT ID bereits vorhanden, wird nicht erneut signiert.
+
+Antwort:
 ```bash
-helm repo add backube https://backube.github.io/helm-charts/
-helm install -n volsync-system --create-namespace volsync backube/volsync
+ALREADY_PROCESSED
 ```
 
-### 8.2 Backup konfigurieren
-
-```bash
-kubectl apply -f deploy/k8s/volsync/00-volsync-restic-secret.yaml
-kubectl apply -f deploy/k8s/volsync/10-archive-replicationsource.yaml
-```
-
-✅ Backup ist **komplett entkoppelt**  
-✅ Applikationen kennen das Backup‑Ziel nicht
+Zweck:
+* Verhindern mehrfacher Verarbeitung identischer PSBTs
+* Schutz gegen Replay‑Abläufe
+* klare Nachvollziehbarkeit bereits gesehener Signiervorgänge
 
 ***
 
-## 9. Wiederherstellung (DR‑Gedanke)
+### 1.5 PSBT Policy Check
 
-*   Restore erfolgt über `ReplicationDestination`
-*   Archiv‑PVC wird aus Backup wiederhergestellt
-*   Middleware findet:
-    *   PSBTs
-    *   Broadcast‑Daten
-    *   GPG‑Approvals
+Vor der Signierung wird die PSBT strukturell geprüft.
+Prüfungen:
+* Transaktion muss vorhanden sein
+* Inputs müssen vorhanden sein
+* Jeder Input benötigt `witness_utxo`
+* Jeder Input benötigt BIP32 Derivations
+* Outputs müssen gültige Werte größer 0 besitzen
 
-***
+Fehler führen zum Abbruch der Signierung.
 
-## 8) Deployment (Kubernetes/Talos)
-
-### 8.1 Prereqs
-
-*   `kubectl` configured to Talos cluster
-*   external Postgres reachable (provide `DATABASE_URL`)
-*   GHCR images available (public or configure `imagePullSecrets`)
-
-### 8.2 Apply manifests
-
-Recommended order (encoded in `k8s/scripts/deploy.sh`):
-
-### 8.3 Verify
-
-```bash
-kubectl -n btc-hot get pods
-kubectl -n btc-net get pods
-kubectl -n btc-hot get svc
-kubectl -n btc-net get svc
-```
+Hinweis:
+Diese Policy ersetzt keine vollständige fachliche Transaktionsprüfung durch den Gesamtprozess im Basisprozess, verhindert aber strukturell ungültige PSBTs im Signer.
+Dies ist implementiert im Basis-System durch Bitcoin Core und Open Policy Agent
 
 ***
 
-## 9) Build & Push Docker images
+### 1.6 Entsiegelung aus dem TPM
 
-### 9.1 Build
-
+Für jeden Signiervorgang wird die Entropie aus dem TPM entsiegelt.
+Ablauf:
+1. Prüfen, ob der TPM Kontext existiert:
 ```bash
-export REG=ghcr.io/your-org
-export TAG=0.1.0
-bash k8s/scripts/build-images.sh
+/psbt-signer/tpm/sealed.ctx
 ```
 
-### 9.2 Push
-
+2. Start einer Policy Session
+3. Laden des aktuellen PCR‑7 Zustands
+4. Entsiegelung mit:
 ```bash
-export REG=ghcr.io/your-org
-export TAG=0.1.0
-bash k8s/scripts/push-images.sh
+tpm2_unseal
 ```
 
-### 9.3 Deploy
+5. Flush der TPM Session
+6. Entfernen des Session Contexts
 
-```bash
-bash k8s/scripts/deploy.sh
-```
+Regel:
+Die Session wird immer bereinigt, auch wenn ein Fehler auftritt.
 
-### 9.4 redploy on changes
-```bash
-export REG=ghcr.io/your-org
-export TAG=0.1.0
-bash k8s/scripts/build-images.sh
-bash k8s/scripts/push-images.sh
-kubectl -n btc-hot rollout restart deployment middleware
-```
+Hinweis:
+Wenn PCR 7 nicht dem erwarteten Zustand entspricht, schlägt der TPM Zugriff fehl.
 
 ***
 
-## 10) Service Configuration (example.env)
+### 1.7 Signierung über embit
 
-Each service has `config/example.env` as documentation of required env vars.  
-In K8s, env vars are provided via:
+Nach erfolgreichem TPM‑Unseal wird die Entropie zur Erstellung des Signaturschlüssels genutzt.
+Ablauf:
+1. Entropie aus TPM lesen
+2. Mnemonic daraus rekonstruieren
+3. Seed erzeugen
+4. HD Root Key erzeugen
+5. PSBT validieren
+6. PSBT mit Root Key signieren
 
-*   `deploy/k8s/base/configmap.yaml` (non-secrets)
-*   `deploy/k8s/base/secrets-template.yaml` (secrets)
-
-***
-
-## 11) Proxmox USB “Insert/Remove” Tooling
-
-### Install (Proxmox Host)
-
-*   Copy `tools/proxmox/psbt_usbFlow` to `/root/psbt-usb.sh` (or symlink)
-*   Ensure executable:
-
+Implementierung über embit:
 ```bash
-chmod +x /root/psbt-usb.sh
+psbt.sign_with(root)
 ```
 
-### Usage
+Regeln:
+* Schlüsselmaterial wird nur im RAM verarbeitet.
+* Der Seed wird nicht persistent gespeichert.
+* Der Private Key wird nicht exportiert.
+* Das Schlüsselmaterial verlässt die VM nicht.
+* Nach jeder Erzeugung des Elements tiefer in der Kette des Schlüsselmaterials wird das obere Element direkt aus dem RAM gelöscht.
 
+***
+
+### 1.8 Antwortverhalten
+
+Es wird die signierte PSBT mit dem SHA256 Hash zurückgegeben
 ```bash
-/root/psbt-usb.sh hot
-/root/psbt-usb.sh signer
-/root/psbt-usb.sh keyb
-/root/psbt-usb.sh keyc
+psbt_signed
+sha256
 ```
 
-It will:
+### 1.9 Weiterverarbeitung auf dem Basis-System
+Diese wird anschließend von dem Basis-System basierend auf dem Wallet-Typen (Hot oder Cold) weiterverarbeitet
 
-*   start VM if needed
-*   attach usb qcow2 to `scsi2`
-*   wait for ENTER
-*   detach
+Hot-Wallet Transaktion werden direkt über Bitcoin Core Finalisiert und schließend auf der blockchain broadcasted.
+
+Für Cold-Wallets wird ein menschlicher Operant benachrichtigt, der den manuellen Workflows des Code-Wallets fortsetzt.
+Es folgt die Signatur durch Key B oder Key C und anschließend die Finalisierung und Broadcasting im Basis-System
 
 ***
 
-## 12) Operator Tool (export PSBT to USB)
+# 2. Operative Regeln
 
-### Install (Hot Operator VM)
+* Key A ist Bestandteil des Hot‑Kontexts.
+* Die Key‑A‑VM ist vom Basissystem getrennt.
+* Das Basissystem kommuniziert als einziges System mit Key A.
+* Die Kommunikation erfolgt ausschließlich über WireGuard.
+* Alle API Requests müssen per HMAC authentifiziert sein.
+* Es werden ausschließlich PSBTs verarbeitet.
+* Das Schlüsselmaterial verlässt die VM nicht.
+* Entropie wird im TPM versiegelt.
+* Entsiegelung ist an PCR 7 gebunden.
+* Der Private Key wird nur im RAM rekonstruiert.
+* Bereits verarbeitete PSBT IDs werden erkannt.
+* Doppelte PSBTs werden nicht erneut signiert.
+* Setup‑Daten werden über USB ausgetauscht.
+* Private Schlüssel werden nicht über USB exportiert.
+* Der Refill Workflow bleibt nach Key A nicht finalisiert.
+* Der Hot‑Workflow kann direkt eine Raw Transaction zurückgeben.
 
-Copy `tools/operator/usb-export-psbt.sh` somewhere in `$PATH` and executable:
+***
 
+# 4. Hilfsprogramme
+
+Die bereitgestellten Skripte unterstützen den operativen Ablauf und die initiale Einrichtung der Key‑A‑VM.
+Sie ersetzen keine Sicherheitsentscheidung, sondern automatisieren definierte Setup‑ und Betriebsaufgaben.
+Alle Skripte sind auf den festgelegten Pfaden auszuführen.
+
+***
+
+## setup/setup.sh
+
+Zweck:
+
+* installiert beziehungsweise konfiguriert das NixOS‑Basissystem
+* bereitet die Key‑A‑VM für den Signer‑Betrieb vor
+* stellt die Grundlage für Docker, WireGuard und die weiteren Services bereit
+
+Einsatz:
+* initiales Setup der VM
+* reproduzierbarer Aufbau der Systemumgebung
+
+***
+
+## psbt/setup/mnt\_usb.sh
+
+Zweck:
+* standardisiertes Mounten des Wechselmediums
+* konsistenter Mount‑Pfad
 ```bash
-chmod +x usb-export-psbt.sh
+/mnt/usb
 ```
 
-### Usage
+Einsatz:
+* vor Export oder Import von Setup‑Artefakten
+* beim kontrollierten Austausch mit dem Basissystem
+* Teil der vollautomatischen Scripten
+* Für einfache manuelle Vorgänge des Operanten
 
+***
+
+## psbt/setup/umnt\_usb.sh
+
+Zweck:
+
+* standardisiertes Unmounten des Wechselmediums
+* Synchronisieren ausstehender Schreibvorgänge
+* sauberes Entfernen des Mediums
+
+Einsatz:
+* nach jedem Setup‑Austausch
+* nach jedem Export oder Import
+* Teil der vollautomatischen Scripten
+* Für einfache manuelle Vorgänge des Operanten
+
+***
+
+## psbt/setup/format\_usb.sh
+
+Zweck:
+
+* vollständige Bereinigung des Wechselmediums
+* Entfernen alter Kommunikations‑ und Wallet‑Artefakte
+* definierter Ausgangszustand
+* Benennung des Wechselmediums
+
+Einsatz:
+* vor Beginn eines neuen Setup‑Vorgangs
+* bei Unsicherheiten über den Zustand des Mediums
+
+***
+
+## wgHMAC\_export.sh
+
+Zweck:
+* Export der Key‑A‑Kommunikationsdaten
+* Export des HMAC Secrets
+* Export der öffentlichen Walletinformationen
+
+Exportiert:
 ```bash
-sudo API_BASE="http://middleware.btc-hot.svc.cluster.local:8080" \
-     ./usb-export-psbt.sh <intent-id>
+/communication/wireguard/wireguard.signer.json
+/communication/signer-hmac.secret
+/wallet/hot/xpub.txt
+/wallet/hot/descriptor.public.txt
+/wallet/hot/metadata.json
 ```
 
-***
+Einsatz:
+* initialer Austausch mit dem Basissystem
+* Einrichtung des Basissystems für die Kommunikation mit Key A
+* Übergabe des öffentlichen Key‑A‑Anteils für Wallet‑Konfigurationen
 
-## 13) Notes / Next Implementation Steps (for future work)
-
-This repo intentionally contains **skeleton services**:
-
-*   `middleware` currently stubs PSBT retrieval (needs DB storage)
-*   `tx-builder` stub: needs UTXO tracking, fee estimation, PSBT building
-*   `policy-signer` stub: signing not implemented (placeholder `HOT_SIGNING_KEY`)
-
-Planned next iterations:
-
-*   DB schema (intents, tx lifecycle, audit, idempotency)
-*   NATS JetStream stream/consumer definitions
-*   Real PSBT build implementation (descriptor-based)
-*   Real signing backend for policy-signer (HSM/KMS integration)
-*   Notification integration with ntfy (external)
+Hinweis:
+Es werden keine privaten Schlüssel exportiert.
 
 ***
 
-## PostGres-SQL DB
+## wgPeer\_setup.sh
 
-### 12.1 Minimaler DB‑Betrieb (How‑To)
+Zweck:
 
-**Migration ausführen (lokal/CI/CD):**
+* Import des WireGuard Peers des Basissystems
+* Erstellung beziehungsweise Aktualisierung der WireGuard Konfiguration
+* Aktivierung des Peer‑Eintrags auf `wg0`
 
-*   Variante A (einfach): `psql` direkt
-
+Liest:
 ```bash
-psql "$DATABASE_URL" -f services/middleware/migrations/001_init.sql
+/communication/wireguard/wireguard.wallet.json
 ```
 
-*   Variante B (Job im Cluster):  
-    Ein K8s Job, der `psql` nutzt und die Migration aus einem ConfigMap/Container ausführt (optional; sag Bescheid, dann schreibe ich dir den Job).
+Schreibt:
+```bash
+/etc/wireguard/wg0.conf
+```
+
+Einsatz:
+* nach Export der Basissystem‑Peer‑Daten
+* bei Neuaufbau der Peer‑Beziehung
+* bei Wechsel des Basissystems
 
 ***
 
-### 12.4 Mapping: Welche Aktion schreibt in welche Tabellen?
+## signer-init
 
-**Hot Auto‑Flow**
+Zweck:
+* Initialisierung der Signer‑Identität
+* Build und Start des Docker‑Containers
+* Erzeugung von Seed und Wallet
+* Kopieren der TPM‑Artefakte
+* Markieren des Systems als initialisiert
 
-*   `intent` (type=hot\_tx)
-*   `policy_decision` (policy.hot)
-*   `hot_sign_request` (request\_id, tx\_hash, state)
-*   `archived_tx` (nach Broadcast + Archivierung auf PVC)
-*   optional `event_log` (NATS lifecycle)
+Schreibt:
+```bash
+/var/lib/signer/initialized
+```
 
-**Cold Manual Refill**
-
-*   `intent` (type=refill, state=WAITING\_HUMAN)
-*   `policy_decision` (policy.refill)
-*   `psbt_artifact` (stage=unappr/appr/signed/final, jeweils Pfad+Hash)
-*   `archived_tx` (nach Broadcast + Archiv)
-*   optional `event_log`
+Einsatz:
+* automatisch beim ersten Systemstart
+* nicht manuell erneut ausführen, wenn das System bereits initialisiert ist
 
 ***
 
+## generate-hmac-secret
+
+Zweck:
+* Erzeugung des HMAC Secrets
+* restriktive Speicherung für den Signer
+
+Schreibt:
+```bash
+/var/lib/signer/hmac.secret
+```
+
+Einsatz:
+* automatisch beim Setup
+* Grundlage für die Authentifizierung der API‑Requests
+
+***
+
+## wg-keygen
+Zweck:
+* Erzeugung des WireGuard Keypairs
+* Bereitstellung der Schlüssel für `wg0`
+
+Schreibt:
+```bash
+/var/lib/wireguard/private.key
+/var/lib/wireguard/public.key
+```
+
+Einsatz:
+* automatisch vor Start von WireGuard
+* Grundlage für den Peer‑Austausch mit dem Basissystem
+
+***
+
+# 5. Sicherheitsmodell
+
+### 5.1 Kommunikationssicherheit
+Die Kommunikation zwischen Basissystem und Key‑A‑VM ist zweistufig abgesichert.
+
+Schicht 1:
+* WireGuard Tunnel
+* definierte Peers
+* eingeschränkte Ports
+
+Schicht 2:
+* HMAC Signatur
+* Timestamp
+* Nonce
+* SHA256 Prüfung der PSBT
+
+Dadurch wird verhindert, dass beliebige Systeme Signieranfragen an Key A senden können.
+
+***
+
+### 5.2 Schlüsselmaterial
+
+Das Schlüsselmaterial wird nicht dauerhaft als Private Key gespeichert.
+
+Speicherprinzip:
+* TPM speichert versiegelte Entropie
+* Mnemonic wird nur temporär rekonstruiert
+* Seed wird nur temporär rekonstruiert
+* Private Key wird nur im RAM gebildet
+* keine Persistenz auf Disk
+
+***
+
+### 5.3 TPM Bindung
+
+Die Entsiegelung nutzt PCR 7.
+Dadurch ist die Entsiegelung an den erwarteten Systemzustand gebunden.
+Wenn sich der relevante Boot‑ oder Policy‑Zustand ändert, schlägt die Entsiegelung fehl.
+Dadurch sollen manipulationen des System erkannt und vor Extraktion des Schlüsselmaterials geschützt werden
+
+***
+
+### 5.4 PSBT‑Policy
+Die Policy prüft die Mindeststruktur der PSBT.
+
+Geprüft wird:
+* vorhandene Transaktion
+* vorhandene Inputs
+* Witness UTXO je Input
+* BIP32 Derivation je Input
+* gültige Output‑Werte
+
+Ungültige PSBTs werden nicht signiert.
+
+***
+
+### 5.5 Deduplication
+
+Jede PSBT ID wird gespeichert.
+Bereits bekannte PSBT IDs führen zu:
+```bash
+ALREADY_PROCESSED
+```
+
+Dadurch wird verhindert, dass dieselbe PSBT mehrfach verarbeitet wird.
+
+***
+
+# 6. Ergebnis
+
+Nach erfolgreichem Setup stellt die Key‑A‑VM einen isolierten und automatisierten Signer bereit.
+Damit bildet die Key‑A‑VM den automatisierten Signaturpunkt des Hot‑Kontexts, ohne das private Schlüsselmaterial an das Basissystem zu übergeben.
 
 
 
-
-
-
-
-
-
-
-
-
-
-TEST
-Deploy komplett grün (Pods Running, Services erreichbar)
-DB Migrationen (001+002) im externen Postgres
-Auto-build Pipeline testen (Intent event → Work‑PVC → Middleware GET returns base64)
-Broadcast+Archive Pipeline testen (mit Dummy PSBT falls nötig, oder einfach Archive Endpoint via curl)
-Observability:
-
-/metrics in middleware/tx-builder/policy-signer
-JSON logs in Loki
-
-
-NetPol Verification:
-
-“deny by default” wirklich wirksam?
-nur erlaubte Egress/Ingress funktionieren
+***
