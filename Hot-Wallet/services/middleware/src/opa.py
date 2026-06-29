@@ -60,7 +60,7 @@ def parseOPA_PSBT(psbt: PSBTModel) -> dict:
         "psbt": psbt.psbt,
         "network": psbt.network,
         "target_address": psbt.target_address,
-        "source_address": psbt.target_address,
+        "source_address": psbt.source_address,
 
         "amount_sats": psbt.amount_sats,
         "fee_sats": psbt.fee_sats,

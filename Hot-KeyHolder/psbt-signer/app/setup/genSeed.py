@@ -5,7 +5,7 @@ import sys
 import subprocess
 from embit import bip39
 
-STATE_DIR = "/var/lib/signer/initialized"
+STATE_DIR = "/psbt-signer/tpm"
 INIT_MARKER = os.path.join(STATE_DIR, "initialized")
 
 
@@ -49,7 +49,10 @@ subprocess.run([
 
 #Berechne die Policy basierend auf dem aktuellen Zustand von PCR 7
 subprocess.run([
-    "tpm2_policypcr", "-S", session_ctx, "-l", "sha256:7", "-L", policy_file
+    "tpm2_policypcr",
+    "-S", session_ctx,
+    "-l", "sha256:4,8,9,11",    #PCR 4,8,9,11 um tpm nach rebuild-switch von NixOS unbrauchbar zu machen
+    "-L", policy_file
 ], check=True)
 
 #Sitzungskontext schließen und aufräumen

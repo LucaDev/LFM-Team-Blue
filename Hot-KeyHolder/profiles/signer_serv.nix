@@ -43,10 +43,32 @@ in
         echo "[*] already initialized"
         exit 0
       fi
+
       mkdir -p /var/lib/signer
-      mkdir -p /var/lib/signer/tpm
+
+      #GID fuer TPM
+      TPM_GID="$(${pkgs.coreutils}/bin/stat -c '%g' /dev/tpmrm0 2>/dev/null || echo 0)"
+      if [ "$TPM_GID" = "0" ]; then
+        echo "[!] WARNUNG: TPM-Geraetegruppe konnte nicht ermittelt werden, falle auf root(0) zurueck"
+        echo "[!] Pruefe 'ls -l /dev/tpmrm0' manuell, falls der Signer-Container keinen TPM-Zugriff bekommt"
+      fi
+
+      #.env erstellen
+      if [ ! -f /var/lib/signer/.env ]; then
+        echo "[*] generating postgres credentials"
+        {
+          echo "POSTGRES_USER=signer"
+          echo "POSTGRES_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -base64 24)"
+          echo "POSTGRES_DB=btc"
+        } > /var/lib/signer/.env
+        chmod 0600 /var/lib/signer/.env
+      fi
+      ln -sf /var/lib/signer/.env "${appDir}/.env"
+
       echo "[*] building signer container"
       ${pkgs.docker}/bin/docker compose build
+
+      ${pkgs.docker}/bin/docker compose pull postgres proxy
 
       echo "[*] switching to locked mode"
       ${pkgs.nftables}/bin/nft -f /etc/nixos/profiles/nftables-locked.conf

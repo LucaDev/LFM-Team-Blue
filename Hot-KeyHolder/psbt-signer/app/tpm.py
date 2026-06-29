@@ -25,11 +25,11 @@ def get_entropy_from_tpm():
     entropy_bytes = b""
 
     try:
-        #aktuellen PCR 7 Wert in Session laden
+        #aktuellen PCR Wert in Session laden
         subprocess.run([
             "tpm2_policypcr", 
             "-S", session_ctx, 
-            "-l", "sha256:7"
+            "-l", "sha256:4,8,9,11"
         ], check=True, stdout=subprocess.DEVNULL)
 
 
@@ -43,7 +43,7 @@ def get_entropy_from_tpm():
         entropy_bytes = result.stdout
          
     except subprocess.CalledProcessError as e:
-        print(f"Errpr beim TPM-Zugriff (PCR 7 verändert?): {e.stderr.decode()}", file=sys.stderr)
+        print(f"Errpr beim TPM-Zugriff (PCR 4, 8, 9, 11 verändert?): {e.stderr.decode()}", file=sys.stderr)
         sys.exit(1)
         
     finally:
