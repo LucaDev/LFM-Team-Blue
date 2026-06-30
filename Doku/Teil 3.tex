@@ -1,17 +1,30 @@
 \chapter{Teamkram}
-Der Krypto Aspekt der Arbeit stellte sich durch das Entwickeln und Verwerfen verschiedener Ansätze dar. 
-Problematisch erwies sich, dass nur sehr wenig Eigenentwicklungen im besonders sicherheitskritischen Bereich der Krypto-Währung existierten und so diese nicht refernziert werden konnte. Dies ist besonders dadurch verstärkt, dass viele Benutzer dieser Technologie auf proprietäre Software wie Krypto-Broker ohne das Kaufen direkter Coins oder Hardware Wallets setzen.
-Eine weitere Problematik ergab sich aus der embit Bibliothek, die zum signing in Key A verwendet wurde. Die Dokumentation dieser Bibliotkek zeigte nicht die Informationen zu mehreren Aspekten an und mussten dementsprechend über verschiedene andere Quellen ermittelt werden
 
-Dies äußerte sich darin, dass die genaue Umsetzung der wallet Verwaltung durch Bitcoin Core über mehrere Stufen entwickelt werden musste und auch dass automatische Signieren über embit über trial and error entwickelt werden musste.
+\subsection{Florian Dobke}
 
-Eine weitere Schwierigkeit zeigte sich im eigenen Anspruch so wenig manuelle Arbeit wie möglich dem Mandatenen zu überlassen. Dementsprechend wurde verschiedenste scripte zur Automatisierung geschrieben oder per System one-shot deklarativ in NixOS formuliert. Darunter fällt ebenfalls die Möglcihkeit Dateien per Doppelklick auszuführen, wofür eine extra Datei-Manager Version und wrapper hinzugefügt werden mussten.
+\subsubsection{Krypto}
+Die Bearbeitung des Krypto-Aspekts war maßgeblich durch das iterative Entwickeln und Verwerfen verschiedener Architekturansätze geprägt. Problematisch erwies sich, dass im besonders sicherheitskritischen Bereich der Kryptowährungen nur wenige quelloffene Eigenentwicklungen existieren, auf die als Referenz hätte zurückgegriffen werden können. Dies ist besonders dadurch verstärkt, dass ein Großteil der Anwender dieser Technologie auf proprietäre Software wie Krypto-Broker, häufig ohne den Erwerb direkter Coins in einer eigenen Wallet, oder Hardware Wallets setzt. Belastbare, nachvollziehbare Architekturbeschreibungen für ein selbst betriebenes, automatisiertes Verwahrsystem sind dementsprechend rar.
 
-Ebenfalls Problematisch zeigte sich ebenfalls die Installation von Sparrow in NixOS als BTC-Wallet. Diese verursachte im stable release verschiedene Errors und musste als unstable Package geladen werden. Über die Entwicklung wurde eine neue NixOS Version zudem released, die eine Sparrow Version installiert, die JAVAFX nativ unterstützt.
+Dies äußerte sich darin, dass die genaue Umsetzung der Wallet Verwaltung durch Bitcoin Core über mehrere Stufen entwickelt werden musste und auch dass automatische Signieren über embit über trial and error entwickelt werden musste.
 
-Besonders aufwändig zeigte sich, dass NixOS deskriptiv arbeitet und dementsprechend bei jeder Änderung neu installiert werden musste. Zum Sichergehen wurde dabei oftmals die gesamte VM neu konfiguriert.
+Erschwerend kam der eigene Anspruch hinzu, dem Mandanten so wenig manuelle Arbeit wie möglich zu überlassen. Entsprechend wurde eine Vielzahl von Skripten zur Automatisierung erstellt oder per System-One-Shot deklarativ in NixOS formuliert.
+Darunter fällt auch die Möglichkeit, sicherheitskritische Skripte per Doppelklick auszuführen, wofür eine angepasste Version des Dateimanagers samt Wrapper integriert werden musste, da dies in der Standardkonfiguration nicht vorgesehen ist.
 
-Limitiered war ebenfalls Proxmox, da dabei nicht wie in Krypto-Währung inzwischen als Standard und nativ für sparrow-Wallet integriert QR codes und Kameras zum Transport von psbts verwendet werden konnten.
+Problematisch gestaltete sich zudem die Installation der Bitcoin-Wallet Sparrow unter NixOS. Im \texttt{stable}-Release traten verschiedene Fehler im Zusammenhang mit der JavaFX-Bibliothek auf, sodass auf das \texttt{unstable}-Package ausgewichen werden musste. Zuvor wurden verschiedene andere Lösungen wie ein wrapper samt Java Bibliothek für Sparrow oder eine standalone Version von Sparrow zu integrieren. Im Verlauf der Entwicklung wurde überdies eine neue NixOS-Version veröffentlicht, die eine Sparrow-Variante mit nativer JavaFX-Unterstützung bereitstellt und die ursprünglichen Probleme behebt.
 
+Als besonders aufwändig entpuppte sich der deklarative Charakter von NixOS, bei dem jede Änderung einen erneuten Build erfordert. Dementsprechend musste das System in der Entwicklung wiederholt neu gebaut werden, wobei zur Absicherung häufig die gesamte virtuelle Maschine neu konfiguriert wurde. Dieser Umstand erhöhte zwar die Reproduzierbarkeit, verlängerte jedoch die Entwicklungszyklen spürbar.
 
-TPM mit entropoy versiegeln und dass die seed wörter merhr als 128 bit sind
+Eine weitere Limitierung ergab sich aus der Virtualisierung über Proxmox. Der inzwischen in der Praxis verbreitete und in Sparrow nativ unterstützte Transport von \acp{PSBT} über QR-Codes und Kameras ließ sich in der Laborumgebung nicht abbilden, weshalb auf den \ac{USB}-basierten Austausch zurückgegriffen wurde.
+
+Als größere Herausforderung erwies sich der Zugriff auf den \ac{TPM} aus einem Docker-Container ohne Root-Rechte. Da der Signer-Prozess bewusst unprivilegierts betrieben wird, erzeugte der Zugriff auf das TPM-Gerät über gewöhnliche Dateioperationen Auhtorisierungs-Errors.
+Dafür musst die erforderliche Gerätegruppen-Zugehörigkeit beim Start automatisiert anhand des tatsächlichen Systemzustands ermittelt und dem Container zugewiesen werden. Erst dadurch ließ sich der TPM-Zugriff mit dem Prinzip minimaler Rechte vereinbaren.
+
+Schließlich zeigte sich, dass die bewusste Einbindung eines menschlichen Freigabeschritts eigene Fehlerquellen mit sich bringt. Der asynchrone Cold-Prozess machte zusätzliche Logik nötig, um veraltete oder verwaiste Nachbefüllungs-\acp{PSBT} zu behandeln (vgl. die definierten Lösch- und Stopp-Punkte). Sicherheit entsteht hier nicht allein aus Kryptographie, sondern ebenso aus dem operationellen Konzept.
+
+\subsubsection{Erkenntnisse}
+
+Eine zentrale Erkenntnis war, dass das Verwerfen von Ansätzen ebenso wertvoll ist wie deren Entwicklung. Mehrere zunächst plausible Erweiterungen wie die Hash-basierte Freigabeschicht, der \ac{ZMQ}-basierte Eigenbau des UTXO-Trackings und der netzwerkfähige Online-Koordinator wurden im Verlauf bewusst wieder entfernt. Deren Reevaluation zeigten, dass sie Komplexität und Angriffsfläche erhöhten, ohne im gegebenen Bedrohungsmodell hinreichenden Mehrwert zu bieten.
+u erkennen, welche Funktionalität \emph{nicht} gebaut werden sollte, erwies sich als eigenständiger Teil des Sicherheitsentwurfs und erhöhte das Wissen über die Bitcoin Technologie.
+
+\subsubsection{Teamarbeit}
+Über die rein technischen Hürden hinaus war die Krypto-Komponente eng mit dem übrigen System verzahnt. Die Basis-Infrastruktur wie PostgreSQL, \ac{NATS}, \ac{WG} undLogging und Monitoring wurde bewusst nicht isoliert für die Wallet entwickelt, sondern gemeinsam mit den übrigen Diensten genutzt. Dies erforderte laufende Abstimmung an den Schnittstellen und eine klare Trennung der Verantwortlichkeiten, reduzierte zugleich aber Doppelarbeit und Betriebsaufwand.
