@@ -39,7 +39,7 @@ Dies erhöht die Sicherheit des Cold-Wallets drastisch und bildet einen Kompromi
     \label{fig2:psbt_hot}
 \end{figure}
 
-Während das Hot-Wallet für automatisierte Transaktionen genutzt wird, erfolgen Transfers aus dem Cold-Wallet ausschließlich kontrolliert und bewusst nicht vollautomatisiert mit manueller Freigabe \cite{knowingbitcoin_hotCold,Wallets,Hot_VS_Cold-Wallet,psbt_dcentral}.
+Während das Hot-Wallet für automatisierte Transaktionen genutzt wird, erfolgen Transfers aus dem Cold-Wallet ausschließlich kontrolliert und bewusst nicht vollautomatisiert mit manueller Freigabe \cite{knowingbitcoin_hotcold,Wallets,Hot_VS_Cold-Wallet,psbt_dcentral}.
 Da sich Hot- und Cold-Wallet einen Schlüssel teilen, kann der Cold-Wallet-Prozess bis zur Benachrichtigung des Mandanten parallel zur Hot-Wallet teilautomatisiert ablaufen (Siehe:~\ref{fig2:psbt_hot}).
 
 
@@ -207,7 +207,7 @@ Um diesen Prozess zu vereinfachen stehen auf den Cold- und Hot-Wallet \acp{VM} f
 \begin{itemize}
   \item psbt/setup/mnt\_usb.sh: Als Voraussetzung für manuelle Operationen auf dem \ac{USB}-Medium,
   \item psbt/setup/umnt\_usb.sh: Synchronisiert und wirft das Wechselmedium sicher aus,
-  \item psbt/setup/format\_usb.sh: gewährleistet die Sicherheit des \ac{USB}-Medium durch Entfernen aller Dateien und benennt es als \texttt{\seqsplit{\ac{USB}}} für folgende Prozesse,
+  \item psbt/setup/format\_usb.sh: gewährleistet die Sicherheit des \ac{USB}-Medium durch Entfernen aller Dateien und benennt es als \texttt{\ac{USB}} für folgende Prozesse,
 \end{itemize}
 
 \paragraph{Signierungs-Prozess} \mbox{}\\
@@ -442,7 +442,7 @@ Beim Export auf das Wechselmedium wird die wartende \ac{PSBT} eingelesen, aus de
 
 Beim Broadcast der signierten Cold-\ac{PSBT} wird erneut eine Löschung ausgelöst. Diese greift gezielt den Fall ab, dass während der Wartezeit des Operator, also zwischen Export und Broadcast, eine weitere Nachbefüllungs-\ac{PSBT} erzeugt und in der Ablage hinterlegt wurde. Da der soeben abgeschlossene Broadcast den ursprünglichen Mangel in einer gewissen Höhe bereits behoben hat, wäre eine solche zwischenzeitlich entstandene \ac{PSBT} auf einen überholten Saldo gestützt und wird daher verworfen.
 
-Der Dritte Löschpunkt besteht in der vollautomatischen Löschung der Nachbefüllungs-PSBT, wenn diese noch nicht von dem Operator aufgenommen wurde. Die Löschung wird ausgelöst, wenn \ac{OPA} eine Hot\_to\_Cold oder Hold Aktion ermittelt. Dementsprechend muss seit Generierung der \ac{PSBT} dem Hot-Wallet eine ausgleichende Menge an Geldmitteln gutgeschrieben worden sein, was mit der nächsten Hot-Transaktion aufgefallen sein muss. 
+Der Dritte Löschpunkt besteht in der vollautomatischen Löschung der Nachbefüllungs-PSBT, wenn diese noch nicht von dem Operator aufgenommen wurde. Die Löschung wird ausgelöst, wenn \ac{OPA} eine \texttt{\seqsplit{Hot\_to\_Cold}} oder Hold Aktion ermittelt. Dementsprechend muss seit Generierung der \ac{PSBT} dem Hot-Wallet eine ausgleichende Menge an Geldmitteln gutgeschrieben worden sein, was mit der nächsten Hot-Transaktion aufgefallen sein muss. 
 
 Ein verbleibender Randfall besteht, wenn der ausgleichende Zufluss erfolgt, nachdem die Nachfüll-\ac{PSBT} erzeugt, aber bevor eine weitere Hot-Transaktion die Balance-Prüfung erneut auslöst. Nimmt der Operator die zu diesem Zeitpunkt bereits obsolete \ac{PSBT} auf, ist sie nach dem Export keinem der drei Löschpunkte mehr zugänglich; ihr Broadcast führt dann zu einer Überbefüllung und einer gegenläufigen hot\_to\_cold-Transaktion, mit doppeltem Gebührenanfall. Eine vollständige Absicherung wäre durch eine erneute Bedarfsprüfung unmittelbar vor dem Broadcast erreichbar; ein \ac{ZMQ}-basiertes Mithören auf Zuflüsse, das bei einer \ac{TX}-Erkennung für das Hot-Wallet eine Reevaluierung durch \ac{OPA} auslöst, würde das Fenster zwar verkleinern, es aufgrund des verbleibenden Export-Zeitpunkts jedoch nicht schließen. Aufgrund der geringen Eintrittswahrscheinlichkeit wurde der Randfall als akzeptabel eingestuft.
 
@@ -602,7 +602,7 @@ Andere proprietäre Lösungen, die Bitcoin nativ unterstützen wie \texttt{\seqs
 \textbf{TPM}\\
 Das Schlüsselmaterial wird zudem besonders gesichert und nur über \ac{TPM} entschlüsselt. Diese Technologie speichert den Code in einem speziellen Hardware-Chip und verspricht dadurch Auslese-Sicherheit \cite{TPM}.
 Der \ac{TPM} wird zudem über \ac{PCR} verschlüsselt, was über eine Authorisierungs-Session ein Abbild des Bootzustandes der Maschine aufnimmt und dieses zur Verschlüsselung des Chips verwendet. Der Chip kann dementsprechend nur durch Verifizierung desselben Systemzustandes in einer weiteren Auth-Session entschlüsselt werden, was eine Kompromittierung des Schlüsselmaterials über den Schlüssel selber ausschließt.
-Die Bindung der Entsiegelung erfolgt dabei konkret an die Platform Configuration Register \texttt{\seqsplit{\ac{PCR} 4}}, \texttt{\seqsplit{8}}, \texttt{\seqsplit{9}} und \texttt{\seqsplit{11}}, welche den für das System-Hardening relevanten Boot- und Konfigurationszustand abbilden. Eine Policy-Session lädt bei jedem Signiervorgang den aktuellen Zustand dieser Register und gibt das versiegelte Geheimnis ausschließlich dann frei, wenn dieser mit dem zum Zeitpunkt der Versiegelung aufgenommenen Zustand übereinstimmt. 
+Die Bindung der Entsiegelung erfolgt dabei konkret an die Platform Configuration Register \texttt{\ac{PCR} 4}, \texttt{\seqsplit{8}}, \texttt{\seqsplit{9}} und \texttt{\seqsplit{11}}, welche den für das System-Hardening relevanten Boot- und Konfigurationszustand abbilden. Eine Policy-Session lädt bei jedem Signiervorgang den aktuellen Zustand dieser Register und gibt das versiegelte Geheimnis ausschließlich dann frei, wenn dieser mit dem zum Zeitpunkt der Versiegelung aufgenommenen Zustand übereinstimmt. 
 Dieser Mechanismus dient nicht nur dem Schutz vor physischem Auslesen, sondern gezielt auch der Absicherung gegen eine nachträgliche Schwächung der Systemkonfiguration: Würde ein Angreifer etwa über einen \texttt{\seqsplit{rebuild}} und \texttt{\seqsplit{switch}} in NixOS die definierte Härtung des Systems entfernen oder verändern, so verändert sich dadurch der relevante \ac{PCR} -Zustand, und die Entsiegelung des Schlüsselmaterials schlägt zwangsläufig fehl \cite{TPM_PRC_NixOS, tcg_tpm2} (Siehe:~\ref{fig6:tpm_pcr}). 
 
 \begin{figure}[H]
