@@ -1,0 +1,17 @@
+\chapter{Teamkram}
+Der Krypto Aspekt der Arbeit stellte sich durch das Entwickeln und Verwerfen verschiedener Ansätze dar. 
+Problematisch erwies sich, dass nur sehr wenig Eigenentwicklungen im besonders sicherheitskritischen Bereich der Krypto-Währung existierten und so diese nicht refernziert werden konnte. Dies ist besonders dadurch verstärkt, dass viele Benutzer dieser Technologie auf proprietäre Software wie Krypto-Broker ohne das Kaufen direkter Coins oder Hardware Wallets setzen.
+Eine weitere Problematik ergab sich aus der embit Bibliothek, die zum signing in Key A verwendet wurde. Die Dokumentation dieser Bibliotkek zeigte nicht die Informationen zu mehreren Aspekten an und mussten dementsprechend über verschiedene andere Quellen ermittelt werden
+
+Dies äußerte sich darin, dass die genaue Umsetzung der wallet Verwaltung durch Bitcoin Core über mehrere Stufen entwickelt werden musste und auch dass automatische Signieren über embit über trial and error entwickelt werden musste.
+
+Eine weitere Schwierigkeit zeigte sich im eigenen Anspruch so wenig manuelle Arbeit wie möglich dem Mandatenen zu überlassen. Dementsprechend wurde verschiedenste scripte zur Automatisierung geschrieben oder per System one-shot deklarativ in NixOS formuliert. Darunter fällt ebenfalls die Möglcihkeit Dateien per Doppelklick auszuführen, wofür eine extra Datei-Manager Version und wrapper hinzugefügt werden mussten.
+
+Ebenfalls Problematisch zeigte sich ebenfalls die Installation von Sparrow in NixOS als BTC-Wallet. Diese verursachte im stable release verschiedene Errors und musste als unstable Package geladen werden. Über die Entwicklung wurde eine neue NixOS Version zudem released, die eine Sparrow Version installiert, die JAVAFX nativ unterstützt.
+
+Besonders aufwändig zeigte sich, dass NixOS deskriptiv arbeitet und dementsprechend bei jeder Änderung neu installiert werden musste. Zum Sichergehen wurde dabei oftmals die gesamte VM neu konfiguriert.
+
+Limitiered war ebenfalls Proxmox, da dabei nicht wie in Krypto-Währung inzwischen als Standard und nativ für sparrow-Wallet integriert QR codes und Kameras zum Transport von psbts verwendet werden konnten.
+
+
+TPM mit entropoy versiegeln und dass die seed wörter merhr als 128 bit sind

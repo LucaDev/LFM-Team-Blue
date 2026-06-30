@@ -1,0 +1,89 @@
+\chapter{\ac{KI}-Evaluation - Ersetzen \ac{LLM}s den Sicherheitsberater?}
+\section{Einleitung}
+
+Der Mandant wünscht eine kritische Evaluation der Frage, ob \ac{KI}-Modelle menschliche Sicherheitsberater bei der Konzeption, Absicherung und schrittweisen Umsetzung digitaler Infrastrukturen künftig ersetzen können. Zu diesem Zweck wurden die Anforderungen an ein sicheres Home-Lab in zwei Szenarien formuliert. In Szenario A stellte ein Nutzer ohne vertiefte IT-Sicherheitskenntnisse eher allgemein gehaltene Prompts. In Szenario B steuerte ein IT-affiner Nutzer die \acs{KI} mit Threat Model, Sicherheitszielen, Negativvorgaben und iterativem Feedback deutlich enger.
+
+Zur wissenschaftlichen Einordnung wurde die Untersuchung an Arbeiten orientiert, die \acs{LLM}-generierte Infrastruktur- und Konfigurationsartefakte nicht nur nach sprachlicher Plausibilität, sondern nach Umsetzbarkeit, Sicherheitskonformität und Validierbarkeit bewerten. Pan et al. zeigen für \ac{IaC}, dass zwischen syntaktischer Korrektheit und tatsächlicher Deployability unterschieden werden muss.\cite{pan2025deployabilitycentriciac} Hase et al. ergänzen, dass auch sicherheitspolitische Compliance ein eigenständiges Bewertungskriterium ist.\cite{hase2026securitypolicyiac} Chen et al. zeigen mit \emph{Ciri}, dass \acs{LLM}s zudem als Konfigurationsvalidatoren betrachtet werden können, wenn sie Fehlkonfigurationen nicht nur benennen, sondern fachlich begründen.\cite{chen2023ciri}
+
+Aus diesen Arbeiten lässt sich eine eigene, durch wissenschaftliche Vorarbeit fundierte Evaluationsmethode ableiten. Bewertet werden:
+
+\begin{itemize}
+\item Architekturplanung
+\item Services
+\item Konfiguration
+\item Netzwerk / Tor
+\item Backup / Monitoring
+\item Bitcoin-Konzept
+\item Fehleranalyse
+\end{itemize}
+
+Die Bewertung erfolgt auf einer Skala von 0 bis 3 Punkten. 0 Punkte bedeuten, dass eine Anforderung fehlt oder kritisch falsch umgesetzt wurde. 1 Punkt steht für eine oberflächliche oder unsichere Lösung. 2 Punkte werden vergeben, wenn die Lösung überwiegend korrekt ist, jedoch relevante Lücken enthält. 3 Punkte bedeuten, dass eine Anforderung korrekt, eng und sicher umgesetzt wurde. Als kritische Ausschlussfehler gelten öffentlich erreichbare Admin-Dienste, fehlende Backup-Verschlüsselung, unsegmentierte Netze, unsichere Passwortverwaltung oder eine Verletzung des Air-Gapped-Prinzips.
+
+\section{Vergleich der beiden Versionen in Szenario A}
+
+Die im normalen ChatGPT erstellte Version von Szenario A lieferte zunächst einen brauchbaren, aber relativ breit gefassten Entwurf. Positiv war, dass Tor-only-Zugriff, Monitoring, verschlüsselte Backups und eine getrennte Bitcoin-Architektur grundsätzlich berücksichtigt wurden. Ebenfalls positiv war, dass die \acs{KI} einen Katalog alltagstauglicher Dienste, erste Docker-Compose-Beispiele sowie Konzepte für Backup, Monitoring und Onion-Konfigurationen erzeugte. Inhaltlich blieb der Entwurf jedoch stark auf textuelle Plausibilität ausgerichtet: Mehrere Sicherheitsentscheidungen waren zwar vernünftig begründet, aber nicht gegen eine reale Zielumgebung verprobt. Gerade in Szenario A zeigte sich damit das aus der Literatur bekannte Muster, dass brauchbar klingende Infrastrukturartefakte noch nicht automatisch mit hoher Umsetzungsqualität oder Security-Compliance gleichzusetzen sind.\cite{pan2025deployabilitycentriciac,hase2026securitypolicyiac}
+
+Die mit Codex praktisch ausgeführte Variante von Szenario A war demgegenüber deutlich operativer. Codex erzeugte nicht nur weitere Planungsartefakte, sondern richtete eine Tor-only-Dienstelandschaft mit 15 Diensten, vorgeschaltetem Edge-Container, Monitoring, Backup-Pfaden und begleitender Dokumentation tatsächlich ein. Besonders relevant war, dass die \acs{KI} auf technische Störungen nicht bloß mit neuen Textvorschlägen reagierte, sondern iterativ arbeitete: Sie prüfte Zustände, korrigierte Konfigurationsfehler, validierte Snapshots, schloss Anmeldungen ab und aktualisierte die Betriebsdokumentation fortlaufend. Damit verschob sich Codex in Szenario A von der Rolle eines textgenerierenden Beraters hin zu einem agentischen Umsetzer.
+
+Gleichzeitig muss die Einordnung nüchtern bleiben. Auch die Codex-Version von Szenario A war kein vollwertiger Ersatz für menschliche Sicherheitsprüfung. Die Architektur blieb aus Ressourcengründen relativ kompakt, mehrere Schutzmechanismen wurden pragmatisch und nicht maximal streng umgesetzt, und der Bitcoin-Teil blieb bewusst eine Simulation. Szenario A zeigt daher vor allem zweierlei: Erstens produziert ein allgemein formulierter Prompt eher eine breit brauchbare als eine streng gehärtete Sicherheitsarchitektur. Zweitens entfaltet ein agentisches System wie Codex seinen Mehrwert vor allem dann, wenn es nicht nur planen, sondern auch prüfen, ausführen und dokumentieren darf.
+
+\section{Vergleich der beiden Versionen in Szenario B}
+
+Die im normalen ChatGPT entwickelte Version von Szenario B war konzeptionell die stärkste Planungsleistung. Das Threat Model war klar formuliert, sensible Zonen wurden von Alltags- und Managementdiensten getrennt, Default-Deny-Netzlogik wurde durchgängig mitgedacht, und für Secrets, Backup, Bitcoin und administrative Zugänge wurden enge Sicherheitsregeln formuliert. Hinzu kamen konkrete Artefakte wie Compose-Beispiele nach Least-Privilege-Prinzip, Netz- und Firewall-Konzepte, Onion-Service-Konfigurationen und eine explizite Fehleranalyse einer bewusst unsicheren Beispielkonfiguration. Inhaltlich kam diese Version der Arbeitsweise eines menschlichen Sicherheitsberaters bereits relativ nahe, weil Anforderungen, Risiken, Schutzmaßnahmen und manuelle Prüfpunkte systematisch miteinander verknüpft wurden.
+
+Die mit Codex ausgeführte Variante von Szenario B zeigte dagegen eine andere Stärke. Codex setzte eine segmentierte Basisinfrastruktur real um, darunter Gateway, DNS, Monitoring, Passwortrotation, ein verschlüsseltes Credential-Bundle und dokumentierte Placeholder für weitere Dienste. Gleichzeitig legte die \acs{KI} die Grenze der eigenen Umsetzung transparent offen: Reverse Proxy, produktive App-Schicht, echte Backup-Ziele, produktive TLS-Versorgung und insbesondere Bitcoin-Schlüsselmaterial wurden nicht einfach blind erzeugt, sondern als noch nicht real betriebene oder nur simulierte Teile dokumentiert.
+
+Genau dieser Punkt ist für die Bewertung entscheidend. Dass Codex in Szenario B weitere Schritte nicht umgesetzt hat, darf nicht vorschnell als bloßes Scheitern interpretiert werden. In mehreren Passagen benannte die \acs{KI} korrekt, dass echte Seeds, Private Keys, Offline-Signaturmaterial oder produktive Geheimnisse nicht auf einem Online-System erzeugt oder in ein Komfort-Runbook überführt werden sollten. Später wurden entsprechende Simulationsdaten ausdrücklich als ungültige Artefakte markiert. Aus Sicht eines Sicherheitsberaters ist diese Selbstbegrenzung teilweise ein Qualitätsmerkmal: Die \acs{KI} unterschied zwischen dem, was automatisierbar, was nur vorbereitbar und was aus Sicherheitsgründen bewusst manuell oder offline bleiben muss. Das entspricht auch dem in der Forschung beschriebenen Wert menschlich angeleiteter Human-AI-Kollaboration, bei der die \acs{KI} nicht einfach alles ausführt, sondern die Entscheidungsqualität im Zusammenspiel mit dem Menschen erhöht.\cite{tariq2025bridgingexpertise}
+
+Dennoch bleibt die Vollständigkeit von Szenario B begrenzt. Die Basisschicht war überzeugend, die produktive Anwendungsschicht aber noch nicht fertig. Für die Gesamtbewertung bedeutet das: Szenario B/Codex ist sicherheitslogisch stärker und ehrlicher über Restrisiken als Szenario A, aber in der faktischen Ausbauhöhe weniger weit als das praktisch ausgerollte Szenario A. Diese Spannung ist kein Widerspruch, sondern ein zentrales Ergebnis der Untersuchung.
+
+\section{Gesamtbewertung der Hauptszenarien}
+
+Die Punktwerte in Tabelle~\ref{tab:ki-sicherheitsberater-bewertung} beziehen sich auf die beiden Hauptszenarien A und B als konzeptionelle Vergleichsszenarien. Der spätere praktische Zusatzdurchlauf A.2 wird bewusst nicht in diese Tabelle eingerechnet, weil er methodisch eine andere Frage untersucht, nämlich die agentische Umsetzung unter direktem Systemzugriff.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\hline
+Bereich & Szenario A & Szenario B \\
+\hline
+Architekturplanung & 2 & 3 \\
+Services & 2 & 3 \\
+Konfiguration & 1 & 3 \\
+Netzwerk / Tor & 2 & 3 \\
+Backup / Monitoring & 2 & 2 \\
+Bitcoin-Konzept & 2 & 2 \\
+Fehleranalyse & 1 & 2 \\
+\hline
+Gesamt & 12 / 21 & 18 / 21 \\
+\hline
+\end{tabular}
+\caption{Punktbewertung der beiden Hauptszenarien}
+\label{tab:ki-sicherheitsberater-bewertung}
+\end{table}
+
+Szenario B erreicht damit deutlich mehr Punkte als Szenario A. Ausschlaggebend war vor allem, dass das zweite Szenario die \acs{KI} nicht nur mit einem Ziel, sondern mit Sicherheitslogik, Ausschlusskriterien und menschlichem Korrektiv versorgte. Diese Beobachtung passt sowohl zu Arbeiten über Prompt Engineering als auch zu Studien über \ac{Human-AI}-Kollaboration in der Cybersecurity: Je strukturierter die Vorgaben und je klarer der fachliche Kontext sind, desto belastbarer werden die Ergebnisse.\cite{chen2023promptreview,tariq2025bridgingexpertise}
+
+\section{Einordnung des praktischen Zusatzdurchlaufs A.2}
+
+Unabhängig von der Punktbewertung der Hauptszenarien ist der praktische Zusatzdurchlauf A.2 gesondert zu betrachten. In diesem Durchlauf erhielt Codex direkten administrativen Zugriff auf eine vorbereitete Proxmox-\acl{VM}. Dadurch wurde nicht mehr nur Planung evaluiert, sondern agentische Umsetzung. Der Durchlauf zeigte, dass Codex über mehrere Stunden hinweg eigenständig arbeiten, Fehler eingrenzen, Zwischenschritte dokumentieren und operative Entscheidungen an reale Systemzustände anpassen konnte.
+
+Gerade dieser Zusatzdurchlauf macht deutlich, warum eine reine Chat-Oberfläche und ein agentisches System analytisch nicht einfach gleichgesetzt werden dürfen. Normales ChatGPT erzeugte in den beiden Hauptszenarien vor allem konzeptionelle und textuelle Artefakte. Codex konnte darüber hinaus Zustände prüfen, Konfigurationen verändern, Rollbacks vorbereiten, Dienste validieren und die Dokumentation auf einen tatsächlichen Ist-Zustand beziehen. In dieser Hinsicht näherte sich Codex der Arbeit eines technischen Implementierers oder Security Engineers an, nicht nur der eines beratenden Textsystems.
+
+Trotzdem ersetzt auch A.2 den Sicherheitsberater noch nicht. Die eigentliche Stärke lag hier nicht in autonomer Unfehlbarkeit, sondern in Geschwindigkeit, Ausdauer und operativer Anschlussfähigkeit. Die Forschung zu \acs{LLM}-generiertem Code und zu Secure-Code-Evaluation zeigt weiterhin, dass Funktionalität und Sicherheit gemeinsam geprüft werden müssen und dass automatisch erzeugte Artefakte ohne fachliche Kontrolle risikobehaftet bleiben.\cite{basic2024codesecurityslr,dai2025securecodeevaluation}
+
+\section{Codex-Security und Sicherheitsimplikationen agentischer Systeme}
+
+Für die Bewertung von Codex als Sicherheitsberater ist nicht nur die Qualität seiner Antworten relevant, sondern auch das Sicherheitsmodell des Systems selbst. OpenAI beschreibt Codex ausdrücklich als agentisches System, dessen Risiko über Sandboxing, Approval-Mechanismen und Netzwerkkontrollen begrenzt werden soll.\cite{openai2026codexsandbox,openai2026codexapprovals} Damit wird ein wichtiger Unterschied zu einem gewöhnlichen Chat deutlich: Der Sicherheitsgewinn eines solchen Systems hängt nicht allein vom Modell, sondern wesentlich vom Ausführungsmodus ab.
+
+Im praktischen Zusatzdurchlauf A.2 wurden diese Schutzgrenzen bewusst weit geöffnet, da Codex mit administrativen Rechten auf einer vorbereiteten \acl{VM} arbeiten sollte. Genau das erklärt einen Teil der hohen Produktivität, erhöht aber zugleich das Schadenspotenzial im Fehlerfall. Für den realen Einsatz folgt daraus, dass ein agentisches \ac{KI}-System nicht nur fachlich, sondern auch betrieblich abgesichert werden muss. Ein unsicher konfigurierter Agent mit vollen Rechten ist selbst ein Sicherheitsrisiko.
+
+In diesem Zusammenhang ist auch \emph{Codex Security} relevant. OpenAI positioniert dieses System als sicherheitsorientierten Agenten für verbundene GitHub-Repositories, der Schwachstellen findet, validiert und Patch-Vorschläge erzeugt.\cite{openai2026codexsecurity,openai2026codexsecuritypreview} Das ist für die vorliegende Arbeit insofern bedeutsam, als hier bereits sichtbar wird, in welche Richtung sich solche Systeme entwickeln: weg von rein generativen Textantworten und hin zu überprüfbaren, arbeitsplatznahen Sicherheits-Workflows. Allerdings betrifft Codex Security aktuell primär Code- und Repository-Prüfung, nicht die vollständige organisatorische und infrastrukturelle Verantwortung eines menschlichen Sicherheitsberaters.
+
+\section{Fazit}
+
+Die Frage des Mandanten, ob \acs{KI}s Sicherheitsberater ersetzen können, lässt sich zum gegenwärtigen Stand nicht pauschal mit Ja beantworten. Die Untersuchung zeigt vielmehr drei komplementäre Ergebnisse.
+
+Erstens hängt die Qualität der Resultate stark von der Qualität der Vorgaben ab. Das eng geführte, sicherheitslogisch präzisierte Szenario B war dem offenen Szenario A in der konzeptionellen Qualität deutlich überlegen. Zweitens zeigt der praktische Zusatzdurchlauf A.2, dass ein agentisches System wie Codex heute bereits erhebliche Teile der technischen Umsetzungs- und Dokumentationsarbeit übernehmen kann. Drittens bleibt menschliche Sicherheitsprüfung unverzichtbar, vor allem bei Segmentierung, Zugriffsschutz, Backup-Strategie, Schlüsselverwaltung und allen Fragen, bei denen organisatorische Verantwortung, Restrisikoabwägung und reale Schadensfolgen berücksichtigt werden müssen.
+
+Damit ist \ac{KI} derzeit kein Ersatz für den Sicherheitsberater, wohl aber ein leistungsfähiges Verstärkungswerkzeug. Besonders Codex zeigte, dass eine \acs{KI} unter geeigneten Rahmenbedingungen nicht nur textuell beraten, sondern praktisch umsetzen, validieren und dokumentieren kann. Der menschliche Sicherheitsberater verschwindet dadurch nicht, seine Rolle verschiebt sich jedoch: weg vom vollständigen manuellen Erarbeiten aller Entwürfe und hin zur fachlichen Steuerung, Kontrolle und Freigabe eines zunehmend agentischen Systems.

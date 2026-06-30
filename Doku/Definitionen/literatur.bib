@@ -210,13 +210,54 @@
   doi = {10.6028/NIST.SP.800-207}
 }
 
-%Tools
+#Github
+@online{NixOsHot_github,
+  author = {{Florian Dobke}},
+  title = {NixOsCold Konfigurations-Dateien und readme},
+  year = {2026},
+  url = {https://github.com/LucaDev/LFM-Team-Blue/tree/main/Hot-Wallet},
+  urldate = {2026-06-30}
+}
+
+@online{NixOsCold_github,
+  author = {{Florian Dobke}},
+  title = {NixOsCold Konfigurations-Dateien und readme},
+  year = {2026},
+  url = {https://github.com/LucaDev/LFM-Team-Blue/tree/main/Cold-Wallet},
+  urldate = {2026-06-30}
+}
+
+@online{Krypto_Basis_github,
+  author = {{Florian Dobke}},
+  title = {Krypto Basis-system Konfigurations-Dateien und readme},
+  year = {2026},
+  url = {https://github.com/LucaDev/LFM-Team-Blue/tree/main/Hot-Wallet},
+  urldate = {2026-06-30}
+}
+
+#Tools
 @online{bitcoin_core_docs,
   author = {{Bitcoin Core Developers}},
   title = {Bitcoin Core Documentation},
   year = {2024},
-  url = {https://bitcoincore.org/en/doc/},
+  url = {https://bitcoincore.org/en/doc/31.0.0/},
   urldate = {2026-06-04}
+}
+
+@online{TPM,
+  author = {{DebitLlama}},
+  title = {Secure environment variables and secrets with TPM in production using Docker or K8S},
+  year = {2024},
+  url = {https://medium.com/@hopeter_20531/secure-environment-variables-and-secrets-with-tpm-in-production-using-docker-or-k8s-d7b60ff63b6b},
+  urldate = {2026-01-15}
+}
+
+@online{TPM_PRC_NixOS,
+  author = {{balint}},
+  title = {A Modern and Secure Desktop Setup},
+  year = {2024},
+  url = {https://discourse.nixos.org/t/a-modern-and-secure-desktop-setup/41154/22},
+  urldate = {2024-03}
 }
 
 @online{sparrow_quick,
@@ -292,6 +333,14 @@
   urlDate   = {2026-05-02}
 }
 
+@article{NATS_Auth,
+  author    = {{NATS Docs}},
+  title     = {Authenticating with a User and Password},
+  year      = {2025},
+  url       = {https://docs.nats.io/using-nats/developer/connecting/userpass},
+  urlDate   = {2026-05-02}
+}
+
 %BTC security + architecture
 @article{knowingbitcoin_hotcold,
   author    = {{Knowing Bitcoin}},
@@ -309,6 +358,14 @@
   year      = {2024},
   url       = {https://knowingbitcoin.com/bitcoin-air-gapped-quantum-security/},
   urlDate   = {2026-05-02}
+}
+
+@online{HMAC,
+  author = {{Malindu Dilshan}},
+  title = {Securing Your APIs with HMAC Signature Validation.},
+  year = {2026},
+  url = {https://medium.com/@malindudilshan389/securing-your-apis-with-hmac-signature-validation-54af44d31197},
+  urldate = {2026-05-02}
 }
 
 @online{Hardware_VS_Cold-Wallet,
@@ -337,20 +394,11 @@
 }
 
 @article{riskpublishing_hotcold,
-  author    = {{Risk Publishing}},
+  author    = {{Chris Ekai}},
   title     = {Hot Wallet vs Cold Wallet Architecture},
   journal   = {Risk Publishing},
   year      = {2026},
   url       = {https://riskpublishing.com/hot-wallet-vs-cold-wallet-what-risk-managers/},
-  urlDate   = {2026-05-02}
-}
-
-%nochmal überlegen ob diese gebraucht
-@misc{bitcoin_core_arch,
-  author    = {{Bitcoin Core Project}},
-  title     = {Bitcoin Core Node Architecture},
-  year      = {2026},
-  url       = {https://deepwiki.com/bitcoin/bitcoin/2-core-node-system},
   urlDate   = {2026-05-02}
 }
 
@@ -389,6 +437,45 @@
   url       = {https://knowingbitcoin.com/sparrow-wallet-multisig-tutorial/},
   urlDate   = {2026-05-02}
 }
+
+#Schlüsselmaterial Vaults (keyA)
+@online{vault_issue3846,
+  author       = {{HashiCorp Vault Community}},
+  title        = {Support for secp256k1 (Issue \#3846)},
+  organization = {GitHub -- hashicorp/vault},
+  year         = {2018},
+  url          = {https://github.com/hashicorp/vault/issues/3846},
+  urldate      = {2026-06-29},
+  note         = {Feature-Request zur secp256k1-Unterstützung für
+                  Kryptowährungs-Wallet-Backends}
+}
+ 
+@online{vault_plugin_ethsign,
+  author       = {{Kaleido}},
+  title        = {vault-plugin-secrets-ethsign},
+  organization = {GitHub -- kaleido-io},
+  url          = {https://github.com/kaleido-io/vault-plugin-secrets-ethsign},
+  urldate      = {2026-06-29},
+  note         = {Community-Plugin für secp256k1}
+}
+ 
+@online{web3signer_docs,
+  author       = {{ConsenSys}},
+  title        = {Web3Signer Documentation},
+  organization = {ConsenSys},
+  url          = {https://docs.web3signer.consensys.io/},
+  urldate      = {2026-06-29},
+  note         = {secp256k1 nur für ETH}
+}
+
+@online{gcp_kms_algorithms,
+  author       = {{Google Cloud}},
+  title        = {Key purposes and algorithms -- Cloud Key Management Service},
+  organization = {Google Cloud Documentation},
+  url          = {https://docs.cloud.google.com/kms/docs/algorithms},
+  urldate      = {2026-06-29},
+}
+
 
 
 #KI
@@ -441,3 +528,105 @@ series = {ISEC '26}
   pages={1704-1716},
   keywords={Large language models;Software;Data models;Space exploration;Prompt engineering;Few shot learning;Software engineering},
   doi={10.1109/ICSE55347.2025.00017}}
+
+@article{pan2025deployabilitycentriciac,
+  author = {Pan, Shidong and Zhang, Tianyi and Zhang, Zejun and Xing, Zhenchang and Sun, Xiaoyu},
+  title = {Deployability-Centric Infrastructure-as-Code Generation: Fail, Learn, Refine, and Succeed through {LLM}-Empowered DevOps Simulation},
+  journal = {CoRR},
+  volume = {abs/2506.05623},
+  year = {2025},
+  doi = {10.48550/arXiv.2506.05623},
+  url = {https://arxiv.org/abs/2506.05623}
+}
+
+@inproceedings{hase2026securitypolicyiac,
+  author = {Hase, Ryo and Wang, Ye and Koike-Akino, Toshiaki and Liu, Jing and Parsons, Kieran and Hato, Jumpei},
+  title = {Evaluating Security Policy Compliance in Infrastructure as Code Generated by Large Language Models},
+  booktitle = {2026 14th International Symposium on Digital Forensics and Security (ISDFS)},
+  year = {2026},
+  pages = {1--6},
+  publisher = {IEEE},
+  url = {https://www.merl.com/publications/TR2026-036}
+}
+
+@article{chen2023ciri,
+  author = {Chen, Yinfang and Song, Xiaoning and Li, Xiangyu and Han, Shi and Lu, Shan},
+  title = {Large Language Models as Configuration Validators},
+  journal = {CoRR},
+  volume = {abs/2310.09690},
+  year = {2023},
+  doi = {10.48550/arXiv.2310.09690},
+  url = {https://arxiv.org/abs/2310.09690}
+}
+
+@article{chen2023promptreview,
+  author = {Chen, Banghao and Zhang, Zhaofeng and Langren{\'e}, Nicolas and Zhu, Shengxin},
+  title = {Unleashing the Potential of Prompt Engineering in Large Language Models: A Comprehensive Review},
+  journal = {CoRR},
+  volume = {abs/2310.14735},
+  year = {2023},
+  doi = {10.48550/arXiv.2310.14735},
+  url = {https://arxiv.org/abs/2310.14735}
+}
+
+@article{tariq2025bridgingexpertise,
+  author = {Tariq, Shahroz and Singh, Ronal and Chhetri, Mohan Baruwal and Nepal, Surya and Paris, C{\'e}cile},
+  title = {Bridging Expertise Gaps: The Role of {LLM}s in Human-{AI} Collaboration for Cybersecurity},
+  journal = {CoRR},
+  volume = {abs/2505.03179},
+  year = {2025},
+  doi = {10.48550/arXiv.2505.03179},
+  url = {https://arxiv.org/abs/2505.03179}
+}
+
+@article{basic2024codesecurityslr,
+  author = {Basic, Enna and Giaretta, Alberto},
+  title = {Large Language Models and Code Security: A Systematic Literature Review},
+  journal = {CoRR},
+  volume = {abs/2412.15004},
+  year = {2024},
+  doi = {10.48550/arXiv.2412.15004},
+  url = {https://arxiv.org/abs/2412.15004}
+}
+
+@article{dai2025securecodeevaluation,
+  author = {Dai, Shih-Chieh and Xu, Jun and Tao, Guanhong},
+  title = {Rethinking the Evaluation of Secure Code Generation},
+  journal = {CoRR},
+  volume = {abs/2503.15554},
+  year = {2025},
+  doi = {10.48550/arXiv.2503.15554},
+  url = {https://arxiv.org/abs/2503.15554}
+}
+
+@misc{openai2026codexapprovals,
+  author = {{OpenAI}},
+  title = {Agent Approvals \& Security -- Codex},
+  year = {2026},
+  howpublished = {\url{https://developers.openai.com/codex/agent-approvals-security}},
+  note = {abgerufen am 24.06.2026}
+}
+
+@misc{openai2026codexsandbox,
+  author = {{OpenAI}},
+  title = {Sandbox -- Codex},
+  year = {2026},
+  howpublished = {\url{https://developers.openai.com/codex/concepts/sandboxing}},
+  note = {abgerufen am 24.06.2026}
+}
+
+@misc{openai2026codexsecurity,
+  author = {{OpenAI}},
+  title = {Security -- Codex},
+  year = {2026},
+  howpublished = {\url{https://developers.openai.com/codex/security}},
+  note = {abgerufen am 24.06.2026}
+}
+
+@misc{openai2026codexsecuritypreview,
+  author = {{OpenAI}},
+  title = {Codex Security: now in research preview},
+  year = {2026},
+  howpublished = {\url{https://openai.com/index/codex-security-now-in-research-preview/}},
+  note = {abgerufen am 24.06.2026}
+}

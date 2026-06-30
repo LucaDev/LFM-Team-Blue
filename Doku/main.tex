@@ -73,6 +73,24 @@
 
 \usepackage{multicol}
 
+\usepackage{listings}
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codeframe}{RGB}{200,200,200}
+\lstset{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  keepspaces=true,
+  showstringspaces=false,
+  xleftmargin=5pt,
+  xrightmargin=5pt,
+}
+
+\usepackage{booktabs}
+\usepackage{xltabular}
+
 %%%% Beginn %%%%
 \begin{document}
 	
@@ -109,10 +127,10 @@
 %Anmerkung von M: subject to change
 	\include{Doku/Teil 1/Einleitung}
     \include{Doku/Teil 1/Services}
+    \include{Doku/Apphost/Dokumentation}
     \include{Doku/Teil 1/Krypto}
-    \include{Doku/Teil 2/Einleitung}
-    
-
+    \include{Doku/Teil 2/KI2}
+    \include{Doku/Teil 3}
 
 
 \pagenumbering{Roman}
@@ -136,11 +154,13 @@
 	\include{Stichwortverzeichnis}
 
     \input{Doku/Definitionen/Glossar}
- % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/stichwortverzeichnis/
+    % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/stichwortverzeichnis/
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Anhang  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\appendix
 	\include{Anhang}
-	
-	
-	
+    \include{Doku/Apphost/Anhang-Appverzeichnis}
+    \include{Doku/Apphost/Anhang-Security}
+
 \end{document}
+

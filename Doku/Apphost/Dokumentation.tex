@@ -1,0 +1,690 @@
+\section{Apphost: Architektur, Umsetzung und Bedrohungsmodell}
+
+In diesem Kapitel beschreiben wir den zentralen Baustein unseres Setups, den
+sogenannten \emph{Apphost}. Auf ihm laufen alle Alltags- und Produktivdienste,
+die der Mandant nutzt. Wir gehen zunächst auf die Entscheidungen ein, die zu
+der gewählten Architektur geführt haben, beschreiben dann den konkreten
+Aufbau und zeigen abschließend, wie das vorgegebene Bedrohungsmodell durch
+unsere Umsetzung abgedeckt wird. Wo es sinnvoll ist, verweisen wir auf die
+separate Installationsanleitung und den Anhang, in dem die einzelnen Schritte und alle
+Sicherheitseinstellungen im Detail aufgeführt sind.
+
+\subsection{Evaluation verschiedener Ansätze}
+
+Bevor wir die endgültige Architektur festgelegt haben, haben wir mehrere
+Varianten gegeneinander abgewogen. Uns war wichtig, eine Lösung zu finden,
+die einerseits sicher und reproduzierbar ist, andererseits aber nicht so
+komplex wird, dass sie am Ende niemand mehr nachvollziehen oder warten kann.
+Genau dieser zweite Punkt war für uns ausschlaggebend, denn der Mandant soll
+die Infrastruktur selbst prüfen und betreiben können.
+
+\subsubsection*{Verworfen: Kubernetes mit Talos Linux}
+
+Unser erster Entwurf basierte auf Kubernetes als Orchestrierung und Talos
+Linux als minimalem, API-gesteuertem Betriebssystem für die Nodes. Auf dem
+Papier ist das eine sehr saubere Sache: Talos hat keine Shell und keinen
+SSH-Zugang, die gesamte Konfiguration läuft über eine deklarative API, und
+Kubernetes bringt von Haus aus Konzepte wie Network Policies und Secrets mit.
+
+Wir sind mit diesem Ansatz auch ziemlich weit gekommen. Im Lauf der Arbeit
+ist uns aber immer deutlicher aufgefallen, dass die Komplexität von Kubernetes
+in keinem guten Verhältnis zum eigentlichen Ziel der Aufgabe steht. Für einen
+einzelnen Mandanten, der eine überschaubare Menge an Diensten privat betreibt,
+bedeutet ein Kubernetes-Cluster einen erheblichen dauerhaften Wartungsaufwand:
+Ingress-Controller, CNI-Plugin, Storage-Provisioner, Zertifikatsverwaltung und
+Cluster-Updates müssen alle verstanden und gepflegt werden. Der Kern der
+Aufgabe ist jedoch die \emph{sorgfältige Absicherung} der Dienste, nicht der
+Betrieb eines Cluster-Stacks. Wir haben uns deshalb bewusst gegen Kubernetes
+entschieden und den Stack auf Docker Compose neu aufgebaut. Diese Entscheidung
+ist uns nicht leicht gefallen, weil wir wie gesagt schon viel investiert hatten
+(siehe Abschnitt~\ref{sec:apphost-herausforderungen}).
+
+\subsubsection*{Ausgetauschte Komponenten}
+
+Mit dem Wechsel weg von Kubernetes haben wir auch einige zuvor gewählte
+Werkzeuge ersetzt, weil sie ohne Cluster keinen Sinn mehr ergaben oder für
+unseren Anwendungsfall schlicht überdimensioniert waren:
+
+\begin{itemize}
+  \item \textbf{Envoy Gateway zu Traefik.} Envoy Gateway ist eng an die
+    Kubernetes Gateway API gekoppelt. Ohne Kubernetes fällt diese
+    Integration weg. Traefik passt deutlich besser, weil es Container-Labels
+    direkt aus Docker liest und von Haus aus die ACME-Zertifikatsverwaltung
+    (Let's Encrypt) inklusive der DNS-01-Challenge mitbringt. Damit bekommen
+    wir gültige Zertifikate, ohne dass der Server aus dem Internet erreichbar
+    sein muss.
+  \item \textbf{Keycloak zu Authelia.} Keycloak ist ein vollwertiger
+    Identity-Provider für große Organisationen und entsprechend schwergewichtig.
+    Authelia lässt sich vollständig deklarativ über Konfigurationsdateien
+    einrichten, passt damit besser zu unserem Infrastructure-as-Code-Ansatz und
+    ist für einen einzelnen Nutzer mit einer Handvoll Diensten deutlich
+    angemessener. Authelia deckt sowohl klassisches Forward-Auth als auch OIDC
+    ab, was uns alle benötigten Fälle abdeckt.
+  \item \textbf{Dragonfly zu Valkey.} Als In-Memory-Cache hatten wir zuerst
+    Dragonfly vorgesehen. Wir sind auf Valkey gewechselt, weil es unter dem
+    Dach der Linux Foundation steht, offener lizenziert ist und damit besser zu
+    einem datenschutz- und unabhängigkeitsorientierten Setup passt. Valkey ist
+    in reinen Benchmarks etwas langsamer als Dragonfly, das spielt in unserem
+    Anwendungsfall (Caching für Immich und Paperless) aber keine Rolle. Der Hauptgrund für Dragonfly war die Verfügbarkeit eines Dragonfly Operators.
+\end{itemize}
+
+\subsubsection*{Ein einziger gehärteter Apphost statt VM pro Dienst}
+
+Eine weitere zentrale Entscheidung war, alle Dienste auf einer einzigen, gut
+abgesicherten virtuellen Maschine zu betreiben, statt jeden Dienst in eine
+eigene VM zu legen. Dafür gab es mehrere Gründe:
+
+\begin{itemize}
+  \item \textbf{Geringere Komplexität.} Eine VM pro Dienst hätte schnell zu
+    einem unübersichtlichen Wildwuchs geführt. Bei über 18 Diensten wären
+    das über 18 Betriebssysteme, die alle einzeln aktualisiert, gehärtet und
+    überwacht werden müssten. Das ist gerade für den Endanwender kaum noch
+    handhabbar.
+  \item \textbf{Kein internes Routing nötig.} Mit vielen VMs bräuchte man ein
+    internes Routing zwischen ihnen. Auf einem Host übernimmt das Docker mit
+    seinen internen Netzwerken, und wir können die Segmentierung sauber und an
+    einer Stelle definieren (siehe Abschnitt~\ref{sec:apphost-netze}).
+  \item \textbf{Kein Vendor-Lock-in auf Proxmox.} Wir haben bewusst auf die
+    SDN- und Netzwerk-Features von Proxmox verzichtet. Man sieht an Beispielen
+    wie VMware, wohin eine starke Abhängigkeit von einem einzelnen Hersteller
+    führen kann. Indem die gesamte Netzwerksegmentierung innerhalb des Apphosts
+    in Docker stattfindet, bleibt der Apphost portabel. Er ließe sich theoretisch
+    auch direkt auf Bare Metal oder unter einem anderen Hypervisor betreiben, ohne
+    dass etwas an der Konfiguration geändert werden muss.
+\end{itemize}
+
+Die Isolation zwischen den Diensten erreichen wir also nicht über viele VMs,
+sondern über getrennte Docker-Netzwerke, User-Namespace-Remapping und eine
+strikt gehärtete Host-Konfiguration. Das halten wir für den besseren
+Kompromiss aus Sicherheit und Wartbarkeit.
+
+\subsection{Aufbau der Entwicklungs- und Testumgebung}
+
+Damit wir realistisch entwickeln und testen konnten, haben wir die Umgebung des
+Mandanten so gut wie möglich nachgebaut. Konkret haben wir einen dedizierten
+Server (um genau zu sein einen AX41 bei Hetzner) gemietet und darauf Proxmox VE installiert. Innerhalb von Proxmox haben wir ein klassisches Heimnetzwerk aufgebaut, wie man es bei
+einer Privatperson realistischerweise vorfinden würde.
+
+\subsubsection*{OPNsense als Router}
+
+Als Router und Firewall des simulierten Heimnetzes haben wir OPNsense in einer
+eigenen VM betrieben. OPNsense ist eine quelloffene Firewall, die
+auch in einem realen Einsatz beim Mandanten eine sinnvolle Wahl wäre. Nur die
+OPNsense-VM hatte direkten Zugriff auf das Internet und hat den ausgehenden
+Verkehr für das interne Netz per NAT maskiert. Dahinter lief alles so, wie man
+es aus einem normalen Heimnetz kennt: DHCP für die internen Geräte, ein
+lokaler DNS-Cache und ein flaches internes Netzwerk.
+
+\subsubsection*{Zugang über WireGuard im Split-Tunnel}
+
+Um so zu arbeiten, als säßen wir physisch im Heimnetz des Mandanten,
+haben wir auf der OPNsense einen WireGuard-Server eingerichtet. Unsere Geräte
+verbinden sich per WireGuard und werden im Split-Tunnel-Modus betrieben. Das
+heißt, nur der Verkehr in das interne Netz läuft durch den Tunnel, der
+normale Internetverkehr unserer Geräte bleibt unberührt. So konnten wir die
+internen Dienste genauso erreichen, wie es ein Gerät im Heimnetz könnte, ohne
+dafür potentiell unsichere Ports nach außen öffnen zu müssen.
+
+\subsubsection*{Absicherung des Proxmox-Hosts}
+
+Den Proxmox-Host selbst haben wir vor der eigentlichen Arbeit abgesichert. Dazu
+gehören Zwei-Faktor-Authentifizierung für die Weboberfläche, komplexe
+Passwörter, ausschließlich schlüsselbasierter SSH-Zugang und das Deaktivieren
+nicht benötigter Dienste. Für die Härtung haben wir das Skript
+\texttt{scripts/proxmox-harden.sh} geschrieben, das unter anderem die
+Passwort-Authentifizierung für SSH deaktiviert, moderne Cipher-Suites erzwingt,
+USB-Eingaben sperrt und den Secure-Boot-Status prüft. Die Details dazu stehen
+in der Installationsanleitung.
+
+\subsubsection*{Annahme zum Heimnetzwerk}
+
+Die Aufgabenstellung hat das Heimnetzwerk selbst nicht näher spezifiziert. Wir
+sind deshalb von einem klassischen, flachen Heimnetz ausgegangen und haben es
+bewusst nicht weiter verkompliziert. Der Schwerpunkt unserer Absicherung liegt
+auf dem Apphost und seinen Diensten, also genau dort, wo die sensiblen Daten
+des Mandanten liegen.
+
+\subsubsection*{Getrennte Umgebung für KI-Experimente}
+
+Im Rahmen des zweiten Aufgabenteils (KI-Evaluation) sollten Agenten teilweise
+autonom in Proxmox arbeiten können. Damit diese Experimente unsere manuelle
+Arbeit nicht gefährden konnten, haben wir ihnen eigene Proxmox-Benutzer und
+vollständig getrennte Resource Pools gegeben. Bis auf einen gemeinsam genutzten
+Storage-Pool waren diese Umgebungen sauber von unserer eigentlichen
+Infrastruktur abgetrennt. Die Agenten konnten also nicht auf unsere produktive
+Konfiguration zugreifen und sich in ihrem eigenen Bereich frei austoben.
+
+\subsection{Der Apphost-Stack im Detail}
+
+Der Apphost besteht aus zwei Schichten, die sauber voneinander getrennt sind:
+dem Betriebssystem (NixOS) und der Anwendungsschicht (Docker Compose). Beide
+sind vollständig als Code beschrieben und liegen versioniert im Git-Repository.
+
+\subsubsection{Warum NixOS}
+
+Als Betriebssystem für den Apphost haben wir uns für NixOS entschieden. Das
+passt aus mehreren Gründen sehr gut zu den Anforderungen der Aufgabe:
+
+\begin{itemize}
+  \item \textbf{Vollständig deklarativ.} Der gesamte Systemzustand, von den
+    installierten Paketen über die Firewall bis hin zu jeder einzelnen
+    Sicherheitseinstellung, ist in Konfigurationsdateien beschrieben. Das ist
+    genau das, was die Aufgabe mit Infrastructure-as-Code meint: Der Mandant kann
+    den kompletten Aufbau vor der Ausführung im Repository prüfen.
+  \item \textbf{Reproduzierbar.} Aus derselben Konfiguration entsteht immer das
+    gleiche System. Es gibt keinen Konfigurations-Drift, der sich über die Zeit
+    einschleicht. Der Mandant kann die Installation auf seiner eigenen Hardware
+    durchführen und erhält exakt dasselbe Ergebnis.
+  \item \textbf{Atomare Updates und Rollbacks.} Jede Änderung erzeugt eine neue
+    Generation. Geht ein Update schief, kann man beim nächsten Neustart einfach
+    eine ältere Generation aus dem Bootmenü auswählen. Das ist ein großer
+    Sicherheitsgewinn für die Wartbarkeit.
+  \item \textbf{Härtung an einer Stelle.} Alle Härtungsmaßnahmen liegen
+    zentral in wenigen Nix-Modulen (\texttt{security.nix},
+    \texttt{networking.nix}, \texttt{docker.nix}, \texttt{secureboot.nix}). Das
+    macht den Sicherheitsstand nachvollziehbar und überprüfbar, statt ihn über
+    viele manuelle Schritte zu verteilen.
+\end{itemize}
+
+Die Festplatte wird über das Modul \texttt{disko} ebenfalls deklarativ
+partitioniert. Wir verwenden Btrfs mit zstd-Kompression und getrennten
+Subvolumes für \texttt{/}, \texttt{/nix}, \texttt{/var}, \texttt{/opt} und
+\texttt{/tmp}. Das \texttt{/tmp}-Subvolume wird mit den Optionen
+\texttt{nosuid}, \texttt{nodev} und \texttt{noexec} eingebunden, und der
+Swap wird bei jedem Start mit einem zufälligen Schlüssel verschlüsselt, damit
+keine sensiblen Daten ungeschützt im Swap landen.
+
+\subsubsection{Warum Docker Compose}
+
+Die Dienste selbst laufen als Container, orchestriert über Docker Compose. Nach
+dem Wegfall von Kubernetes ist das die naheliegende Wahl: Die Konfiguration ist
+kompakt, gut lesbar und für den Mandanten leicht nachvollziehbar. Der gesamte
+Stack wird über eine zentrale \texttt{docker-compose.yml} zusammengesetzt, die
+per \texttt{include} einzelne, nach Themen gruppierte Compose-Dateien einbindet
+(zum Beispiel \texttt{media}, \texttt{documents}, \texttt{monitoring},
+\texttt{cloud}). Dadurch bleibt jede Datei überschaubar und ist einem klaren
+Zweck zugeordnet.
+
+\subsubsection{Netzwerksegmentierung}
+\label{sec:apphost-netze}
+
+Statt alle Container in ein gemeinsames Netzwerk zu hängen, bekommt jede
+Dienstgruppe ihr eigenes Docker-Netzwerk. Eine Datenbank ist nur in dem Netz
+erreichbar, in dem auch die zugehörige Anwendung liegt, und nicht von überall.
+Diese Aufteilung begrenzt die laterale Bewegung eines Angreifers: Selbst wenn
+ein Dienst kompromittiert wird, kann der Angreifer von dort nicht ohne Weiteres
+auf alle anderen Dienste zugreifen.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Netzwerk} & \textbf{Beispieldienste} & \textbf{Von außen erreichbar} \\
+  \midrule
+  traefik-public        & alle veröffentlichten Dienste & ja, nur über Traefik \\
+  socket-proxy          & Traefik, Homepage              & nein \\
+  media-network         & Jellyfin, Immich, Postgres, Valkey & nein (nur Immich-Web) \\
+  documents-network     & Paperless, Bento-PDF, Valkey   & nein (nur Web) \\
+  cloud-network         & OpenCloud, Collabora           & nein (nur Web) \\
+  storage-network       & Garage (S3)                    & nein \\
+  home-network          & Home Assistant, Mosquitto      & nein (nur Web) \\
+  monitoring-network    & Prometheus, Grafana, Loki      & nur Grafana, Prometheus, Alertmanager \\
+  communication-network & Ntfy, Alertmanager             & nein (nur Web) \\
+  dev-network           & Forgejo                        & nein (nur Web) \\
+  tools-network         & Homepage, Vaultwarden          & nein (nur Web) \\
+  \bottomrule
+\end{tabular}
+\caption{Vereinfachte Übersicht der internen Docker-Netzwerke.}
+\end{table}
+
+Wichtig ist dabei: Datenbanken, Cache-Instanzen und der interne Teil des
+Monitorings (zum Beispiel Loki) haben gar keine Traefik-Labels und sind damit
+von außen überhaupt nicht erreichbar. Sie sind nur für die Dienste sichtbar,
+die sie wirklich brauchen.
+
+\subsubsection{Reverse Proxy mit Traefik}
+
+Traefik ist der einzige Einstiegspunkt für Web-Verkehr. Er terminiert TLS und
+verteilt die Anfragen anhand der Subdomain an den jeweiligen Dienst. Die
+Zuordnung passiert über Container-Labels, die Traefik direkt aus Docker liest.
+Damit Traefik nicht den vollen Zugriff auf den Docker-Socket braucht, lesen wir
+die Docker-API ausschließlich über einen eingeschränkten Socket-Proxy aus,
+der nur lesende Anfragen zulässt, um selbst bei kompromitierung von Traefik keinen vollzugriff auf das System zu ermöglichen.
+
+Die Zertifikate holt Traefik über Let's Encrypt mit der DNS-01-Challenge. Der
+große Vorteil dieser Methode ist, dass der Server dafür nicht aus dem Internet
+erreichbar sein muss. Es wird lediglich über die DNS-API des Anbieters
+(in unserem Fall Cloudflare) kurzzeitig ein TXT-Eintrag gesetzt. Die Ports 80
+und 443 können vollständig hinter dem Router bleiben. An Cloudflare fließen
+dabei keinerlei Inhalte, sondern nur der Nachweis, dass wir die Domain
+kontrollieren.
+
+Für den internen Zugriff über das Heimnetz setzen
+wir damit bewusst auf ein echtes, öffentlich vertrauenswürdiges Zertifikat statt
+auf ein selbstsigniertes. Das hat mehrere praktische Vorteile. Erstens kommt es
+zu keinen Zertifikatswarnungen im Browser. Das ist nicht nur bequemer, sondern
+auch sicherheitsrelevant: Wer sich angewöhnt, Zertifikatswarnungen einfach
+wegzuklicken, übersieht irgendwann auch eine echte Man-in-the-Middle-Warnung.
+Ein gültiges Zertifikat hält diese Warnung also als verlässliches Signal intakt.
+Zweitens funktioniert die volle Vertrauenskette ohne manuelles Verteilen einer
+eigenen CA auf jedes Gerät des Mandanten, was gerade bei Handys und bei Apps, die selbstsignierte Zertifikate strikt ablehnen, oft
+Probleme macht. Drittens ist die Verwaltung vollständig automatisiert: Traefik
+erneuert die Zertifikate rechtzeitig selbst, es gibt keine abgelaufenen
+Zertifikate, um die sich jemand kümmern müsste.
+
+Eine bewusste Ausnahme bildet der Tor-Zugang. Onion-Adressen lassen sich von
+Let's Encrypt nicht zertifizieren, und sie brauchen es auch nicht, weil die
+Verbindung über Tor bereits Ende-zu-Ende verschlüsselt ist. Dort verwenden wir
+deshalb ein selbstsigniertes Zertifikat, was im Tor-Browser unkritisch ist.
+Auch wenn ein Zertifikat nicht notwendig wäre, da Tor die Verschlüsselung übernimmt, ist es dennoch sinnvoll, weil es eine zusätzliche Schutzschicht gegen Angreifer bildet, sollte das Tor-Netzwerk kompromittiert werden, oder sicherheitsschwächen im Tor-Protokoll selbst auftreten.
+
+\subsubsection{Single Sign-On mit Authelia}
+
+Authelia ist unser zentraler Authentifizierungsdienst und schützt die Dienste,
+die keine ausreichend starke eigene Anmeldung mitbringen. Wir nutzen zwei
+Mechanismen, je nachdem, was der jeweilige Dienst unterstützt:
+
+\begin{itemize}
+  \item \textbf{OIDC (OpenID Connect)} für Dienste, die das nativ können, zum
+    Beispiel Grafana, Immich, Paperless und Forgejo. Diese Dienste leiten zur
+    Anmeldung an Authelia weiter und vertrauen anschließend dem ausgestellten
+    Token. Der Vorteil ist, dass die Benutzeridentität sauber in den Dienst
+    übernommen wird.
+  \item \textbf{Forward-Auth} für Dienste ohne brauchbare eigene
+    Zugriffskontrolle, zum Beispiel Prometheus, Alertmanager und die Homepage.
+    Hier prüft Traefik bei jeder Anfrage zuerst bei Authelia, ob der Nutzer
+    angemeldet ist, bevor die Anfrage überhaupt den Dienst erreicht.
+\end{itemize}
+
+Die Benutzer und ihre Passwörter liegen in einer Datei mit Argon2id-Hashes, die
+beim Setup automatisch generiert wird. Damit ist die zentrale Anmeldung sauber
+deklarativ beschrieben und nicht in einer Datenbank versteckt, die man von außen
+nicht prüfen kann.
+
+\subsubsection{Zensurresistenter Zugriff über Tor}
+
+Auf ausdrücklichen Kundenwunsch sind alle Dienste zusätzlich über das
+Tor-Netzwerk als Onion Service v3 erreichbar. Dafür läuft ein Tor-Container,
+der einen Hidden Service bereitstellt und den Verkehr an einen eigenen
+Traefik-Einstiegspunkt weiterreicht. So kann der Mandant auch aus stark
+überwachten oder zensierten Netzen auf seine Dienste zugreifen, ohne dass dabei
+Metadaten an den lokalen Provider abfließen und ohne dass überhaupt ein Port
+nach außen geöffnet werden muss. Der Tor-Container ist als reiner Client
+konfiguriert (kein Relay, kein Exit, deaktivierter Control- und SOCKS-Port).
+
+Praktisch bedeutet das einen dualen URL-Raum: Im Heimnetz erreicht man die
+Dienste unter \texttt{*.domain} mit gültigem Zertifikat, über Tor unter
+\texttt{*.onion}.
+
+Wichtig ist dabei, dass die Tor-Erreichbarkeit \emph{pro Dienst} explizit
+ein- und ausgeschaltet werden kann. Jeder Dienst bekommt in unserem Aufbau
+neben seinen normalen Traefik-Labels ein zusätzliches Set an Labels für den
+Tor-Einstiegspunkt. Lässt man dieses Set weg, ist der Dienst schlicht nicht
+über Tor erreichbar, ohne dass sich am internen Zugriff irgendetwas ändert. So
+kann der Mandant gezielt steuern, welche Dienste anonym von außen verfügbar sein
+sollen und welche bewusst nur im Heimnetz bleiben. Wir nutzen das zum Beispiel
+für Collabora, das aus Sicherheitsgründen standardmäßig nicht über Tor
+freigegeben ist.
+
+\paragraph{Kompatibilität der Anwendungen und OIDC.}
+Nicht jede Anwendung kommt mit zwei verschiedenen URLs gleich gut zurecht. Manche
+verhalten sich völlig transparent: Home Assistant zum Beispiel orientiert sich am
+jeweils anfragenden Host und stellt sich automatisch auf die gerade verwendete
+URL ein, sodass der Wechsel zwischen internem Pfad und Tor dort unbemerkt
+funktioniert. Eine echte Einschränkung betrifft dagegen die Dienste, die sich
+über OIDC an Authelia anmelden. OIDC bindet die ausgestellten Tokens, die Redirect-URIs
+und vor allem die sogenannte Issuer-URL fest an eine einzige Basis-Adresse.
+Betreiben wir Authelia intern unter \texttt{auth.domain}, dann sind alle Tokens
+auf genau diese Adresse ausgestellt. Versucht sich derselbe Nutzer anschließend
+über die Tor-Adresse anzumelden, schlägt die Validierung fehl, weil die
+Issuer-URL in der Antwort nicht mehr zu der Adresse passt, über die er gerade
+zugreift. Ein nahtloser Wechsel zwischen internem Pfad und Tor-Pfad ist bei
+OIDC-geschützten Diensten daher nicht möglich. Für reine Forward-Auth-Dienste
+(zum Beispiel Prometheus oder die Homepage) tritt das Problem nicht auf, weil
+dort kein Token an eine feste Issuer-URL gebunden wird. Das ist eine reine
+Komforteinschränkung und kein Sicherheitsproblem. Wie wir damit umgehen und
+warum wir dem Mandanten dafür ergänzend einen WireGuard-Zugang empfehlen, steht
+im Abschnitt zu den eingegangenen Kompromissen.
+
+\subsubsection{Monitoring und Alerting}
+
+Für die Überwachung setzen wir auf den bekannten Stack aus Prometheus
+(Metriken), Loki (Logs), Grafana (Dashboards) und Alertmanager (Alarmierung).
+Node-Exporter und cAdvisor liefern Host- und Container-Metriken, Promtail
+sammelt die Logs ein. Prometheus und Loki sind rein intern, nur Grafana,
+Prometheus und Alertmanager sind über den Reverse Proxy zugänglich und dort
+durch Authelia geschützt.
+
+Dieser Stack stammt ursprünglich aus unserer Kubernetes-Phase, denn im
+cloud-nativen Umfeld ist die Kombination aus Prometheus und Grafana praktisch
+der De-facto-Standard für Monitoring. Beim Umbau auf Docker Compose hat sich
+gezeigt, dass wir ihn problemlos übernehmen konnten, und genau das ist einer
+seiner größten Vorzüge: Die Komponenten sind nicht an Kubernetes gebunden,
+sondern laufen als ganz normale Container genauso gut. Wir mussten das einmal
+erarbeitete Monitoring-Konzept also nicht wegwerfen, sondern konnten es direkt
+weiterverwenden. Für unseren Anwendungsfall passt der Stack aus mehreren
+Gründen gut:
+
+\begin{itemize}
+  \item \textbf{Pull-basiert und einfach.} Prometheus holt die Metriken
+    selbstständig von den Exportern ab. Wir müssen nichts an einen externen
+    Dienst pushen, alle Daten bleiben auf dem Host.
+  \item \textbf{Geringer Ressourcenbedarf.} Gerade Loki ist bewusst
+    leichtgewichtig (es indexiert nur Metadaten, nicht den vollen Text wie z.B. Elastic/OpenSearch) und passt damit gut zu einem einzelnen, sparsam ausgelegten Host.
+  \item \textbf{Alles aus einer Oberfläche.} Grafana führt Metriken und Logs in
+    einer einzigen Oberfläche zusammen, sodass der Mandant nicht mehrere
+    Werkzeuge bedienen muss.
+  \item \textbf{Flexible Alarmierung.} Der Alertmanager trennt die Auswertung
+    der Alarme sauber von deren Zustellung und kann frei konfiguriert werden, in
+    unserem Fall in Richtung des selbst gehosteten ntfy.
+\end{itemize}
+
+Besonders wichtig für das Bedrohungsmodell ist die Alarmierung. Die Aufgabe
+verlangt ausdrücklich, dass Push-Benachrichtigungen nicht über fremde
+Cloud-Dienste laufen, die Metadaten abgreifen könnten. Wir nutzen deshalb das
+selbst gehostete \texttt{ntfy}. Der Alertmanager schickt seine Alarme per
+Webhook an ntfy, und der Mandant kann diese sowohl am Desktop als auch auf
+seinem GrapheneOS-Smartphone empfangen. Da ntfy selbst gehostet ist, verlassen
+die Benachrichtigungen die eigene Infrastruktur nicht. Beispiele für
+definierte Alarme sind hohe CPU-Last, knapper Speicherplatz, ausgefallene
+Container und ein nicht erreichbares Backend hinter Traefik.
+
+\subsubsection{Objektspeicher mit Garage}
+
+Garage ist ein leichtgewichtiger, S3-kompatibler Objektspeicher. Wir nutzen ihn
+als Speicher-Backend für OpenCloud. Auch Garage läuft mit minimalen Rechten
+(alle Capabilities entfernt, read-only Dateisystem) und ist nur innerhalb des
+Storage-Netzes erreichbar.
+
+\subsubsection{Absicherung der Container}
+\label{sec:apphost-container}
+
+Die Netzwerksegmentierung allein reicht nicht aus. Damit ein einzelner
+kompromittierter Dienst möglichst wenig anrichten kann, härten wir jeden
+Container nach demselben Grundmuster. Diese Einstellungen stehen direkt in den
+Compose-Dateien und sind damit für den Mandanten nachvollziehbar:
+
+\begin{itemize}
+  \item \textbf{Keine neuen Privilegien.} Jeder Container läuft mit
+    \texttt{no-new-privileges:true}. Damit kann ein Prozess im Container seine
+    Rechte nicht nachträglich erhöhen, etwa über setuid-Binaries.
+  \item \textbf{Capabilities auf null und gezielt zurück.} Wir entfernen mit
+    \texttt{cap\_drop: ALL} zunächst sämtliche Linux-Capabilities und geben
+    anschließend pro Dienst nur die wenigen wieder frei, die er wirklich
+    braucht. Traefik bekommt zum Beispiel nur \texttt{NET\_BIND\_SERVICE}, um die
+    Ports 80 und 443 zu binden, die Datenbanken nur die für den Wechsel des
+    Benutzers nötigen Capabilities. Die meisten Dienste laufen ganz ohne
+    zusätzliche Capabilities.
+  \item \textbf{Read-only Dateisystem.} Wo es der Dienst zulässt (z.B. Traefik,
+    Tor, Garage, Node-Exporter, Homepage, ntfy und Mosquitto), wird das
+    Wurzeldateisystem des Containers schreibgeschützt eingebunden. Für die
+    wenigen Stellen, die echten Schreibzugriff brauchen, dient ein kleines,
+    nicht ausführbares tmpfs im RAM.
+  \item \textbf{Ressourcenlimits.} Jeder Container hat CPU- und
+    Speicherobergrenzen. Das verhindert, dass ein einzelner (möglicherweise
+    kompromittierter) Dienst den ganzen Host lahmlegt.
+  \item \textbf{Seccomp und AppArmor.} Es gilt das Standard-Seccomp-Profil von
+    Docker, das gefährliche Syscalls blockiert, und auf Host-Ebene erzwingt
+    AppArmor zusätzliche Mandatory-Access-Control-Profile.
+  \item \textbf{User-Namespace-Remapping.} Auf Daemon-Ebene wird root im
+    Container auf einen unprivilegierten Bereich auf dem Host abgebildet. Selbst
+    wer im Container root wird, ist auf dem Host damit ein Benutzer ohne Rechte.
+\end{itemize}
+
+Die einzige nennenswerte Ausnahme von diesem Muster ist Collabora, das für das
+Rendern von Dokumenten erweiterte Rechte benötigt. Wir gehen darauf im Abschnitt
+zu den Kompromissen ein.
+
+Ergänzt wird die Container-Härtung durch automatische Sicherheitsscans. Ein
+geplanter Job prüft die laufenden Images wöchentlich (montags um 02:00) mit Trivy auf
+bekannte Schwachstellen der Stufen HIGH und CRITICAL und legt den Bericht unter
+\texttt{/var/log/docker-security-scan.log} ab. Zusammen mit den durch RenovateBot
+laufend aktuell gehaltenen Images entsteht so ein kontinuierlicher Kreislauf:
+Neue Schwachstellen werden zeitnah erkannt, und das passende Update steht meist
+schon als Pull Request bereit.
+
+\subsubsection{Umgang mit Geheimnissen}
+
+Alle Geheimnisse (Passwörter, Token, Schlüssel) liegen in einer
+\texttt{.env}-Datei und einem \texttt{secrets/}-Verzeichnis, die beide nicht im
+Git eingecheckt werden. Aus den Klartextwerten der \texttt{.env} erzeugen kleine
+Skripte die tatsächlich benötigten gehashten Werte, etwa die Argon2id-Hashes
+für Authelia, die bcrypt-Hashes für ntfy und die Passwortdatei für Mosquitto.
+Das Verzeichnis \texttt{secrets/} ist auf Dateisystemebene strikt geschützt
+(Zugriff nur für den \texttt{apphost}-Benutzer). Ändert der Mandant ein
+Passwort, generiert er die Hashes mit einem einzigen Befehl neu.
+
+\subsubsection{Kontrollierte Updates mit Renovate}
+
+Ein wiederkehrendes Problem beim Self-Hosting ist, dass Container-Images
+veralten und so unbemerkt Sicherheitslücken offen bleiben. Damit das nicht
+passiert, überwacht RenovateBot unser Repository und öffnet automatisch einen
+Pull Request, sobald für ein Image eine neue Version verfügbar ist. Dadurch
+haben wir einen kontrollierten und nachvollziehbaren Update-Prozess geschaffen:
+
+\begin{itemize}
+  \item Jedes Update kommt als einzelner, dokumentierter Pull Request, statt
+    unbemerkt im Hintergrund zu passieren.
+  \item Unkritische Updates für den Monitoring-Stack werden automatisch
+    zusammengefasst und können automatisch gemerged werden.
+  \item Sicherheitskritische Komponenten wie Datenbanken oder Traefik werden
+    bewusst nicht automatisch gemerged, sondern erst nach einer Wartezeit und
+    manueller Prüfung.
+  \item Major-Updates mit möglichen Breaking Changes warten länger und werden
+    immer von Hand geprüft.
+\end{itemize}
+
+Nach dem Mergen eines Pull Requests genügt auf dem Server ein einziger Befehl,
+um die neuen Images zu ziehen und die Container neu zu starten. Ergänzt wird das
+durch einen wöchentlichen Schwachstellen-Scan der laufenden Images mit Trivy
+und die tägliche automatische Aktualisierung des NixOS-Systems selbst. So
+bleibt die Angriffsfläche dauerhaft klein, ohne dass jemand ständig manuell
+nach neuen Versionen suchen muss.
+
+\subsubsection{Übersicht der Dienste}
+
+Insgesamt stellt der Apphost deutlich mehr als die geforderten 15 Dienste
+bereit, von Medien (Jellyfin, Immich) über Dokumente (Paperless, Bento-PDF),
+Cloud und Office (OpenCloud, Collabora), Hausautomation (Home Assistant,
+Mosquitto), Kommunikation (Ntfy, Bichon) und Entwicklung (Forgejo) bis zu
+Werkzeugen wie dem Passwortmanager Vaultwarden und einer Startseite (Homepage).
+Die vollständige Liste mit Subdomains und Beschreibungen findet sich im Anhang.
+
+\subsection{Abdeckung des Bedrohungsmodells}
+
+Die Aufgabenstellung gibt drei zentrale Angriffsvektoren vor. Im Folgenden
+zeigen wir für jeden davon, mit welchen Maßnahmen wir ihn adressieren. Eine
+ausführliche Auflistung aller einzelnen Einstellungen findet sich im Anhang.
+
+\subsubsection{Remote-Angriffe}
+
+Hierunter fallen Phishing, Brute-Force, kompromittierte Endgeräte und
+Supply-Chain-Angriffe auf Abhängigkeiten.
+
+\begin{itemize}
+  \item \textbf{Keine offenen Ports.} Da Web-Zugriff nur über das Heimnetz
+    und über Tor erfolgt und die Zertifikate per DNS-01 geholt
+    werden, muss kein einziger Port ins Internet geöffnet werden. Das nimmt
+    klassischen Remote-Angriffen von vornherein die Angriffsfläche. Auch intern wird zusätzlich  ledigtlich SSH für die Wartung benötigt.
+  \item \textbf{Starke, zentrale Authentifizierung.} Authelia mit Argon2id und
+    Mehr-Faktor-Authentifizierung schützt die Dienste. Fail2ban sperrt nach
+    wenigen Fehlversuchen sowohl bei SSH als auch bei fehlgeschlagenen
+    Web-Logins (HTTP 401) und verlängert die Sperrzeit progressiv.
+  \item \textbf{Default-Deny-Firewall.} Die nftables-Firewall verwirft
+    eingehenden Verkehr standardmäßig und erlaubt nur das Nötigste. SSH ist
+    zusätzlich Rate-Limited.
+  \item \textbf{Supply-Chain.} RenovateBot, der wöchentliche Trivy-Scan und die
+    täglichen NixOS-Updates sorgen dafür, dass bekannte Schwachstellen schnell
+    geschlossen werden. Sollte trotzdem ein Container kompromittiert werden,
+    greift die in Abschnitt~\ref{sec:apphost-container} beschriebene
+    Container-Härtung: entfernte Capabilities, \texttt{no-new-privileges},
+    read-only Dateisysteme, das Seccomp-Profil, AppArmor und vor allem das
+    User-Namespace-Remapping (root im Container ist nicht root auf dem Host)
+    begrenzen den möglichen Schaden. Die Netzwerksegmentierung
+    (Abschnitt~\ref{sec:apphost-netze}) verhindert zusätzlich, dass sich ein
+    Angreifer von einem Dienst aus frei weiterbewegen kann.
+\end{itemize}
+
+\subsubsection{Lokale Angriffe (BadUSB, Einklinken ins Netz)}
+
+Die Aufgabe stellt explizit klar, dass das Aufschrauben des Servers
+out-of-scope ist, das Anstecken bösartiger USB-Geräte und das unautorisierte
+Einklinken ins Netzwerk aber sehr wohl abgewehrt werden müssen.
+
+\begin{itemize}
+  \item \textbf{USB-Angriffe.} Die Kernel-Module für USB-Speicher
+    (\texttt{usb-storage}, \texttt{uas}) und weitere unnötige Hardware-Module
+    sind per Blacklist deaktiviert. Auch auf dem Proxmox-Host werden USB-Eingaben
+    gesperrt. Ein einfach angestecktes BadUSB-Gerät findet so keinen direkten
+    Angriffsweg.
+  \item \textbf{Verifizierter Boot.} Secure Boot über lanzaboote sorgt dafür,
+    dass nur signierte Boot-Komponenten starten. Zusammen mit erzwungener
+    Kernel-Modul-Signatur (\texttt{module.sig\_enforce}) und dem Kernel-Lockdown
+    wird verhindert, dass ein lokaler Angreifer manipulierten Code einschleust.
+  \item \textbf{DMA-Schutz.} Die IOMMU wird erzwungen und früher PCI-DMA-Zugriff
+    blockiert, was Angriffe über direkten Speicherzugriff erschwert.
+  \item \textbf{Netzwerk.} Wer sich unautorisiert ins Netz einklinkt, trifft auf
+    eine Default-Deny-Firewall und auf Dienste, die hinter Authelia liegen. Ein
+    bloßer Netzwerkzugang reicht also nicht, um an die Dienste zu kommen.
+\end{itemize}
+
+\subsubsection{Metadaten-Leaks}
+
+Damit keine sensiblen Nutzungs- oder Standortdaten an den Provider abfließen,
+setzen wir an mehreren Stellen an:
+
+\begin{itemize}
+  \item \textbf{Tor.} Der Zugriff über Onion Services verbirgt sowohl die
+    Identität des Servers als auch die des Nutzers vor dem lokalen Provider.
+  \item \textbf{Verschlüsseltes DNS.} Der Host nutzt DNS-over-TLS mit
+    DNSSEC-Validierung gegen Resolver ohne Logging-Policy (Cloudflare und Quad9),
+    sodass DNS-Anfragen nicht im Klartext beim Provider landen.
+  \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über NTS
+    (Network Time Security), also authentifiziert über TLS.
+  \item \textbf{Keine fremde Cloud für Alarme.} Wie beschrieben laufen
+    Push-Benachrichtigungen ausschließlich über das selbst gehostete ntfy.
+\end{itemize}
+
+\subsubsection{Eingegangene Kompromisse}
+
+Kein reales Setup ist frei von Kompromissen. Wir halten es für wichtig, diese
+offen zu benennen:
+
+\begin{itemize}
+  \item \textbf{Ein Host statt vieler VMs.} Wir bündeln viele Dienste auf einem
+    Host. Damit ist der Host ein attraktiveres Ziel, als es eine einzelne
+    Mini-VM wäre. Wir halten das für vertretbar, weil die Isolation über
+    Docker-Netzwerke, User-Namespaces und die sehr umfangreiche Host-Härtung
+    erfolgt und der Gewinn an Wartbarkeit für den Mandanten den Unterschied
+    überwiegt.
+  \item \textbf{OIDC und der duale URL-Raum.} Dienste mit OIDC funktionieren nicht
+    nahtlos gleichzeitig über die interne Domain und über Tor, weil OIDC die
+    Tokens fest an eine Basis-URL bindet (die Mechanik dahinter haben wir im
+    Tor-Abschnitt erläutert). Das ist eine reine Komforteinschränkung und kein
+    Sicherheitsproblem. Als Komfortverbesserung empfehlen wir dem Mandanten
+    ergänzend einen WireGuard-Zugang: Damit sind die internen Adressen von
+    überall über denselben Pfad erreichbar, der URL-Wechsel entfällt und die
+    OIDC-Anmeldung funktioniert ortsunabhängig. Tor bleibt als zusätzlicher
+    anonymer Zugangsweg davon unberührt.
+  \item \textbf{Collabora.} Der Office-Dienst Collabora benötigt für das
+    Rendern von Dokumenten erweiterte Rechte (unter anderem die Capability
+    \texttt{SYS\_ADMIN}). Das ist der am wenigsten eingeschränkte Container im
+    Stack. Wir akzeptieren das, weil die Funktion sonst nicht läuft, und
+    begrenzen das Risiko über die Netzwerksegmentierung und die Anmeldung an OpenCloud. Aus diesem Grund ist Collabora jedoch standardmäßig nicht über Tor erreichbar.
+    In dem letzten Monaten hat sich EU-Office als (EU-)Fork von Onlyoffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. EU-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von EU-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
+  \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen Sandbox-Runtimes
+    sind vorbereitet, aber standardmäßig nicht aktiv (siehe nächster
+    Abschnitt).
+\end{itemize}
+
+\subsection{Backups und Wiederherstellung}
+
+Für die Sicherung setzen wir bewusst auf die in Proxmox integrierte
+Backup-Funktion. Proxmox sichert komplette VMs als konsistente Snapshots und
+kann diese regelmäßig und vollautomatisch wegschreiben. Der Grund für diese
+Entscheidung ist vor allem die Einfachheit für den Mandanten: Da der gesamte
+Apphost in einer einzigen VM lebt, sichert ein VM-Backup automatisch den
+konsistenten Gesamtzustand aller Dienste auf einmal. Es gibt also keine Situation,
+in der nach einer Wiederherstellung die Datenbank eines Dienstes nicht mehr zu
+dessen Dateien passt. Gerade für einen Anwender ohne tiefes IT-Wissen ist es
+ein großer Vorteil, mit einem Klick wieder einen funktionierenden Stand zu
+haben.
+
+Wir sind uns bewusst, dass damit eine gewisse Nähe zu Proxmox entsteht. Dieser
+Lock-in ist aber gering: Das Backup-Format ist offen und gut dokumentiert, die
+Sicherungen sind durch Kompression und Deduplizierung sehr effizient, und die
+Backups lassen sich verschlüsseln. So sind die Daten auch dann geschützt, wenn
+ein Backup-Medium gestohlen wird. Für die Wiederherstellung nach einem
+Hardwaredefekt genügt es, Proxmox neu aufzusetzen und die VM aus dem letzten
+Backup zurückzuspielen.
+
+\subsection{Sicherheitshärtung im Überblick}
+
+Das System kombiniert eine große Zahl einzelner Härtungsmaßnahmen, die alle
+deklarativ in den NixOS-Modulen festgelegt sind. Wir geben hier nur einen
+geordneten Überblick, die vollständige Liste mit konkreten Werten befindet sich im Anhang.
+
+\begin{itemize}
+  \item \textbf{Boot und Firmware:} Secure Boot per lanzaboote, eingebundener
+    TPM, deaktivierter Bootloader-Editor, erzwungene Kernel-Modul-Signatur und
+    Kernel-Lockdown.
+  \item \textbf{Kernel:} Aktivierte CPU-Mitigationen (Spectre, Meltdown, MDS und
+    weitere), vollständiges ASLR, init-on-alloc und init-on-free, erzwungene
+    IOMMU, eingeschränkter Zugriff auf Kernel-Informationen sowie eine an den
+    CIS-Benchmark angelehnte Modul-Blacklist.
+  \item \textbf{Netzwerk:} nftables mit Default-Deny, rate-limited SSH und
+    ICMP, gehärtete Sysctl-Einstellungen, DNS-over-TLS mit DNSSEC und
+    authentifizierte Zeit über NTS.
+  \item \textbf{Zugriff:} ausschließlich schlüsselbasiertes SSH mit modernen
+    und post-quanten-fähigen Verfahren, gehärtetes sudo mit I/O-Logging, eine
+    unveränderliche Benutzerdatenbank, ein gesperrtes Root-Konto und AppArmor
+    als Mandatory Access Control.
+  \item \textbf{Audit und Intrusion Detection:} der Linux Audit Daemon für
+    sicherheitsrelevante Ereignisse, Fail2ban mit progressivem Banning und AIDE
+    für die tägliche Prüfung der Dateisystemintegrität.
+  \item \textbf{Container:} User-Namespace-Remapping, Zugriff auf die Docker-API
+    nur über einen eingeschränkten Socket-Proxy, entfernte Capabilities,
+    read-only Dateisysteme wo möglich und ein wöchentlicher CVE-Scan.
+  \item \textbf{Updates:} tägliche NixOS-Aktualisierung, RenovateBot für die
+    Container und regelmäßiges Aufräumen des Nix-Stores.
+\end{itemize}
+
+\subsection{Herausforderungen}
+\label{sec:apphost-herausforderungen}
+
+Zum Abschluss wollen wir kurz darlegen, an welchen Stellen wir auf
+größere Schwierigkeiten gestoßen sind und wie wir damit umgegangen sind.
+
+\begin{itemize}
+  \item \textbf{Der komplette Umbau weg von Kubernetes.} Wie eingangs
+    beschrieben hatten wir den Stack zuerst auf Kubernetes mit Talos Linux
+    aufgebaut und waren damit schon fast fertig. Die Erkenntnis, dass der Ansatz
+    für diesen Anwendungsfall zu komplex ist, kam entsprechend spät und war
+    ehrlich gesagt ein ziemlicher Dämpfer. Wir haben uns trotzdem für den
+    kompletten Rewrite auf Docker Compose entschieden, weil das Endergebnis
+    dadurch wartbarer und für den Mandanten nachvollziehbarer ist. Im Rückblick
+    war das die richtige Entscheidung, auch wenn sie viel Arbeit gekostet hat. Grund war ein gewisser Bias, der sich über Jahre entwickelt hat.
+  \item \textbf{Der Bias.} Durch die jahrelange Arbeit mit Kubernetes Clustern, entstand ein gewisser architektonischer Bias. Best Practices sind bekannt und oft sind sogar bereits fertige Lösungsbausteine existent. Dadurch entsteht entsteht die Tendenz, jede Herausforderung als Kubernetes-Usecase zu betrachten. Es ist jedoch wichtig, objektiv zu bleiben und anzuerkennen, dass diese Herangehensweise in bestimmten Einsatzszenarien keinen messbaren Vorteil bietet oder sogar unnötige Komplexität erzeugt.
+  Eines der Teammitglieder betreibt zum Beispiel seit Jahre sein Homelab auf Kubernetes-Basis: \texttt{https://github.com/LucaDev/Home/}
+  \item \textbf{NixOS-Versionssprung kurz vor Abgabe.} Gegen Ende der
+    Bearbeitungszeit erschien die neue NixOS-Version, und der Sprung auf
+    \texttt{26.05} brachte einige Breaking Changes mit sich. Wir hätten es uns
+    einfach machen und auf der älteren Version bleiben können, wollten dem
+    Mandanten aber kein von Anfang an veraltetes System ausliefern. Wir haben den
+    Sprung also noch mitgenommen und die nötigen Anpassungen vorgenommen, was
+    unter Zeitdruck zusätzlichen Aufwand bedeutet hat.
+  \item \textbf{Kompatibilität von Kata Containers und gVisor.} Beide Sandbox-
+    Runtimes wollten wir eigentlich standardmäßig aktivieren. In der Praxis
+    haben sie sich aber je nach Proxmox-Konfiguration unterschiedlich verhalten,
+    insbesondere wenn nested-virtualization
+    nicht stabil verfügbar war. Damit das Setup auf möglichst vielen Hosts ohne
+    Probleme startet, haben wir beide Runtimes vorbereitet, aber nicht als
+    Standard gesetzt. Sie lassen sich pro Dienst aktivieren, sobald die Hardware
+    das stabil unterstützt.
+  \item \textbf{Zeit und Vereinbarkeit.} Wir arbeiten alle in Vollzeit und haben
+    dieses Projekt neben weiteren Modulen bearbeitet. Wir haben uns zeitweise
+    stark in Details verrannt, vor allem in der Kubernetes-Phase. Die wichtigste
+    Lehre daraus ist, frühzeitiger zu hinterfragen, ob ein gewählter Ansatz
+    wirklich zum Kern der Aufgabe passt, statt ihn aus Prinzip zu Ende zu bringen.
+\end{itemize}
