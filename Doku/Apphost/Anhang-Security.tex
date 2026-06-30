@@ -1,0 +1,196 @@
+\section{Sicherheitshärtungen des Systems}
+\label{sec:hardening}
+Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständige Liste.
+
+\subsection{Boot \& Firmware}
+\begin{itemize}
+  \item \textbf{Secure Boot (lanzaboote):} Alle NixOS-Generationen werden beim Build automatisch signiert. Der Boot schlägt fehl, wenn die Signatur nach dem Key-Enrollment ungültig ist. (\texttt{boot.lanzaboote.enable = true})
+  \item \textbf{TPM-Integration:} Der TPM-Chip ist in den Secure-Boot-Prozess eingebunden (\texttt{tpm-eventlog}); ermöglicht Measured Boot.
+  \item \textbf{Bootloader-Editor deaktiviert:} \texttt{boot.loader.systemd-boot.editor = false} verhindert das Umgehen des Passworts über den Boot-Editor.
+  \item \textbf{Kernel-Modul-Signatur erzwungen:} \texttt{module.sig\_enforce=1} - nur signierte Kernel-Module dürfen geladen werden.
+  \item \textbf{Kernel-Lockdown:} \texttt{lockdown=confidentiality} sperrt privilegierten Zugriff auf Kernel-Speicher.
+  \item \textbf{UEFI-Passwort (Host):} Muss im Mainboard-BIOS gesetzt werden (herstellerspezifisch).
+\end{itemize}
+
+\subsection{Kernel-Härtung}
+\subsubsection*{Spectre/Meltdown/CPU-Mitigationen}
+\begin{itemize}
+  \item Page Table Isolation: \texttt{pti=on}
+  \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on}
+  \item TSX deaktiviert + TAA/MDS vollständig mitigiert (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt})
+  \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt}
+\end{itemize}
+
+\subsubsection*{Speicher- \& Adressraumschutz}
+\begin{itemize}
+  \item Vollständiges ASLR: \texttt{randomize\_va\_space=2}, \texttt{vm.mmap\_rnd\_bits=32}
+  \item SLUB-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits
+  \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}
+  \item debugfs deaktiviert: \texttt{debugfs=off}
+\end{itemize}
+
+\subsubsection*{DMA-Schutz (IOMMU)}
+\begin{itemize}
+  \item IOMMU erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \texttt{intel\_iommu=on}
+  \item DMA Passthrough deaktiviert: \texttt{iommu.passthrough=0}
+  \item Early PCI DMA blockiert: \texttt{efi=disable\_early\_pci\_dma}
+\end{itemize}
+
+\subsubsection*{Kernel-Informationslecks}
+\begin{itemize}
+  \item Kernel-Pointer versteckt: \texttt{kernel.kptr\_restrict=2}
+  \item dmesg nur für root: \texttt{kernel.dmesg\_restrict=1}
+  \item Unprivilegiertes BPF deaktiviert: \texttt{kernel.unprivileged\_bpf\_disabled=1}, \texttt{net.core.bpf\_jit\_enable=0}
+  \item perf\_events nur privilegiert: \texttt{kernel.perf\_event\_paranoid=3}
+  \item ptrace eingeschränkt: \texttt{kernel.yama.ptrace\_scope=2} (nur \texttt{PTRACE\_TRACEME})
+  \item SysRq deaktiviert: \texttt{kernel.sysrq=0}
+  \item setuid-Core-Dumps deaktiviert: \texttt{fs.suid\_dumpable=0}
+\end{itemize}
+
+\subsubsection*{Dateisystem-Schutz (Kernel)}
+\begin{itemize}
+  \item \texttt{fs.protected\_hardlinks=1}, \texttt{fs.protected\_symlinks=1}
+  \item \texttt{fs.protected\_fifos=2}, \texttt{fs.protected\_regular=2}
+  \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}
+\end{itemize}
+
+\subsubsection*{Blacklisted Kernel-Module (Angelehnt an CIS Benchmark)}
+Nicht benötigte Protokoll- und Dateisystem-Module sind deaktiviert, darunter:\\
+\textit{Netzwerk:} \texttt{dccp}, \texttt{sctp}, \texttt{rds}, \texttt{tipc}, \texttt{ax25}, \texttt{atm}, \texttt{ipx}, \texttt{appletalk} u.\,a.\\
+\textit{Dateisysteme:} \texttt{cramfs}, \texttt{hfs}, \texttt{hfsplus}, \texttt{jffs2}, \texttt{udf}, \texttt{cifs}, \texttt{nfs*}, \texttt{gfs2}\\
+\textit{Hardware:} \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{firewire-core}
+
+\subsection{Netzwerk-Härtung}
+\subsubsection*{nftables-Firewall (Default Deny)}
+\begin{itemize}
+  \item Input-Policy: \texttt{drop} - nur explizit erlaubter Verkehr passiert.
+  \item Forward-Policy: \texttt{drop} - kein unerwünschtes Routing.
+  \item ICMP und ICMP6 rate-limitiert (5/s bzw.\ 10/s mit Burst).
+  \item SSH rate-limitiert: 5 Verbindungen/min, Burst 10.
+  \item Alle abgewiesenen Pakete werden geloggt (\texttt{[nftables DROP]}).
+\end{itemize}
+
+\subsubsection*{IPv4/IPv6 Sysctl}
+\begin{itemize}
+  \item Reverse Path Filtering aktiv (\texttt{rp\_filter=1})
+  \item Source-Routing, ICMP-Redirects und Router-Advertisements deaktiviert
+  \item SYN-Flood-Schutz: \texttt{tcp\_syncookies=1}, \texttt{tcp\_max\_syn\_backlog=4096}
+  \item TCP-Timestamps deaktiviert (verhindert Uptime-Fingerprinting)
+  \item IPv6 Router-Advertisements und Autoconf deaktiviert
+  \item Martian-Pakete werden geloggt
+  \item eBPF-JIT-Härtung: \texttt{net.core.bpf\_jit\_harden=2}
+\end{itemize}
+
+\subsubsection*{DNS-Sicherheit}
+\begin{itemize}
+  \item DNS-over-TLS erzwungen (\texttt{DNSOverTLS=true})
+  \item DNSSEC-Validierung aktiv (\texttt{DNSSEC=true})
+  \item Server: Cloudflare (\texttt{1.1.1.1}) und Quad9 (\texttt{9.9.9.9}) -- beide ohne Logging-Policy
+\end{itemize}
+
+\subsubsection*{NTP -- Authenticated Time Sync}
+\begin{itemize}
+  \item chrony mit \textbf{Network Time Security (NTS)} -- Zeitserver werden über TLS authentifiziert
+  \item \texttt{authselectmode=require} -- unauthentifizierte Server werden abgelehnt
+  \item systemd-timesyncd deaktiviert
+\end{itemize}
+
+
+\subsection{Zugriffssteuerung \& Authentifizierung}
+\subsubsection*{SSH-Härtung}
+\begin{itemize}
+  \item Nur Public-Key-Authentifizierung (\texttt{PasswordAuthentication=false}, \texttt{PermitRootLogin=no})
+  \item Post-Quanten-KEM: \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
+  \item Ciphers: nur ChaCha20-Poly1305 und AES-256/128-GCM
+  \item MACs: nur ETM-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
+  \item X11/TCP/Agent-Forwarding und Tunnel deaktiviert
+  \item \texttt{MaxAuthTries=3}, \texttt{LoginGraceTime=30s}, \texttt{MaxSessions=3}
+  \item Rechtlicher Hinweis-Banner bei Login
+\end{itemize}
+
+\subsubsection*{Sudo-Härtung}
+\begin{itemize}
+  \item Nur Wheel-Gruppe darf sudo ausführen (\texttt{execWheelOnly=true})
+  \item Passwort immer erforderlich (\texttt{wheelNeedsPassword=true})
+  \item Session-Timeout: 5 Minuten; max.\ 3 Passwortversuche
+  \item Vollständiges I/O-Logging unter \texttt{/var/log/sudo-io}
+  \item Eingeschränkter \texttt{PATH} (\texttt{secure\_path})
+\end{itemize}
+
+\subsubsection*{Benutzerverwaltung}
+\begin{itemize}
+  \item Immutable User-Datenbank: \texttt{users.mutableUsers=false}
+  \item Root-Konto gesperrt: \texttt{hashedPassword=\textquotedbl!\textquotedbl}, keine SSH-Keys
+  \item Nur ein unprivilegierter Benutzer (\texttt{apphost})
+\end{itemize}
+
+\subsubsection*{AppArmor (Mandatory Access Control)}
+\begin{itemize}
+  \item AppArmor aktiv: \texttt{security.apparmor.enable=true}
+  \item \texttt{killUnconfinedConfinables=true} - Prozesse ohne Profil werden beendet
+  \item Upstream AppArmor-Profile eingebunden (\texttt{apparmor-profiles})
+\end{itemize}
+
+
+\subsection{Audit \& Intrusion Detection}
+\subsubsection*{Linux Audit Daemon}
+Überwacht werden u.\,a.:
+\begin{itemize}
+  \item Zeitänderungen (\texttt{clock\_settime}, \texttt{/etc/localtime})
+  \item Benutzer-/Gruppenänderungen (\texttt{/etc/passwd}, \texttt{/etc/shadow}, \texttt{/etc/group})
+  \item Privilege Escalation (execve mit UID-Wechsel zu root)
+  \item Kernel-Modul-Laden/Entladen (\texttt{init\_module}, \texttt{delete\_module})
+  \item Änderungen an \texttt{/etc/sudoers} und \texttt{/etc/docker/}
+  \item Dateilösch- und Berechtigungsänderungen
+  \item Netzwerkkonfigurationsänderungen (\texttt{sethostname}, \texttt{/etc/hosts})
+  \item Backlog-Limit: 8192 Einträge
+\end{itemize}
+
+\subsubsection*{Fail2ban - Progressives Banning}
+\begin{itemize}
+  \item SSH-Jail: 3 Fehlversuche $\Rightarrow$ 2 Stunden Sperre
+  \item Traefik-Jail: 5 Fehlversuche (HTTP 401) $\Rightarrow$ 1 Stunde Sperre
+  \item Progressives Banning aktiv: jede weitere Sperre verlängert sich automatisch, bis max.\ 48 Stunden
+  \item Backend: nftables (kein iptables)
+\end{itemize}
+
+\subsubsection*{AIDE - Dateisystem-Integrität}
+\begin{itemize}
+  \item Tägliche automatische Prüfung via systemd-Service
+  \item Überwachte Pfade: \texttt{/etc}, \texttt{/bin}, \texttt{/sbin}, \texttt{/lib*}, \texttt{/usr/bin}, \texttt{/usr/sbin}, \texttt{/boot}, \texttt{/opt/apphost/config}
+  \item Algorithmen: SHA-512, SHA-256, MD5, Tiger, HAVAL, GOST u.\,a.
+  \item Datenbank komprimiert (\texttt{gzip\_dbout=yes})
+\end{itemize}
+
+
+\subsection{Container-Sicherheit}
+\begin{itemize}
+  \item \textbf{User-Namespace-Remapping:} \texttt{userns-remap=default} - Root im Container wird auf UID 100000-165536 auf dem Host gemappt. Ein Container-Ausbruch liefert dem Angreifer keinen root-Zugriff auf den Host.
+  \item \textbf{Docker-Socket nur via Unix-Socket:} kein TCP-Listener (\texttt{hosts=[\textquotedbl{}unix:///var/run/docker.sock\textquotedbl{}]}), kein Userland-Proxy.
+  \item \textbf{Socket-Proxy:} Traefik greift nur über einen eingeschränkten Docker-Socket-Proxy auf die Docker-API zu. Direkter API-Zugriff ist geblockt.
+  \item \textbf{Seccomp-Profil:} Standard-Docker-Seccomp-Profil aktiv.
+  \item \textbf{Strikte Verzeichnisrechte:} \texttt{/opt/apphost/secrets} ist \texttt{0700} (kein Gruppen-Zugriff); alle anderen App-Verzeichnisse \texttt{0750}.
+  \item \textbf{Core-Dumps deaktiviert:} \texttt{LimitCORE=0} im Docker-Daemon.
+  \item \textbf{Wöchentlicher CVE-Scan:} Trivy scannt alle laufenden Images montags 02:00 auf HIGH/CRITICAL-Schwachstellen (\texttt{/var/log/docker-security-scan.log}).
+\end{itemize}
+
+\subsubsection*{Kata Containers \& gVisor (optional, standardmäßig deaktiviert)}
+Beide Runtimes sind konfiguriert, aber nicht als Standard gesetzt, da sie unter bestimmten Hypervisor-Konfigurationen zu Instabilitäten führen können, insbesondere wenn Nested Virtualization nicht (stabil) unterstützt wird.
+Die Runtime kann in der Docker-Compose-Konfiguration pro Service auf \texttt{kata} oder \texttt{runsc} (gVisor) umgestellt werden, sofern die Hardware Nested Virtualization stabil unterstützt.\\
+Primär geeignet für nicht vertrauenswürdigen Code. Für den normalen Betrieb mit bekannten Diensten bietet User-Namespace-Remapping und die vielen anderen angewandten Sicherheitskonfigurationen bereits ein sehr hohes Sicherheitsniveau, vorausgesetzt, das System wird aktuell gehalten.
+
+\subsection{Festplatte \& Daten}
+\begin{itemize}
+  \item \textbf{Swap verschlüsselt:} Zufälliger Schlüssel pro Boot (\texttt{randomEncryption=true}) (keine persistenten Daten im Swap).
+  \item \textbf{Btrfs mit zstd-Kompression} auf allen Subvolumes.
+  \item \textbf{/tmp eingeschränkt:} Mount-Optionen \texttt{nosuid,nodev,noexec}.
+  \item \textbf{ESP (\texttt{/boot}):} Umask \texttt{0077} (nur root darf lesen). 
+\end{itemize}
+
+\subsection{Update-Management}
+
+\begin{itemize}
+  \item \textbf{NixOS-Auto-Upgrade:} Täglich 04:30 Uhr (± 15 min zufällige Verzögerung). Neustart muss manuell durchgeführt werden (\texttt{allowReboot=false}).
+  \item \textbf{RenovateBot:} Container-Images werden automatisch aktuell gehalten (siehe Abschnitt~\ref{sec:renovate}).
+  \item \textbf{Nix-Store GC:} Wöchentlich, löscht Generationen älter als 30 Tage.
+\end{itemize}

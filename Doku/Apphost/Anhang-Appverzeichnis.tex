@@ -1,0 +1,73 @@
+\section{Installierte Applikationen}
+\label{sec:apps}
+
+Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<subdomain>.<DOMAIN>}. Konfigurierbare Subdomains können in der \texttt{.env}-Datei überschrieben werden. Zusätzlich ist jeder Dienst über das Tor-Netzwerk über die \texttt{<subdomain>}.\texttt{<tor-addresse>}.onion-Adresse erreichbar.
+
+\begin{xltabular}{\linewidth}{p{3.5cm} p{3.2cm} X}
+  \toprule
+  \textbf{Dienst} & \textbf{Subdomain} & \textbf{Beschreibung} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Dienst} & \textbf{Subdomain} & \textbf{Beschreibung} \\
+  \midrule
+  \endhead
+  \midrule
+  \multicolumn{3}{r}{\small\itshape Fortsetzung auf der nächsten Seite} \\
+  \endfoot
+  \bottomrule
+  \endlastfoot
+  \multicolumn{3}{l}{\textbf{Infrastruktur}} \\
+  \midrule
+  Traefik         & \texttt{traefik.*}      & Reverse Proxy / TLS-Termination \\
+  Authelia        & \texttt{auth.*}         & SSO / MFA / OIDC-Provider \\
+  Garage          & \texttt{s3.*}           & S3-kompatibler Objektspeicher \\
+  Garage UI       & \texttt{garage.*}       & Garage Web-Verwaltung \\
+  Tor             & ---                     & Onion-Routing für alle Dienste \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Medien}} \\
+  \midrule
+  Jellyfin        & \texttt{jellyfin.*}     & Medienserver (Filme, Musik, TV) \\
+  Immich          & \texttt{photos.*}       & Foto- und Video-Backup \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Dokumente}} \\
+  \midrule
+  Paperless-NGX   & \texttt{paperless.*}    & Dokumentenmanagement / OCR \\
+  Bento-PDF       & \texttt{pdf.*}          & PDF-Werkzeuge \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Cloud \& Office}} \\
+  \midrule
+  OpenCloud       & \texttt{cloud.*}        & Nextcloud-Alternative, Dateisync \\
+  Collabora       & \texttt{office.*}       & Browser-basierte Office-Suite \\
+  WOPI-Server     & \texttt{wopi.*}         & Collaboration-Backend \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Home Automation}} \\
+  \midrule
+  Home Assistant  & \texttt{home.*}         & Hausautomation \\
+  Mosquitto       & \texttt{mqtt.*}         & MQTT-Broker (WebSocket) \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Kommunikation}} \\
+  \midrule
+  Ntfy            & \texttt{ntfy.*}         & Push-Benachrichtigungen \\
+  Bichon          & \texttt{bichon.*}       & E-Mail-Client \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Entwicklung}} \\
+  \midrule
+  Forgejo         & \texttt{git.*}          & Self-hosted Git-Plattform \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Monitoring}} \\
+  \midrule
+  Grafana         & \texttt{grafana.*}      & Dashboards \& Visualisierung \\
+  Prometheus      & \texttt{prometheus.*}   & Metriken-Scraping \\
+  Alertmanager    & \texttt{alertmanager.*} & Alert-Routing \\
+  Loki            & intern                  & Log-Aggregation \\
+  Node Exporter   & intern                  & Host-Metriken \\
+  cAdvisor        & intern                  & Container-Metriken \\
+  Promtail        & intern                  & Log-Shipper zu Loki \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Tools}} \\
+  \midrule
+  Homepage        & \texttt{dashboard.*}    & Startseite / Service-Übersicht \\
+  Vaultwarden     & \texttt{vault.*}        & Passwortmanager (Bitwarden-kompatibel) \\
+  OpenSpeedTest   & \texttt{speedtest.*}    & Interner Netzwerk-Speedtest \\
+\end{xltabular}
