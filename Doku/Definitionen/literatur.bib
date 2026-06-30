@@ -210,18 +210,28 @@
   doi = {10.6028/NIST.SP.800-207}
 }
 
+@techreport{nist_sp800_53,
+  author      = {{Joint Task Force}},
+  title       = {Security and Privacy Controls for Information Systems and Organizations},
+  number      = {NIST SP 800-53, Rev. 5},
+  institution = {National Institute of Standards and Technology},
+  year        = {2020},
+  doi         = {10.6028/NIST.SP.800-53r5},
+  urldate     = {2026-06-30}
+}
+
 #Github
 @online{NixOsHot_github,
   author = {{Florian Dobke}},
-  title = {NixOsCold Konfigurations-Dateien und readme},
+  title = {NixOSHot Konfigurations-Dateien und readme},
   year = {2026},
-  url = {https://github.com/LucaDev/LFM-Team-Blue/tree/main/Hot-Wallet},
+  url = {https://github.com/LucaDev/LFM-Team-Blue/tree/main/Hot-KeyHolder},
   urldate = {2026-06-30}
 }
 
 @online{NixOsCold_github,
   author = {{Florian Dobke}},
-  title = {NixOsCold Konfigurations-Dateien und readme},
+  title = {NixOSCold Konfigurations-Dateien und readme},
   year = {2026},
   url = {https://github.com/LucaDev/LFM-Team-Blue/tree/main/Cold-Wallet},
   urldate = {2026-06-30}
@@ -260,10 +270,19 @@
   urldate = {2024-03}
 }
 
+@techreport{tcg_tpm2,
+  author      = {{Trusted Computing Group}},
+  title       = {{TPM} 2.0 Library Specification},
+  institution = {Trusted Computing Group},
+  year        = {2019},
+  url         = {https://trustedcomputinggroup.org/resource/tpm-library-specification/},
+  urldate     = {2026-06-30}
+}
+
 @online{sparrow_quick,
   author = {{Sparrow Wallets}},
   title = {Quick Start Guide },
-  year = {202},
+  year = {2026},
   url = {https://www.sparrowwallet.com/docs/quick-start.html},
   urldate = {2026-06-04}
 }
@@ -324,7 +343,7 @@
   urlDate   = {2026-05-02}
 }
 
-@article{opa_microservices,
+@online{opa_microservices,
   author    = {{InfraCloud Technologies}},
   title     = {Microservices Authorization with Open Policy Agent},
   journal   = {InfraCloud Blog},
@@ -333,16 +352,25 @@
   urlDate   = {2026-05-02}
 }
 
-@article{NATS_Auth,
+@online{NATS_Auth,
   author    = {{NATS Docs}},
   title     = {Authenticating with a User and Password},
   year      = {2025},
-  url       = {https://docs.nats.io/using-nats/developer/connecting/userpass},
+  url       = {https://docs.nats.io/running-a-nats-service/configuration/securing_nats/authorization},
   urlDate   = {2026-05-02}
 }
 
+@inproceedings{wireguard,
+  author    = {Donenfeld, Jason A.},
+  title     = {{WireGuard}: Next Generation Kernel Network Tunnel},
+  booktitle = {Network and Distributed System Security Symposium (NDSS)},
+  year      = {2017},
+  url       = {https://www.wireguard.com/papers/wireguard.pdf},
+  urldate   = {2026-06-30}
+}
+
 %BTC security + architecture
-@article{knowingbitcoin_hotcold,
+@online{knowingbitcoin_hotcold,
   author    = {{Knowing Bitcoin}},
   title     = {Bitcoin Security: Cold vs Hot Wallet Setup},
   journal   = {Knowing Bitcoin},
@@ -368,6 +396,17 @@
   urldate = {2026-05-02}
 }
 
+@techreport{rfc2104,
+  author      = {Krawczyk, Hugo and Bellare, Mihir and Canetti, Ran},
+  title       = {{HMAC}: Keyed-Hashing for Message Authentication},
+  number      = {RFC 2104},
+  institution = {Internet Engineering Task Force (IETF)},
+  year        = {1997},
+  doi         = {10.17487/RFC2104},
+  url         = {https://www.rfc-editor.org/rfc/rfc2104},
+  urldate     = {2026-06-30}
+}
+
 @online{Hardware_VS_Cold-Wallet,
   author = {{Ledger}},
   title = {Hardware Wallets Vs Cold Wallets: What’s the Difference?},
@@ -384,7 +423,7 @@
   urldate = {2026-06-04}
 }
 
-@article{nadcab_custodial_arch,
+@online{nadcab_custodial_arch,
   author    = {{Nadcab Labs}},
   title     = {Custodial Wallet Architecture Explained},
   journal   = {Nadcab},
@@ -393,7 +432,7 @@
   urlDate   = {2026-05-02}
 }
 
-@article{riskpublishing_hotcold,
+@online{riskpublishing_hotcold,
   author    = {{Chris Ekai}},
   title     = {Hot Wallet vs Cold Wallet Architecture},
   journal   = {Risk Publishing},
@@ -411,7 +450,39 @@
   urlDate   = {2026-05-02}
 }
 
-@article{psbt_dcentral,
+@online{bip21,
+  author  = {Schneider, Nils and Corallo, Matt},
+  title   = {{BIP-21}: {URI} Scheme},
+  year    = {2012},
+  url     = {https://github.com/bitcoin/bips/blob/master/bip-0021.mediawiki},
+  urldate = {2026-06-30}
+}
+
+@online{bip125,
+  author  = {Harding, David A. and Todd, Peter},
+  title   = {{BIP-125}: Opt-in Full Replace-by-Fee Signaling},
+  year    = {2015},
+  url     = {https://github.com/bitcoin/bips/blob/master/bip-0125.mediawiki},
+  urldate = {2026-06-30}
+}
+
+@online{bitcoincore_walletcreatefundedpsbt,
+  author  = {{Bitcoin Core Developers}},
+  title   = {{walletcreatefundedpsbt} -- {RPC} {API} Reference},
+  url     = {https://developer.bitcoin.org/reference/rpc/walletcreatefundedpsbt.html},
+  urldate = {2026-06-30}
+}
+
+@techreport{sec2,
+  author      = {{Certicom Research}},
+  title       = {{SEC 2}: Recommended Elliptic Curve Domain Parameters, Version 2.0},
+  institution = {Standards for Efficient Cryptography Group (SECG)},
+  year        = {2010},
+  url         = {https://www.secg.org/sec2-v2.pdf},
+  urldate     = {2026-06-30}
+}
+
+@online{psbt_dcentral,
   author    = {{D-Central Technologies}},
   title     = {Partially Signed Bitcoin Transactions (PSBT): The Cypherpunk Standard for Collaborative Bitcoin Security},
   journal   = {D-Central},
@@ -420,7 +491,7 @@
   urlDate   = {2026-05-02}
 }
 
-@article{airgap_psbt_guide,
+@online{airgap_psbt_guide,
   author    = {{BitcoinSafe}},
   title     = {Air-Gapped Bitcoin Signing Guide},
   journal   = {BitcoinSafe},
@@ -429,7 +500,7 @@
   urlDate   = {2026-05-02}
 }
 
-@article{sparrow_multisig,
+@online{sparrow_multisig,
   author    = {{Knowing Bitcoin}},
   title     = {Sparrow Wallet Multisig Tutorial},
   journal   = {Knowing Bitcoin},
@@ -472,7 +543,7 @@
   author       = {{Google Cloud}},
   title        = {Key purposes and algorithms -- Cloud Key Management Service},
   organization = {Google Cloud Documentation},
-  url          = {https://docs.cloud.google.com/kms/docs/algorithms},
+  url          = {https://cloud.google.com/kms/docs/algorithms},
   urldate      = {2026-06-29},
 }
 
@@ -629,4 +700,12 @@ series = {ISEC '26}
   year = {2026},
   howpublished = {\url{https://openai.com/index/codex-security-now-in-research-preview/}},
   note = {abgerufen am 24.06.2026}
+}
+
+@online{learnmeabitcoin_psbt,
+  author       = {Walker, Greg},
+  title        = {Partially Signed Bitcoin Transaction (PSBT)},
+  organization = {learnmeabitcoin},
+  url          = {https://learnmeabitcoin.com/technical/transaction/psbt/},
+  urldate      = {2026-06-30}
 }
