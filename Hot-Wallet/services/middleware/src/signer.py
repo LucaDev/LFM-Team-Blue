@@ -178,7 +178,6 @@ def delete_psbt(psbt_id = None):
         psbt = create_psbt_msg(psbt_info)
 
         psbt.state = "COLD_STOPPED"
-        psbt.state = "COLD_STARTED"
         asyncio.to_thread(
             insert_psbt, psbt
         )
