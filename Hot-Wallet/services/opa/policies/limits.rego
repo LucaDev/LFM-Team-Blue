@@ -73,7 +73,7 @@ confirmation_blocks := 1 if {
     risk_score > 70
 }
 
-confirmation_blocks := 2 if {
+confirmation_blocks := 3 if {
     risk_score > 30
     risk_score <= 70
 }

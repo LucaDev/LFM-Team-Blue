@@ -55,12 +55,13 @@ async def request_bip21(request: Request, payload: dict = Body(...)):
                 status_code=400, detail="Invalid amount format in URI"
             )
 
-    intent_id = ""
-    while True:
-        intent_id = str(uuid4())
-        exists = await asyncio.to_thread(psbt_id_exists, intent_id)
-        if not exists:
-            break
+    intent_id = payload.get("id")[0] or qs.get("id") or None
+    if intent_id is None:
+        while True:
+            intent_id = str(uuid4())
+            exists = await asyncio.to_thread(psbt_id_exists, intent_id)
+            if not exists:
+                break
 
     source_address = get_walletName("hot")[0]
 
@@ -112,12 +113,13 @@ async def request_psbt(request: Request, payload: dict = Body(...)):
     if not psbt:
         raise HTTPException(status_code=400, detail="Missing PSBT")
     
-    psbt_id = ""
-    while True:
-        psbt_id = str(uuid4())
-        exists = await asyncio.to_thread(psbt_id_exists, psbt_id)
-        if not exists:
-            break
+    psbt_id = payload.get("id") or None
+    if psbt_id is None:
+        while True:
+            psbt_id = str(uuid4())
+            exists = await asyncio.to_thread(psbt_id_exists, psbt_id)
+            if not exists:
+                break
 
     source_address = get_walletName("hot")[0]
 
