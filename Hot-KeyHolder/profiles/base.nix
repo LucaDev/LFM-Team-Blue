@@ -33,6 +33,10 @@
         source = ./files/format-USB.sh;
         mode   = "0755";
     };
+    environment.etc."scripts/delete_seed.sh" = {
+        source = ./files/delete_seed.sh;
+        mode   = "0755";
+    };
 
     #Wrappers
 
@@ -52,6 +56,10 @@
         source = ./files/wrappers/format-USB.sh;
         mode   = "0755";
     };
+    environment.etc."scripts/wrappers/delete_seed.sh" = {
+        source = ./files/wrappers/delete_seed.sh;
+        mode   = "0755";
+    };
 
 
     #Desktop page mit symlinks auf wrappers
@@ -64,6 +72,7 @@
         "L+ /home/user/Desktop/scripts/wgPeer_setup.sh - - - - /etc/scripts/wrappers/wgPeer_setup.sh"
         "L+ /home/user/Desktop/scripts/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
         "L+ /home/user/Desktop/scripts/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
+        "L+ /home/user/Desktop/scripts/delete_seed.sh - - - - /etc/scripts/wrappers/delete_seed.sh"
 
         #docker
         # Hauptverzeichnis

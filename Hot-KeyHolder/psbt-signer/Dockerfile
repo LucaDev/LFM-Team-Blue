@@ -31,6 +31,8 @@ COPY . .
 RUN mkdir -p /data /wallets \
     && chown -R 1000:1000 /app /data /wallets
 
+USER 1000
+
 EXPOSE 8080
 
-CMD ["uvicorn", "app.signer:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "/psbt-signer/scripts/signer.py", "--host", "0.0.0.0", "--port", "8080"]
