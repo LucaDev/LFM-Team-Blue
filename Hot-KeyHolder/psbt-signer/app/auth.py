@@ -11,7 +11,7 @@ class AuthError(Exception):
     pass
 
 
-def verify_request(secret: str, body: bytes, ts: str, nonce: str, sig: str):
+def verify_request(secret: bytes, body: bytes, ts: str, nonce: str, sig: str):
 
     if ts is None:
         raise AuthError("missing X-Timestamp")
