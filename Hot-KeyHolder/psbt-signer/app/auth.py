@@ -5,7 +5,7 @@ import hashlib
 import time
 import os
 
-MAX_SKEW = os.getenv("MAX_SKEW", 30)
+MAX_SKEW = int(os.getenv("MAX_SKEW", "30"))
 
 class AuthError(Exception):
     pass

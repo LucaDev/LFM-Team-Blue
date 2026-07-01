@@ -54,5 +54,4 @@ def get_entropy_from_tpm():
     if len(entropy_bytes) == 32:
         return entropy_bytes
     else:
-        print("Error: entsiegelten Daten nicht 32 Bytes lang", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError("Error: entsiegelten Daten nicht 32 Bytes lang", file=sys.stderr)

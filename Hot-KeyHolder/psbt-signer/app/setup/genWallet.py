@@ -6,20 +6,13 @@ from embit import bip39
 from embit.bip32 import HDKey
 from embit.descriptor import Descriptor
 from embit.networks import NETWORKS
-import sys
 from binascii import hexlify
 
-
+from app.tpm import get_entropy_from_tpm
 
 NETWORK_SYS = os.getenv("NETWORK","main")
 STATE_DIR = "/psbt-signer/tpm"
 
-# Errechnet den Pfad zu 'scripts/' (ein Ordner über 'setup/')
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(SCRIPT_DIR)
-sys.path.append(PARENT_DIR)
-
-from tpm import get_entropy_from_tpm
 
 
 entropy = get_entropy_from_tpm()

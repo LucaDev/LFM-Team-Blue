@@ -71,16 +71,6 @@ process = subprocess.Popen([
     "-c", sealed_ctx
 ], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
-PERSISTENT_HANDLE = "0x81010001"
-
-# evtl. altes Objekt am Handle lösen (Re-Init), Fehler ignorieren
-subprocess.run(["tpm2_evictcontrol", "-C", "o", "-c", PERSISTENT_HANDLE],
-               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-# versiegeltes Objekt dauerhaft im TPM verankern
-subprocess.run(["tpm2_evictcontrol", "-C", "o", "-c", sealed_ctx, PERSISTENT_HANDLE],
-               check=True, stdout=subprocess.DEVNULL)
-
 #Daten einspeisen und ausführen
 _, stderr = process.communicate(input=entropy)
 
@@ -89,6 +79,23 @@ del entropy
 if process.returncode != 0:
     print(f"Fehler beim Versiegeln im TPM: {stderr.decode()}", file=sys.stderr)
     sys.exit(1)
+
+PERSISTENT_HANDLE = "0x81010001"
+
+# evtl. altes Objekt am Handle lösen (Re-Init), Fehler ignorieren
+subprocess.run([
+    "tpm2_evictcontrol",
+    "-C", "o",
+     "-c", PERSISTENT_HANDLE
+     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+# versiegeltes Objekt dauerhaft im TPM verankern
+subprocess.run([
+    "tpm2_evictcontrol",
+    "-C", "o",
+    "-c", sealed_ctx,
+    PERSISTENT_HANDLE
+    ], check=True, stdout=subprocess.DEVNULL)
 
 #Schreiben einer Datei nur auf root
 SEED_OUT = "/psbt-signer/run/wallets/SEED_PHRASE.txt"

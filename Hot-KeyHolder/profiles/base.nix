@@ -79,7 +79,6 @@
         "d /psbt-signer 0770 root 1000 -"
         "d /psbt-signer/run/data 0770 root 1000 -"
         "d /psbt-signer/run/wallets 0770 root 1000 -"
-        "d /psbt-signer/scripts 0770 root 1000 -"
         "d /psbt-signer/run/secrets 0770 root 1000 -"
 
         "d /var/lib/signer 0770 root 1000 - -"

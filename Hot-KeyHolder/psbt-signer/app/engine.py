@@ -37,6 +37,5 @@ def sign_psbt(psbt: PSBT):
     after = sum(len(inp.partial_sigs) for inp in psbt.inputs)
     if after <= before:
         raise ValueError("Signer hat keine Signatur hinzugefügt (Key passt nicht zur PSBT)")
-    return psbt
-
+    
     return psbt

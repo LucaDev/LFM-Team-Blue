@@ -86,7 +86,7 @@ async def sign(request: Request):
 
     #Sign
     try:
-        psbt_signed = sign_psbt(psbt_bytes)
+        psbt_signed = sign_psbt(decode_psbt(psbt_b64))
     except Exception as e:
         log.exception("signing failed")
         raise HTTPException(500, str(e))

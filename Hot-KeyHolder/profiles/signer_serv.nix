@@ -68,7 +68,7 @@ in
       fi
       ln -sf /var/lib/signer/.env "${appDir}/.env"
 
-      {pkgs.nftables}/bin/nft -f /etc/nixos/profiles/nftables-setup.conf
+      ${pkgs.nftables}/bin/nft -f /etc/nixos/profiles/nftables-setup.conf
 
       echo "[*] building signer container"
       ${pkgs.docker}/bin/docker compose build
@@ -81,7 +81,7 @@ in
       ${pkgs.docker}/bin/docker compose up -d
 
       #Wallet init
-      ${pkgs.docker}/bin/docker exec psbt-signer python3 /psbt-signer/scripts/setup/genSeed.py
+      ${pkgs.docker}/bin/docker exec psbt-signer python3 -m app.setup.genSeed
 
       # Seed-Phrase auf den Desktop (0400, Eigentümer user) und aus dem Volume shreddern
       if [ -f /var/lib/signer/wallets/SEED_PHRASE.txt ]; then
@@ -92,7 +92,7 @@ in
           2>/dev/null || rm -f /var/lib/signer/wallets/SEED_PHRASE.txt
       fi
 
-      ${pkgs.docker}/bin/docker exec psbt-signer python3 /psbt-signer/scripts/setup/genWallet.py
+      ${pkgs.docker}/bin/docker exec psbt-signer python3 -m app.setup.genWallet
 
       ${pkgs.docker}/bin/docker cp psbt-signer:/psbt-signer/tpm/seal.pub /var/lib/signer/tpm/
       ${pkgs.docker}/bin/docker cp psbt-signer:/psbt-signer/tpm/seal.priv /var/lib/signer/tpm/
