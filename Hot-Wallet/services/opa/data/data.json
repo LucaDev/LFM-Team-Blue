@@ -11,11 +11,13 @@
   "hot": {
     "limits": {
       "max_amount_sats": 5000000,
+      "max_daily_sats": 30000000,
 
       "max_fee_rate_sat_vb": 100,
       "min_fee_rate_sat_vb": 20,
 
       "max_fee_sats": 20000
+      
     },
     "balance":{
       "min": 0.5,

@@ -6,6 +6,7 @@ import os
 from .db import insert_psbt, get_walletName
 from .models import PSBTModel
 from src.com.btc_core import address_wallet_match
+from .metrics import PSBT_BUILT_TOTAL, WHITELIST_BLOCK_TOTAL
 
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
@@ -14,6 +15,7 @@ log = logging.getLogger(SERVICE_NAME)
 # Nach OPA senden zu Tx-builder (forwarding in middleware nc subscribe (oben))
 #Nach Tx-builder, WENN FEHLSCHLUG
 async def handle_psbt_failed(psbt: PSBTModel):
+    PSBT_BUILT_TOTAL.labels(result="failed").inc()
 
     log.info(
         "PSBT build failed",
@@ -37,6 +39,7 @@ async def handle_psbt_failed(psbt: PSBTModel):
 
 #Hier funktion nach Tx-builder, wenn ERFOLGREICH
 async def handle_psbt_created(psbt: PSBTModel):
+    PSBT_BUILT_TOTAL.labels(result="ok").inc()
     
     log.info(
         "PSBT build success",
@@ -67,4 +70,6 @@ async def whitelist_check(address: str, rail: str) -> bool:
         if address_wallet_match(walletName, address):
             return True
     log.info(f"Address does not belong to whitelisted wallet: {address}")
+
+    WHITELIST_BLOCK_TOTAL.inc()
     return False

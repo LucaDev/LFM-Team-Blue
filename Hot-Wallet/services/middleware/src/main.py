@@ -15,6 +15,8 @@ from .models import create_psbt, create_psbt_msg, create_paymentIntent_msg
 from src.com import payments, health, psbt
 from .db import archive_psbt, psbt_created_seen, insert_psbt
 from src.com.wallets import import_wallet
+from src.com.ntfy import notify
+from .metrics import PSBT_SIGNED_TOTAL, BROADCAST_TOTAL
 
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
@@ -132,6 +134,9 @@ async def startup():
                 if psbt_signed is None:
                     log.error("Signing failed, abort flow psbt_id=%s", psbt.psbt_id)
                     return
+                
+                PSBT_SIGNED_TOTAL.labels(result="ok").inc()
+
                 psbt.psbt = psbt_signed
                 if psbt.wallet_type == "hot":
                     #Finalisierung
@@ -146,8 +151,12 @@ async def startup():
 
                     except Exception as e:
                         log.exception(f"PSBT finalization failed: {e}")
+                        BROADCAST_TOTAL.labels(flow="hot", result="finalize_failed").inc()
+
                         psbt.state = "FINALIZE_FAILED"
                         await asyncio.to_thread(insert_psbt, psbt)
+
+                        await notify("Finalization failed", f"id={psbt.psbt_id}: {e}", priority="urgent", tags="rotating_light")
                         return
 
                     #Broadcast
@@ -161,11 +170,16 @@ async def startup():
                             insert_psbt, psbt
                         )
                         log.info("Transaction broadcasted successfully. txid=%s", txid)
+                        BROADCAST_TOTAL.labels(flow="hot", result="ok").inc()
 
                     except Exception as e:
                         log.exception(f"PSBT broadcast failed: {e}")
+                        BROADCAST_TOTAL.labels(flow="hot", result="broadcast_failed").inc()
+                        
                         psbt.state = "BROADCAST_FAILED"
                         await asyncio.to_thread(insert_psbt, psbt)
+
+                        await notify("Broadcast failed", f"id={psbt.psbt_id}: {e}", priority="urgent", tags="rotating_light")
                         return
 
                     #Archíving
@@ -197,14 +211,16 @@ async def startup():
                         insert_psbt, psbt
                     )
                     log.info("Warten auf Operanten feur cold-worflow")
+
                     #Ntfy informieren
+                    await notify("Cold-Refill nötig",
+                    f"{psbt.amount_sats} sats -> {psbt.target_address} (id={psbt.psbt_id})",
+                    priority="high", tags="warning,money")
+                    
 
             else:
-                #Ntfy about malicious request
+                await notify("Rejected request to not-whitelisted wallet, malicious request", f"id={psbt.psbt_id}", priority="urgent", tags="rotating_light")
                 return
-        else:
-            return
-            #add retry queue log/Ntfy human?
         
 
     #Initial

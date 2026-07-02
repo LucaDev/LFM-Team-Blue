@@ -3,11 +3,14 @@ import os
 import logging
 from fastapi import APIRouter, Body, HTTPException, Request
 from decimal import Decimal
+import asyncio
+from uuid import uuid4
 
 from src.models import create_paymentIntent, PaymentIntent, create_psbt, PSBTModel
-from uuid import uuid4 
+
 from src.db import psbt_id_exists, get_walletName
-import asyncio
+from src.metrics import INTENTS_TOTAL
+
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
@@ -78,6 +81,8 @@ async def request_bip21(request: Request, payload: dict = Body(...)):
 
     await publish_intent(nc, intent)
 
+    INTENTS_TOTAL.labels(rail="bip21").inc()
+
     return {
         "ok": True,
         "intent_id": intent_id
@@ -136,6 +141,8 @@ async def request_psbt(request: Request, payload: dict = Body(...)):
     )
 
     await publish_psbt(nc, psbt_model)
+
+    INTENTS_TOTAL.labels(rail=rail).inc()
 
     return {
         "ok": True,

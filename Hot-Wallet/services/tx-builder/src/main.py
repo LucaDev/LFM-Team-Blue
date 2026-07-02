@@ -15,7 +15,6 @@ from nats.aio.client import Client as NATS
 
 
 from .logging_setup import setup_logging
-from .metrics import INTENTS_TOTAL, UTXO_UNSPENT_GAUGE, PSBT_BUILT_TOTAL
 from .btc_core import get_psbt, get_outputAddress
 from .models import PSBTModel, create_psbt, PaymentIntent, create_paymentIntent_msg
 
@@ -75,10 +74,6 @@ async def handle_intent_build(msg):
         psbt = await build_psbt_for_intent(intent)
 
         if psbt is None or psbt.psbt == "":
-            #metrics logging
-            PSBT_BUILT_TOTAL.labels(result="failed").inc()
-            INTENTS_TOTAL.labels(type="refill", result="no-psbt").inc()
-
             psbt.meta = psbt.meta | {"created_utc": utc_now_iso()}
 
             log.error("intent_handler_failed", extra={"service": SERVICE_NAME, "intent_id": psbt.psbt_id,"status": "intent_handler_failed", "error_code": psbt.error_code, "context": psbt.meta,"created_utc": utc_now_iso()})
@@ -87,11 +82,7 @@ async def handle_intent_build(msg):
                     "psbt.failed",
                     psbt.model_dump_json().encode()
                 )
-            return
-
-        #metrics logging
-        PSBT_BUILT_TOTAL.labels(result="ok").inc()
-        INTENTS_TOTAL.labels(type="refill", result="psbt-created").inc()
+            return  
 
         psbt.meta = psbt.meta | {"created_utc": utc_now_iso()}
 

@@ -10,6 +10,7 @@ from src.signer import load_psbt, delete_psbt
 from src.db import insert_psbt, archive_psbt, get_psbt_byID, get_pending_PSBT
 from .btc_core import broadcast_to_bitcoind, psbt_finalize
 from src.models import create_psbt_msg, create_psbt
+from .metrics import BROADCAST_TOTAL
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 
@@ -114,17 +115,22 @@ async def broadcast_psbt(psbt_id: str, request: Request):
 
     except Exception as e:
         log.exception("Failed to finalize PSBT")
+        BROADCAST_TOTAL.labels(flow="cold", result="finalize_failed").inc()
+
         raise HTTPException(status_code=400, detail=f"finalization failed: {e}")
 
     try:
         #broadcast
         txid = broadcast_to_bitcoind(rawtx_hex)
-
         if not txid:
             raise RuntimeError("Bitcoind returned empty txid")
+        
+        BROADCAST_TOTAL.labels(flow="cold", result="ok").inc()
 
     except Exception as e:
         log.exception("Broadcast failed")
+        BROADCAST_TOTAL.labels(flow="cold", result="broadcast_failed").inc()
+        
         raise HTTPException(status_code=400, detail=f"broadcast failed: {e}")    
 
     #persist final state (optional tracking)

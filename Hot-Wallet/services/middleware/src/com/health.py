@@ -1,7 +1,9 @@
-import asyncio
-import os
-import logging
 from fastapi import APIRouter
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
+
+from src.metrics import WAITING_HUMAN
+from src.db import count_waiting_human
 
 router = APIRouter()
 
@@ -15,5 +17,13 @@ async def health():
         "service": "middleware",
         "status": "ok"
     }
+
+@app.get("/metrics")
+def metrics():
+    try:
+        WAITING_HUMAN.set(count_waiting_human())   # Zustands-Gauge beim Scrape aktualisieren
+    except Exception:
+        pass
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 

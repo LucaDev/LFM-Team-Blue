@@ -346,3 +346,27 @@ def psbt_created_seen(psbt_id: str, state: str = "INTENT_CREATED") -> bool:
                 LIMIT 1
             """, (psbt_id, state))
             return cur.fetchone() is not None
+        
+    
+def sats_perTime(window_hours: int = 24) -> int:
+    with conn() as c:
+        with c.cursor() as cur:
+            cur.execute("""
+                SELECT COALESCE(SUM(amount_sats), 0) AS s
+                FROM btc.psbt_archive
+                WHERE archived_utc > now() - make_interval(hours => %s)
+                  AND COALESCE(meta->>'rail','') NOT IN ('OPA_hot','OPA_cold')
+            """, (window_hours,))
+            return int(cur.fetchone()["s"])
+        
+        
+def count_waiting_human() -> int:
+    with conn() as c:
+        with c.cursor() as cur:
+            cur.execute("""
+                SELECT count(*) AS n FROM (
+                  SELECT DISTINCT ON (psbt_id) psbt_id, psbt_state
+                  FROM btc.psbt ORDER BY psbt_id, id DESC
+                ) s WHERE psbt_state = 'WAITING_HUMAN'
+            """)
+            return int(cur.fetchone()["n"])

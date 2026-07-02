@@ -5,9 +5,11 @@ import logging
 from uuid import uuid4 
 from decimal import Decimal, ROUND_HALF_UP
 
-from .db import get_pending_PSBT, insert_psbt, insert_opa_decision, psbt_id_exists, get_walletName
+from .db import get_pending_PSBT, insert_psbt, insert_opa_decision, psbt_id_exists, get_walletName, sats_perTime
+from .metrics import OPA_DECISIONS_TOTAL, VELOCITY_BLOCK_TOTAL, REFILL_TOTAL, HOT_BALANCE_BTC
 from .models import PSBTModel
-from signer import delete_psbt
+from src.com.ntfy import notify
+from .signer import delete_psbt
 from src.com.btc_core import get_walletBalance
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181")
@@ -15,8 +17,8 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 log = logging.getLogger(SERVICE_NAME)
 
 
-async def send_to_opa(psbt: PSBTModel) -> dict:
-    payload = {"input": parseOPA_PSBT(psbt)}
+async def send_to_opa(psbt: PSBTModel, spent_today: int = 0) -> dict:
+    payload = {"input": parseOPA_PSBT(psbt, spent_today)}
 
     log.info(
         "sending to OPA",
@@ -51,7 +53,7 @@ async def send_to_opa(psbt: PSBTModel) -> dict:
             "limits": raw.get("limits", {}),
         }
     
-def parseOPA_PSBT(psbt: PSBTModel) -> dict:
+def parseOPA_PSBT(psbt: PSBTModel, spent_today: int = 0) -> dict:
     return {
         "psbt_id": psbt.psbt_id,
         "wallet_type": psbt.wallet_type,
@@ -64,16 +66,25 @@ def parseOPA_PSBT(psbt: PSBTModel) -> dict:
         "amount_sats": psbt.amount_sats,
         "fee_sats": psbt.fee_sats,
         "fee_rate": psbt.fee_rate,
+        "spent_today": spent_today,
     }
     
 
 async def opa_evaluate(psbt: PSBTModel) -> bool:
 
+    spent_today = 0
+    if psbt.rail not in ("OPA_hot", "OPA_cold"):                    # DB nur bei Zahlungen anfragen
+        spent_today = await asyncio.to_thread(sats_perTime, 24)
+
     #Weiterleitung zu OPA bei hot-tx, nicht benötigt für refill (mensch)
-    decision = await send_to_opa(psbt)
+    decision = await send_to_opa(psbt, spent_today)
 
     allowed = decision.get("allow", False)
     reasons = decision.get("reasons", [])
+
+    OPA_DECISIONS_TOTAL.labels(result="allow" if allowed else "deny").inc()
+    if "daily limit exceeded" in reasons:
+        VELOCITY_BLOCK_TOTAL.inc()
 
     #DB logging
     await asyncio.to_thread(
@@ -101,6 +112,8 @@ async def opa_evaluate(psbt: PSBTModel) -> bool:
                 "payload": psbt
             }
         )
+
+        await notify("OPA rejected request", f"id={psbt.psbt_id}, reasons: {reasons}", priority="urgent", tags="rotating_light")
         return False
 
     psbt.state = "OPA_APPROVED"
@@ -118,6 +131,7 @@ async def opa_evaluate(psbt: PSBTModel) -> bool:
 
 async def check_walletBalance(wallet_name: str):
     balance = get_walletBalance(wallet_name)
+    HOT_BALANCE_BTC.set(float(balance))
 
     payload = {"input": {
         "balance": balance
@@ -155,6 +169,8 @@ async def handle_refillDecision(decision: dict):
     execution = decision.get("execution", {})
     reason = decision.get("reason", {})
 
+    REFILL_TOTAL.labels(action=action).inc()
+    
     if action == "hold":
         action_allowed = False
     else:
@@ -178,7 +194,7 @@ async def handle_refillDecision(decision: dict):
 
     if action == "hold":
         log.info("no fund swap required")
-        
+
         #Refill PSBT löschen, da OPA balance zu hoch
         pending = get_pending_PSBT()
         if pending is not None:

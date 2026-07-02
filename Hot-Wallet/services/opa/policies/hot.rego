@@ -25,6 +25,10 @@ skip_amount_fee_checks if {
     object.get(input, "rail", "") == "manual"
 }
 
+skip_velocity if {
+    startswith(object.get(input, "rail", ""), "OPA")
+}
+
 #Input validation
 
 deny["missing psbt_id"] if {
@@ -62,6 +66,11 @@ deny["network not allowed"] if{
 deny["amount exceeds limit"] if{
     not skip_amount_fee_checks
     input.amount_sats > data.hot.limits.max_amount_sats
+}
+
+deny["daily limit exceeded"] if {
+    not skip_velocity
+    (object.get(input, "spent_today", 0) + object.get(input, "amount_sats", 0)) > data.hot.limits.max_daily_sats
 }
 
 #Später extra authentifizierung? hex code im meta?

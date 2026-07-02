@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .db import insert_psbt,get_pending_PSBT, get_psbt_byID
 from .models import PSBTModel,create_psbt
+from src.com.ntfy import notify
 
 REFILL_FILE = Path(os.getenv("REFILL_PSBT", "/run/refill.psbt"))
 REFILL_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -48,6 +49,8 @@ async def sign_psbt(psbt: PSBTModel) -> PSBTModel:
             insert_psbt, psbt
         )
         log.info(f"Ein Fehler ist aufgetreten: {e}")
+
+        await notify("Signing failed", f"id={psbt.psbt_id}: {e}", priority="urgent", tags="rotating_light")
         return
     
     #Bei sign ohne direkten error
@@ -57,6 +60,7 @@ async def sign_psbt(psbt: PSBTModel) -> PSBTModel:
             insert_psbt, psbt
         )
         log.info("Signing failed")
+        await notify("Signing failed", f"id={psbt.psbt_id}", priority="urgent", tags="rotating_light")
         raise RuntimeError("Signer did not return a signed PSBT.")
     
     #Nach erfolgreichen Signieren
