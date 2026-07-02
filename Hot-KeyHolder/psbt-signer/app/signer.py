@@ -10,8 +10,7 @@ from psycopg.errors import UniqueViolation
 from .auth import verify_request, AuthError
 from .db import insert_psbt
 from .engine import sign_psbt
-from .replay import claim_nonce
-from .velocity import hot_outflow_sats, check_and_record, VelocityError
+from .redis import hot_outflow_sats, check_and_record, VelocityError,claim_nonce
 from .psbt import (
     decode_psbt,
     encode_psbt,

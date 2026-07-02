@@ -12,7 +12,7 @@ from .signer import sign_psbt, save_psbt
 from .txBuilder import handle_psbt_created, handle_psbt_failed, whitelist_check
 from .logging_setup import setup_logging
 from .models import create_psbt, create_psbt_msg, create_paymentIntent_msg
-from src.com import payments, health, psbt
+from src.com import payments, internal, psbt
 from .db import archive_psbt, psbt_created_seen, insert_psbt
 from src.com.wallets import import_wallet
 from src.com.ntfy import notify
@@ -32,7 +32,7 @@ nc = None
 app = FastAPI()
 
 app.include_router(payments.router)
-app.include_router(health.router)
+app.include_router(internal.router)
 app.include_router(psbt.router)
     
 
@@ -133,6 +133,8 @@ async def startup():
                 psbt_signed = await sign_psbt(psbt)
                 if psbt_signed is None:
                     log.error("Signing failed, abort flow psbt_id=%s", psbt.psbt_id)
+                    PSBT_SIGNED_TOTAL.labels(result="failed").inc()
+                    
                     return
                 
                 PSBT_SIGNED_TOTAL.labels(result="ok").inc()
@@ -175,7 +177,7 @@ async def startup():
                     except Exception as e:
                         log.exception(f"PSBT broadcast failed: {e}")
                         BROADCAST_TOTAL.labels(flow="hot", result="broadcast_failed").inc()
-                        
+
                         psbt.state = "BROADCAST_FAILED"
                         await asyncio.to_thread(insert_psbt, psbt)
 

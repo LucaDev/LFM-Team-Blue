@@ -9,8 +9,6 @@ import hashlib
 from decimal import Decimal
 
 from fastapi import FastAPI
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from fastapi.responses import Response
 from nats.aio.client import Client as NATS
 
 
@@ -49,10 +47,6 @@ def ensure_dir(p: Path):
 def healthz():
     return {"ok": True, "service": SERVICE_NAME}
 
-
-@app.get("/metrics")
-def metrics():
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 ###########################################################################################################
 
 

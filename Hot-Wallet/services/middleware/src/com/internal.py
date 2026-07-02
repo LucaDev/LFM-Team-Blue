@@ -18,7 +18,7 @@ async def health():
         "status": "ok"
     }
 
-@app.get("/metrics")
+@router.get("/metrics") 
 def metrics():
     try:
         WAITING_HUMAN.set(count_waiting_human())   # Zustands-Gauge beim Scrape aktualisieren
