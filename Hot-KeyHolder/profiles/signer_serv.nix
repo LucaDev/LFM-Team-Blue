@@ -60,7 +60,7 @@ in
         echo "[*] generating postgres credentials"
         {
           echo "POSTGRES_USER=signer"
-          echo "POSTGRES_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -base64 24)"
+          echo "POSTGRES_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -hex 24)"
           echo "POSTGRES_DB=btc"
           echo "TPM_GID=$TPM_GID" 
         } > /var/lib/signer/.env
@@ -73,7 +73,7 @@ in
       echo "[*] building signer container"
       ${pkgs.docker}/bin/docker compose build
 
-      ${pkgs.docker}/bin/docker compose pull postgres proxy
+      ${pkgs.docker}/bin/docker compose pull postgres proxy redis
 
       echo "[*] switching to locked mode"
       ${pkgs.nftables}/bin/nft -f /etc/nixos/profiles/nftables-locked.conf
