@@ -158,9 +158,10 @@ async def sign_psbt_on_signer(
     
 
 async def save_psbt(psbt: str):
-    psbt_info = get_pending_PSBT()
-    if psbt_info is not None:
-        await delete_psbt(psbt_info.get("psbt_id", None))
+    pending = get_pending_PSBT()
+    if pending is not None:
+        log.info("deleting old refill PSBT", extra={"psbt_id": pending.get("psbt_id")})
+        await delete_psbt(pending["psbt_id"])   # COLD_STOPPED + unlink
 
     REFILL_FILE.write_text(psbt)
 

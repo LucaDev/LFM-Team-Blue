@@ -114,7 +114,7 @@ async def create_psbt(
     error_code: dict | None = None,
 ) -> PSBTModel:
     
-    if state != "INTENT_CREATED" and psbt is not None:
+    if state != "INTENT_CREATED" and psbt:
         info = extr_psbtInfo(psbt, network, wallet_name=source_address or "keyA")
         amount_sats = amount_sats or info.get("amount_sats")
         fee_sats = fee_sats or info.get("fee_sats")

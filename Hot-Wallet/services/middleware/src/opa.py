@@ -5,8 +5,9 @@ import logging
 from uuid import uuid4 
 from decimal import Decimal, ROUND_HALF_UP
 
-from .db import insert_psbt, insert_opa_decision, psbt_id_exists, get_walletName
+from .db import get_pending_PSBT, insert_psbt, insert_opa_decision, psbt_id_exists, get_walletName
 from .models import PSBTModel
+from signer import delete_psbt
 from src.com.btc_core import get_walletBalance
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181")
@@ -177,6 +178,12 @@ async def handle_refillDecision(decision: dict):
 
     if action == "hold":
         log.info("no fund swap required")
+        
+        #Refill PSBT löschen, da OPA balance zu hoch
+        pending = get_pending_PSBT()
+        if pending is not None:
+            log.info("deleting old refill PSBT", extra={"psbt_id": pending.get("psbt_id")})
+            await delete_psbt(pending["psbt_id"])   # COLD_STOPPED + unlink
         return None
 
     intent_id = ""
@@ -192,11 +199,18 @@ async def handle_refillDecision(decision: dict):
         type = "hot-tx"
         rail = "OPA_hot"
 
+        #Refill PSBT löschen, da OPA balance zu hoch
+        pending = get_pending_PSBT()
+        if pending is not None:
+            log.info("deleting old refill PSBT", extra={"psbt_id": pending.get("psbt_id")})
+            await delete_psbt(pending["psbt_id"])   # COLD_STOPPED + unlink
+
     elif action == "cold_to_hot":
         source_address = get_walletName("cold")[0]
         target_address = get_walletName("hot")[0]
         type = "refill"
         rail = "OPA_cold"
+
     else:
         raise ValueError(f"Unknown action: {action}")
     

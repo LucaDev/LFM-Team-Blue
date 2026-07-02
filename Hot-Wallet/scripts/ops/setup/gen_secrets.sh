@@ -11,7 +11,7 @@ fi
   echo "SETUP_NATS_PASS=$(openssl rand -hex 24)"
   echo "OPERATOR_TOKEN=$(openssl rand -hex 24)"
   echo "POSTGRES_USER=signer"
-  echo "POSTGRES_PASSWORD=$(${pkgs.openssl}/bin/openssl rand -hex 24)"
+  echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
   echo "POSTGRES_DB=btc"
 } > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
