@@ -13,6 +13,8 @@ Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständi
 \end{itemize}
 
 \subsection{Kernel-Härtung}
+\textcolor{OliveGreen}{Oliven-Grüne} Optionen sind unter NixOS 26.05 stand 02. Juli standardmäßig auf den gleichen Wert gesetzt.
+
 \subsubsection*{Spectre/Meltdown/CPU-Mitigationen}
 \begin{itemize}
   \item Page Table Isolation: \texttt{pti=on}
@@ -23,42 +25,42 @@ Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständi
 
 \subsubsection*{Speicher- \& Adressraumschutz}
 \begin{itemize}
-  \item Vollständiges ASLR: \texttt{randomize\_va\_space=2}, \texttt{vm.mmap\_rnd\_bits=32}
-  \item SLUB-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits
-  \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}
-  \item debugfs deaktiviert: \texttt{debugfs=off}
+  \item Vollständiges ASLR: \texttt{\textcolor{OliveGreen}{randomize\_va\_space=2}}, \texttt{\textcolor{OliveGreen}{vm.mmap\_rnd\_bits=32}}. Standardmäßig aktiv, lediglich explizit gesetzt
+  \item SLUB-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits. Standardmäßig deaktiviert, da es Performance kostet.
+  \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}. Standardmäßig auf xonly gesetzt. Sehr alte Programme die noch auf vsyscalls setzen verlieren ggf. ihre Funktion. Moderne haben keine Probleme damit.
+  \item debugfs deaktiviert: \texttt{debugfs=off}. Standardmäßig aktiviert
 \end{itemize}
 
 \subsubsection*{DMA-Schutz (IOMMU)}
 \begin{itemize}
-  \item IOMMU erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \texttt{intel\_iommu=on}
+  \item IOMMU erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \texttt{intel\_iommu=on}. Oftmals automatisch aktiviert, jedoch nicht immer.
   \item DMA Passthrough deaktiviert: \texttt{iommu.passthrough=0}
   \item Early PCI DMA blockiert: \texttt{efi=disable\_early\_pci\_dma}
 \end{itemize}
 
 \subsubsection*{Kernel-Informationslecks}
 \begin{itemize}
-  \item Kernel-Pointer versteckt: \texttt{kernel.kptr\_restrict=2}
-  \item dmesg nur für root: \texttt{kernel.dmesg\_restrict=1}
-  \item Unprivilegiertes BPF deaktiviert: \texttt{kernel.unprivileged\_bpf\_disabled=1}, \texttt{net.core.bpf\_jit\_enable=0}
-  \item perf\_events nur privilegiert: \texttt{kernel.perf\_event\_paranoid=3}
-  \item ptrace eingeschränkt: \texttt{kernel.yama.ptrace\_scope=2} (nur \texttt{PTRACE\_TRACEME})
-  \item SysRq deaktiviert: \texttt{kernel.sysrq=0}
-  \item setuid-Core-Dumps deaktiviert: \texttt{fs.suid\_dumpable=0}
+  \item Kernel-Pointer versteckt: \texttt{kernel.kptr\_restrict=2}. Default=1. Stärkere Restriktion aktiviert
+  \item dmesg nur für root: \texttt{\textcolor{OliveGreen}{kernel.dmesg\_restrict=1}}. Standard jedoch explizit gesetzt.
+  \item Unprivilegiertes BPF deaktiviert: \texttt{\textcolor{OliveGreen}{kernel.unprivileged\_bpf\_disabled=1, net.core.bpf\_jit\_enable=0}}, Standard unter NixOS jedoch explizit gesetzt.
+  \item perf\_events nur privilegiert: \texttt{kernel.perf\_event\_paranoid=3}. Standard=2. Höheres Schutzlevel
+  \item ptrace eingeschränkt: \texttt{kernel.yama.ptrace\_scope=2} (nur \texttt{PTRACE\_TRACEME}). Default=1. Noch stärkere Einschränkung von ptrace
+  \item SysRq deaktiviert: \texttt{kernel.sysrq=0}. Default=1
+  \item setuid-Core-Dumps deaktiviert: \texttt{fs.suid\_dumpable=0}. Default=2
 \end{itemize}
 
 \subsubsection*{Dateisystem-Schutz (Kernel)}
 \begin{itemize}
-  \item \texttt{fs.protected\_hardlinks=1}, \texttt{fs.protected\_symlinks=1}
-  \item \texttt{fs.protected\_fifos=2}, \texttt{fs.protected\_regular=2}
-  \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}
+  \item \textcolor{OliveGreen}{\texttt{fs.protected\_hardlinks=1}, \texttt{fs.protected\_symlinks=1}}. Nur explizit gesetzt
+  \item \texttt{fs.protected\_fifos=2}, \texttt{fs.protected\_regular=2}. Default=1. Erweitert FIFO und regular File Schutz
+  \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}. Default=nosuid,nodev. noexec für zusätzlichere Absicherung
 \end{itemize}
 
 \subsubsection*{Blacklisted Kernel-Module (Angelehnt an CIS Benchmark)}
 Nicht benötigte Protokoll- und Dateisystem-Module sind deaktiviert, darunter:\\
-\textit{Netzwerk:} \texttt{dccp}, \texttt{sctp}, \texttt{rds}, \texttt{tipc}, \texttt{ax25}, \texttt{atm}, \texttt{ipx}, \texttt{appletalk} u.\,a.\\
-\textit{Dateisysteme:} \texttt{cramfs}, \texttt{hfs}, \texttt{hfsplus}, \texttt{jffs2}, \texttt{udf}, \texttt{cifs}, \texttt{nfs*}, \texttt{gfs2}\\
-\textit{Hardware:} \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{firewire-core}
+Netzwerk: \texttt{dccp}, \texttt{sctp}, \texttt{rds}, \texttt{tipc}, \texttt{ax25}, \texttt{atm}, \texttt{ipx}, \texttt{appletalk} u.\,a.\\
+Dateisysteme: \texttt{cramfs}, \texttt{hfs}, \texttt{hfsplus}, \texttt{jffs2}, \texttt{udf}, \texttt{cifs}, \texttt{nfs*}, \texttt{gfs2}\\
+Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{firewire-core}
 
 \subsection{Netzwerk-Härtung}
 \subsubsection*{nftables-Firewall (Default Deny)}
@@ -105,7 +107,9 @@ Nicht benötigte Protokoll- und Dateisystem-Module sind deaktiviert, darunter:\\
   \item MACs: nur ETM-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
   \item X11/TCP/Agent-Forwarding und Tunnel deaktiviert
   \item \texttt{MaxAuthTries=3}, \texttt{LoginGraceTime=30s}, \texttt{MaxSessions=3}
-  \item Rechtlicher Hinweis-Banner bei Login
+  \item Rechtlicher Hinweis-Banner bei Login: kein technischer Schutz jedoch rechtliche Absicherung der Auditierungs- und Logging-Maßnahmen. Entzieht
+  unbefugten Zugreifenden jegliche Grundlage für eine Berufung auf Unkenntnis der Überwachung und
+  dokumentiert befugten Nutzenden die Bedingungen des Zugriffs.
 \end{itemize}
 
 \subsubsection*{Sudo-Härtung}
@@ -181,7 +185,7 @@ Primär geeignet für nicht vertrauenswürdigen Code. Für den normalen Betrieb 
 
 \subsection{Festplatte \& Daten}
 \begin{itemize}
-  \item \textbf{Swap verschlüsselt:} Zufälliger Schlüssel pro Boot (\texttt{randomEncryption=true}) (keine persistenten Daten im Swap).
+  \item \textbf{Swap verschlüsselt:} Zufälliger Schlüssel pro Boot (\texttt{randomEncryption=true}) (keine persistenten Daten im Swap. Standardmäßig nicht unter NixOS aktiviert).
   \item \textbf{Btrfs mit zstd-Kompression} auf allen Subvolumes.
   \item \textbf{/tmp eingeschränkt:} Mount-Optionen \texttt{nosuid,nodev,noexec}.
   \item \textbf{ESP (\texttt{/boot}):} Umask \texttt{0077} (nur root darf lesen). 
