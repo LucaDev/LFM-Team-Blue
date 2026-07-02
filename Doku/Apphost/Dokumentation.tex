@@ -252,19 +252,11 @@ Damit Traefik nicht den vollen Zugriff auf den Docker-Socket braucht, lesen wir
 die Docker-API ausschließlich über einen eingeschränkten Socket-Proxy aus,
 der nur lesende Anfragen zulässt, um selbst bei kompromitierung von Traefik keinen vollzugriff auf das System zu ermöglichen.
 
-Die Zertifikate holt Traefik über Let's Encrypt mit der DNS-01-Challenge. Der
-große Vorteil dieser Methode ist, dass der Server dafür nicht aus dem Internet
-erreichbar sein muss. Es wird lediglich über die DNS-API des Anbieters
-(in unserem Fall Cloudflare) kurzzeitig ein TXT-Eintrag gesetzt. Die Ports 80
-und 443 können vollständig hinter dem Router bleiben. An Cloudflare fließen
-dabei keinerlei Inhalte, sondern nur der Nachweis, dass wir die Domain
-kontrollieren.
+Für den internen Zugriff über das Heimnetz nutzen wir eine eigene Domain (z.B in unseren Tests: lbaecker.de), dessen DNS-A Eintrag direkt auf die private IP-Adresse des Servers im Heimnetzwerk zeigt. Von außen ist dieser Eintrag zwar öffentlich auflösbar, jedoch nicht erreichbar. Die private IP ist außerhalb des Heimnetzes nicht routbar, wodurch kein Risiko (bis auf die Möglichkeit für Angreifer, die IP Adresse des Apphosts von außen zu ermitteln) entsteht. Diese sehr unkritische Information-Exposure stellt einen Tradeoff dar. Es wäre auch möglich, einen statischen DNS Eintrag im lokalen DNS-Resolver des Routers zu hinterlegen. Ein so sicherheitsbewusster Nutzer wie unser Mandant wird jedoch sicherlich einige Geräte besitzen, die standardmäßig auf sicheres DNS setzen und den via DHCP/Router Advertisement verteilten DNS-Server ignorieren. Durch diesen Ansatz lässt sich die IP-Adresse problemlos mit jedem DNS-Server auflösen. Ein interner Eintrag im Router kann auch zusätzlich erfolgen.
 
-Für den internen Zugriff über das Heimnetz setzen
-wir damit bewusst auf ein echtes, öffentlich vertrauenswürdiges Zertifikat statt
-auf ein selbstsigniertes. Das hat mehrere praktische Vorteile. Erstens kommt es
+Der Charme der Lösung mit einer echten Domain liegt darin, dass wir ein echtes, öffentlich vertrauenswürdiges Zertifikat von Let's Encrypt bekommen, statt auf selbstsignierte Zertifikate zurückgreifen zu müssen. Das hat mehrere praktische Vorteile. Erstens kommt es
 zu keinen Zertifikatswarnungen im Browser. Das ist nicht nur bequemer, sondern
-auch sicherheitsrelevant: Wer sich angewöhnt, Zertifikatswarnungen einfach
+auch sicherheitsrelevant. Denn wer sich angewöhnt, Zertifikatswarnungen einfach
 wegzuklicken, übersieht irgendwann auch eine echte Man-in-the-Middle-Warnung.
 Ein gültiges Zertifikat hält diese Warnung also als verlässliches Signal intakt.
 Zweitens funktioniert die volle Vertrauenskette ohne manuelles Verteilen einer
@@ -273,11 +265,20 @@ Probleme macht. Drittens ist die Verwaltung vollständig automatisiert: Traefik
 erneuert die Zertifikate rechtzeitig selbst, es gibt keine abgelaufenen
 Zertifikate, um die sich jemand kümmern müsste.
 
+Die Zertifikate holt Traefik über Let's Encrypt mit der DNS-01-Challenge. Der
+große Vorteil dieser Methode ist, dass der Server dafür nicht aus dem Internet
+erreichbar sein muss. Es wird lediglich über die DNS-API des Anbieters
+(in unserem Fall Cloudflare) kurzzeitig ein TXT-Eintrag gesetzt. Die Ports 80
+und 443 können vollständig hinter dem Router bleiben. An Cloudflare fließen
+dabei keinerlei Inhalte, sondern nur der Nachweis, dass wir die Domain
+kontrollieren.
+
 Eine bewusste Ausnahme bildet der Tor-Zugang. Onion-Adressen lassen sich von
 Let's Encrypt nicht zertifizieren, und sie brauchen es auch nicht, weil die
 Verbindung über Tor bereits Ende-zu-Ende verschlüsselt ist. Dort verwenden wir
 deshalb ein selbstsigniertes Zertifikat, was im Tor-Browser unkritisch ist.
 Auch wenn ein Zertifikat nicht notwendig wäre, da Tor die Verschlüsselung übernimmt, ist es dennoch sinnvoll, weil es eine zusätzliche Schutzschicht gegen Angreifer bildet, sollte das Tor-Netzwerk kompromittiert werden, oder sicherheitsschwächen im Tor-Protokoll selbst auftreten.
+
 
 \subsubsection{Single Sign-On mit Authelia}
 
@@ -306,7 +307,7 @@ nicht prüfen kann.
 
 Auf ausdrücklichen Kundenwunsch sind alle Dienste zusätzlich über das
 Tor-Netzwerk als Onion Service v3 erreichbar. Dafür läuft ein Tor-Container,
-der einen Hidden Service bereitstellt und den Verkehr an einen eigenen
+der einen Onion Service bereitstellt und den Verkehr an einen eigenen
 Traefik-Einstiegspunkt weiterreicht. So kann der Mandant auch aus stark
 überwachten oder zensierten Netzen auf seine Dienste zugreifen, ohne dass dabei
 Metadaten an den lokalen Provider abfließen und ohne dass überhaupt ein Port
@@ -314,8 +315,8 @@ nach außen geöffnet werden muss. Der Tor-Container ist als reiner Client
 konfiguriert (kein Relay, kein Exit, deaktivierter Control- und SOCKS-Port).
 
 Praktisch bedeutet das einen dualen URL-Raum: Im Heimnetz erreicht man die
-Dienste unter \texttt{*.domain} mit gültigem Zertifikat, über Tor unter
-\texttt{*.onion}.
+Dienste unter \texttt{*.domain.tld} mit gültigem Zertifikat, über Tor unter
+\texttt{*.<onion-service>.onion} (hier wird wie oben beschrieben ein zentrales selbstsigniertes Wildcard-Zertifikat genutzt).
 
 Wichtig ist dabei, dass die Tor-Erreichbarkeit \emph{pro Dienst} explizit
 ein- und ausgeschaltet werden kann. Jeder Dienst bekommt in unserem Aufbau
@@ -456,7 +457,7 @@ Das Verzeichnis \texttt{secrets/} ist auf Dateisystemebene strikt geschützt
 Passwort, generiert er die Hashes mit einem einzigen Befehl neu.
 
 \subsubsection{Kontrollierte Updates mit Renovate}
-
+\label{sec:renovate}
 Ein wiederkehrendes Problem beim Self-Hosting ist, dass Container-Images
 veralten und so unbemerkt Sicherheitslücken offen bleiben. Damit das nicht
 passiert, überwacht RenovateBot unser Repository und öffnet automatisch einen
@@ -618,6 +619,13 @@ Backups lassen sich verschlüsseln. So sind die Daten auch dann geschützt, wenn
 ein Backup-Medium gestohlen wird. Für die Wiederherstellung nach einem
 Hardwaredefekt genügt es, Proxmox neu aufzusetzen und die VM aus dem letzten
 Backup zurückzuspielen.
+
+\subsubsection{Dateisystemintegrität mit AIDE}
+AIDE (Advanced Intrusion Detection Environment) prüft die Integrität des Dateisystems, indem es Prüfsummen und Metadaten (Rechte, Eigentümer, Timestamps) von im Vorfeld konfiguierten Dateien und Verzeichnissen in einer Datenbank ablegt und bei jedem weiteren Lauf mit ihr vergleicht. 
+
+Der Sinn dahinter ist, unautorisierte Veränderungen schnell sichtbar zu machen, wie etwa eine eingeschleuste Backdoor in einer Binary, einer manipulierten Konfigurationsdatei oder üblicherweise schnell zu übersehenden Veränderungen wie veränderten SUID-Bits. Es wird davon ausgegangen, dass ein Angreifer einige der Schutzmechanismen bereits überwunden hat und Spuren seiner Kompromittierung auf dem Dateisystem hinterlassen hat, die sich über AIDE auffinden lassen.
+
+AIDE läuft automatisiert über einen systemd-Timer (das moderne Equivalent zu einem Cronjob), die Ergebnisse müssen jedoch manuell geprüft werden.
 
 \subsection{Sicherheitshärtung im Überblick}
 
