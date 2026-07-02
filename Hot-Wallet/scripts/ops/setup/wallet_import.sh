@@ -127,7 +127,7 @@ do
 
     if docker compose -f "$PROJECT_ROOT/docker-compose.yaml" exec -T \
         -e NATS_URL="nats://setup:${SETUP_NATS_PASS}@nats:4222" \
-        middleware python -m src.tools.publish \
+        middleware python -m src.com.nats_pub \
         wallet.import.requested "/run/wallets/$WALLET_TYPE/metadata.json"
     then
         echo "OK: $WALLET_TYPE import gestartet"

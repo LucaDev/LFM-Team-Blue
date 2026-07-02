@@ -104,6 +104,8 @@ async def request_psbt(request: Request, payload: dict = Body(...)):
     }
     """
     nc = request.app.state.nc
+
+    rail = "psbt"
     if OPERATOR_TOKEN and request.headers.get("X-Operator-Token", "") == OPERATOR_TOKEN:
         rail = "manual"                                        # Operator: Whitelist-Bypass, nur OPA-Struktur
 
@@ -123,10 +125,10 @@ async def request_psbt(request: Request, payload: dict = Body(...)):
 
     psbt_model = await create_psbt(
         psbt_id=psbt_id,
-        rail="psbt",
+        rail=rail,
         wallet_type="hot",
         psbt=psbt,
-        meta={"rail": "psbt"},
+        meta={"rail": rail},
         network=BITCOIN_NETWORK,
         source_address=source_address,
         sha256=payload.get("sha256"),

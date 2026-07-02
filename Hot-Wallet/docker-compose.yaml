@@ -5,7 +5,7 @@ services:
     container_name: tx-builder
     environment:
       SERVICE_NAME: tx-builder
-      NATS_URL: nats://middleware:${MW_NATS_PASS}@nats:4222
+      NATS_URL: nats://txbuilder:${TXB_NATS_PASS}@nats:4222
       WORK_ROOT: /run/psbts
 
       DATABASE_URL: postgresql://user:pass@postgres:5432/btc
@@ -35,10 +35,12 @@ services:
       POSTGRES_DB: btc
 
       NATS_URL: nats://middleware:${MW_NATS_PASS}@nats:4222
+      OPERATOR_TOKEN: ${OPERATOR_TOKEN}
+
       OPA_URL: http://opa:8181
+
       SIGNER_URL: http://10.10.0.2
       SIGNER_PORT: 8080
-      DATABASE_URL: postgresql://user:pass@postgres:5432/btc
 
       BITCOIN_NETWORK: regtest
       BTC-CORE_RPC_URL: http://btc-core:18443
@@ -73,17 +75,17 @@ services:
       - ./services/opa/policies:/policies:ro
       - ./services/opa/data:/data:ro
 
-    nats:
-      image: nats:2.10
-      container_name: nats
-      command: ["-c", "/etc/nats/nats-server.conf"]
-      environment:
-        MW_NATS_PASS: ${MW_NATS_PASS}
-        TXB_NATS_PASS: ${TXB_NATS_PASS}
-        OPERATOR_NATS_PASS: ${OPERATOR_NATS_PASS}
-        SETUP_NATS_PASS: ${SETUP_NATS_PASS}
-      volumes:
-        - ./services/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
+  nats:
+    image: nats:2.10
+    container_name: nats
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    environment:
+      MW_NATS_PASS: ${MW_NATS_PASS}
+      TXB_NATS_PASS: ${TXB_NATS_PASS}
+      OPERATOR_NATS_PASS: ${OPERATOR_NATS_PASS}
+      SETUP_NATS_PASS: ${SETUP_NATS_PASS}
+    volumes:
+      - ./services/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
 
   postgres:
     image: postgres:16

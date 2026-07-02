@@ -50,9 +50,11 @@ async def startup():
     async def wallet_import_handler(msg):
         metadata = json.loads(msg.data.decode())
         try:
-            result = await asyncio.to_thread(import_wallet, metadata)
+            result = await import_wallet(metadata)
+
             await nc.publish("wallet.import.done", json.dumps(result).encode())
             log.info("wallet imported via NATS", extra={"wallet_id": result.get("wallet_id")})
+
         except Exception as e:
             log.exception("wallet import failed")
             await nc.publish("wallet.import.failed", json.dumps({"error": str(e)}).encode())
@@ -130,7 +132,7 @@ async def startup():
                 if psbt_signed is None:
                     log.error("Signing failed, abort flow psbt_id=%s", psbt.psbt_id)
                     return
-                
+                psbt.psbt = psbt_signed
                 if psbt.wallet_type == "hot":
                     #Finalisierung
                     try:
@@ -192,7 +194,7 @@ async def startup():
 
                     psbt.state = "WAITING_HUMAN"
                     await asyncio.to_thread(
-                        insert_psbt, psbt_signed
+                        insert_psbt, psbt
                     )
                     log.info("Warten auf Operanten feur cold-worflow")
                     #Ntfy informieren

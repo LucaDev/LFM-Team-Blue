@@ -69,6 +69,12 @@ async def broadcast_psbt(psbt_id: str, request: Request):
         raise HTTPException(status_code=400, detail="Empty PSBT")
     
     psbt_info = get_psbt_byID(psbt_id)
+    if psbt_info is None:
+        log.warning(f"PSBT not found for broadcast psbt_id={psbt_id}")
+        raise HTTPException(
+            status_code=409,
+            detail="PSBT unrecognized in database"
+        )
 
     if psbt_info.get("psbt_state") != "COLD_STARTED":
         log.warning(f"Invalid broadcast state psbt_id={psbt_id}")

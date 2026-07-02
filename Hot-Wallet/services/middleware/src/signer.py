@@ -138,7 +138,7 @@ async def sign_psbt_on_signer(
                 headers=headers
             )
             
-            log.error(f"Status Code vom Signer erhalten: {r.status_code}")
+            log.info(f"Status Code vom Signer erhalten: {r.status_code}")
             
             r.raise_for_status() 
             
@@ -171,11 +171,11 @@ def load_psbt():
 
 
 #Löscht nicht, sondern schriebt COLD_STOPPED
-def delete_psbt(psbt_id = None):
+async def delete_psbt(psbt_id = None):
     if psbt_id is not None:
         psbt_info = get_psbt_byID(psbt_id)
         if psbt_info is not None:
-            psbt = create_psbt(
+            psbt = await create_psbt(
                 psbt_id=psbt_info["psbt_id"],
                 wallet_type=psbt_info["wallet_type"],
                 rail="OPA_cold",

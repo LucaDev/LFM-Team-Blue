@@ -3,7 +3,7 @@ from typing import Optional, Dict, Literal,Any
 import hashlib
 import base64
 
-from .api.btc_core import extr_psbtInfo
+from src.com.btc_core import extr_psbtInfo
 
 
 class PaymentIntent(BaseModel):
@@ -114,8 +114,8 @@ async def create_psbt(
     error_code: dict | None = None,
 ) -> PSBTModel:
     
-    if state != "INTENT_CREATED":
-        info = info = extr_psbtInfo(psbt, network, wallet_name=source_address or "keyA")
+    if state != "INTENT_CREATED" and psbt is not None:
+        info = extr_psbtInfo(psbt, network, wallet_name=source_address or "keyA")
         amount_sats = amount_sats or info.get("amount_sats")
         fee_sats = fee_sats or info.get("fee_sats")
         fee_rate = fee_rate or info.get("fee_rate")

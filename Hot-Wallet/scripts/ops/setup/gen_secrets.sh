@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ENV_FILE="$(cd "$(dirname "$0")/../.." && pwd)/.env"   # -> Hot-Wallet/.env
+ENV_FILE="$(cd "$(dirname "$0")/../../.." && pwd)/.env"   # -> Hot-Wallet/.env
 if [[ -f "$ENV_FILE" ]]; then
   echo "[*] .env existiert bereits – nichts zu tun"; exit 0
 fi

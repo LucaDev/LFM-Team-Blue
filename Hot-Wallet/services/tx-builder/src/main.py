@@ -201,7 +201,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     psbt = result.get("psbt")
 
     fee_btc = result.get("fee")
-    fee_sats = Decimal(str(fee_btc)) * Decimal("100000000")
+    fee_sats = int(Decimal(str(fee_btc)) * Decimal("100000000"))
 
     changepos = result.get("changepos")
 

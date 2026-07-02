@@ -7,7 +7,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from .db import insert_psbt, insert_opa_decision, psbt_id_exists, get_walletName
 from .models import PSBTModel
-from .api.btc_core import get_walletBalance
+from src.com.btc_core import get_walletBalance
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")

@@ -16,7 +16,7 @@ WALLET_DIR = os.getenv("WALLET_DIR", "/root/.bitcoin/regtest/wallets")
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 
 log = logging.getLogger(SERVICE_NAME)
-_subdir = {"test": "regtest", "signet": "signet", "main": ""}
+_subdir = {"regtest": "test", "signet": "signet", "main": ""}
 wallets_root = Path("/root/.bitcoin") / _subdir.get(BITCOIN_NETWORK, "regtest") / "wallets"
 
 
@@ -55,7 +55,6 @@ async def import_wallet(metadata: dict) -> dict:
 
 
     #Checken, ob walletName schon vergeben
-    walletName_dir = Path("/root/.bitcoin/regtest/wallets") / wallet_name
     if walletName_dir.exists():
         #Unload + Loeschen
         try:

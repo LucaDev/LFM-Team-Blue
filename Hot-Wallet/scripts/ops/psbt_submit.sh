@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../..")"
+PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../..")"
 
 API_BASE="${API_BASE:-http://localhost:8080}"
 PSBT_DIR="${1:-${PSBT_DIR:-$SCRIPT_DIR}}"   # Standard: dieses Verzeichnis (Sparrow legt die .psbt hier ab)

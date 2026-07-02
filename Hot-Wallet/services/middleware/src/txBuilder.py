@@ -5,7 +5,7 @@ import os
 
 from .db import insert_psbt, get_walletName
 from .models import PSBTModel
-from .api.btc_core import address_wallet_match
+from src.com.btc_core import address_wallet_match
 
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
