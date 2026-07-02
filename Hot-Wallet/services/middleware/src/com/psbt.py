@@ -9,7 +9,7 @@ from fastapi.responses import PlainTextResponse
 from src.signer import load_psbt, delete_psbt
 from src.db import insert_psbt, archive_psbt, get_psbt_byID, get_pending_PSBT
 from .btc_core import broadcast_to_bitcoind, psbt_finalize
-from src.models import create_psbt_msg
+from src.models import create_psbt_msg, create_psbt
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 
@@ -29,17 +29,22 @@ async def psbt():
     if psbt_str is None:
         raise HTTPException(status_code=404, detail="No PSBT available")
 
-    psbt_info = get_pending_PSBT()
-    psbt_id = psbt_info.get("psbt_id")
-    psbt_info['rail'] = "OPA_cold"
-    psbt_info['psbt'] = psbt_str
-    psbt = await create_psbt_msg(psbt_info)
+    psbt_db = get_pending_PSBT()
+    if psbt_db is None:
+        raise HTTPException(status_code=404, detail="No pending PSBT")
+
+    psbt_id = psbt_db.get("psbt_id")
+    if psbt_id is None:
+        raise HTTPException(status_code=404, detail="Unknown psbt_id")
+    psbt_db['rail'] = "OPA_cold"
+    psbt_db['psbt'] = psbt_str
+    psbt = await create_psbt_msg(psbt_db)
 
     if psbt is None:
         raise HTTPException(status_code=404, detail="No refill PSBT available")
 
     #Nur loeschen der Datei, nicht Status überschreiben
-    delete_psbt()
+    await delete_psbt()
     
 
     psbt.state = "COLD_STARTED"
@@ -55,7 +60,7 @@ async def psbt():
     return PlainTextResponse(payload)
 
 
-@router.post("/broadcast")
+@router.post("/broadcast/{psbt_id}")
 async def broadcast_psbt(psbt_id: str, request: Request):
 
     psbt_signed = (await request.body()).decode().strip()
@@ -63,23 +68,45 @@ async def broadcast_psbt(psbt_id: str, request: Request):
     if not psbt_signed:
         raise HTTPException(status_code=400, detail="Empty PSBT")
     
-    psbt_info = get_psbt_byID(psbt_id)
-    if psbt_info.get("psbt_state") != "COLD_STARTED":
+    psbt_db = get_psbt_byID(psbt_id)
+    if psbt_db is None:
+        log.warning(f"PSBT not found for broadcast psbt_id={psbt_id}")
+        raise HTTPException(
+            status_code=409,
+            detail="PSBT unrecognized in database"
+        )
+
+    #Get Data out of DB to compare target_address, amount, etc. with signed PSBT
+    if psbt_db.get("psbt_state") != "COLD_STARTED":
         log.warning(f"Invalid broadcast state psbt_id={psbt_id}")
         raise HTTPException(
             status_code=409,
             detail="Invalid PSBT state for broadcast"
         )
     
-    psbt_info['rail'] = "OPA_cold"
-    psbt_info['psbt'] = psbt_signed
+    psbt_db['rail'] = "OPA_cold"
+    psbt_db['psbt'] = None
+    psbt_db = await create_psbt_msg(psbt_db)
+    
+    signed_parsed = create_psbt(
+        psbt_id=psbt_db.psbt_id,
+        wallet_type=psbt_db.wallet_type,
+        rail=psbt_db.rail,
+        psbt=psbt_signed,
+        network=psbt_db.network,
+        changepos=psbt_db.changepos,
+        source_address=psbt_db.source_address,
+        state=psbt_db.state,
+        sha256=hash_psbt(psbt_signed),
+        meta=psbt_db.meta,
+        error_code=psbt_db.error_code,
+    )
 
-    psbt = create_psbt_msg(psbt_info)
-        
+    if signed_parsed["amount_sats"] != psbt_db["amount_sats"] \
+    or signed_parsed["target_address"] != psbt_db["target_address"]:
+        raise HTTPException(status_code=409, detail="Signierte PSBT weicht vom DB-Eintrag ab")
 
-    psbt_hash = hash_psbt(psbt_signed)
-
-    log.info(f"Broadcast request psbt_id={psbt_id} hash={psbt_hash}")
+    log.info(f"Broadcast request psbt_id={psbt_id} hash={signed_parsed.sha256}")
 
     try:
         #finalize
@@ -117,11 +144,11 @@ async def broadcast_psbt(psbt_id: str, request: Request):
     log.info(f"Broadcast success txid={txid}")
 
     #Löschen aweiterer cold-Anfragen angekommen während cold-workflow (race condition)
-    psbt_info_new = get_pending_PSBT()
-    if psbt_info_new.get("psbt_id") != psbt_id:
-        delete_psbt(psbt_info_new.get("psbt_id"))
+    psbt_db_new = get_pending_PSBT()
+    if psbt_db_new is not None and psbt_db_new.get("psbt_id") != psbt_id:
+        await delete_psbt(psbt_db_new.get("psbt_id"))
 
     return {
         "txid": txid,
-        "psbt_hash": psbt_hash,
+        "psbt_hash": signed_parsed.sha256,
     }

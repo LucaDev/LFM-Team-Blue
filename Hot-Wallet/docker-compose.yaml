@@ -5,7 +5,7 @@ services:
     container_name: tx-builder
     environment:
       SERVICE_NAME: tx-builder
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://txbuilder:${TXB_NATS_PASS}@nats:4222
       WORK_ROOT: /run/psbts
 
       DATABASE_URL: postgresql://user:pass@postgres:5432/btc
@@ -30,15 +30,19 @@ services:
     environment:
       SERVICE_NAME: middleware
 
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: btc
+      NATS_URL: nats://middleware:${MW_NATS_PASS}@nats:4222
+      OPERATOR_TOKEN: ${OPERATOR_TOKEN}
 
-      NATS_URL: nats://nats:4222
       OPA_URL: http://opa:8181
+      
       SIGNER_URL: http://10.10.0.2
       SIGNER_PORT: 8080
-      DATABASE_URL: postgresql://user:pass@postgres:5432/btc
+
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
 
       BITCOIN_NETWORK: regtest
       BTC-CORE_RPC_URL: http://btc-core:18443
@@ -69,34 +73,28 @@ services:
       - "--addr=0.0.0.0:8181"
       - "/policies"
       - "/data"
-    ports:
-      - "8181:8181"
     volumes:
       - ./services/opa/policies:/policies:ro
       - ./services/opa/data:/data:ro
 
   nats:
-    image: nats:latest
+    image: nats:2.10
     container_name: nats
-    ports:
-      - "4222:4222"
-
-  nats-box:
-    image: natsio/nats-box:latest
-    container_name: nats-box
-    depends_on:
-      - nats
-    stdin_open: true
-    tty: true
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    environment:
+      MW_NATS_PASS: ${MW_NATS_PASS}
+      TXB_NATS_PASS: ${TXB_NATS_PASS}
+      OPERATOR_NATS_PASS: ${OPERATOR_NATS_PASS}
+      SETUP_NATS_PASS: ${SETUP_NATS_PASS}
+    volumes:
+      - ./services/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
 
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: btc
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
     - postgres_data:/run/postgresql/data
     - ./services/postgres/001_psbt.sql:/docker-entrypoint-initdb.d/001_psbt.sql:ro
@@ -108,9 +106,6 @@ services:
     volumes:
       - btcCore_data:/root/.bitcoin
       - ./services/btc-core/src/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
-    ports:
-      - "18443:18443"
-      - "18444:18444"
     entrypoint: ["/root/entrypoint.sh"]
   
 

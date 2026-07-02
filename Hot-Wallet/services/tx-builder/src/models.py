@@ -1,11 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Literal,Any
-import json
 import hashlib
 import base64
-
-from embit.psbt import PSBT
-from embit.networks import NETWORKS
 
 
 class PaymentIntent(BaseModel):
@@ -13,7 +9,7 @@ class PaymentIntent(BaseModel):
 
     type: Literal["hot-tx", "refill"]
 
-    rail: Literal["bip21", "psbt", "OPA_hot", "OPA_cold"]
+    rail: Literal["bip21", "psbt", "manual", "OPA_hot", "OPA_cold"]
 
     network: str
 
@@ -72,7 +68,7 @@ class PSBTModel(BaseModel):
 
     psbt_id: str
     wallet_type: Literal["hot", "cold"]
-    rail: Literal["bip21", "psbt", "OPA_hot", "OPA_cold"]
+    rail: Literal["bip21", "psbt", "manual", "OPA_hot", "OPA_cold"]
 
     #Core PSBT data
     psbt: str  # base64 PSBT

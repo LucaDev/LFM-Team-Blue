@@ -2,15 +2,27 @@ import os
 import json
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 from .models import PSBTModel, isModel
 
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+DB_HOST = os.getenv("POSTGRES_HOST", "postgres")
+DB_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+DB_USER = os.getenv("POSTGRES_USER", "")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "")
+DB_NAME = os.getenv("POSTGRES_DB", "")
 
 def conn():
-    if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL not configured")
-    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
+    if not DB_USER or not DB_NAME:
+        raise RuntimeError("Postgres credentials not configured")
+    return psycopg.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        dbname=DB_NAME,
+        row_factory=dict_row,
+    )
 
 
 #Wenn error auftritt, dass die DB zurückgerollt werden kann
@@ -18,7 +30,8 @@ def rollback():
     with conn() as c:
         c.rollback()
 
-   
+def _jsonb(v):
+    return Jsonb(v.model_dump() if isModel(v) else v)
 
 
 #wallet
@@ -282,10 +295,6 @@ def insert_opa_decision(
                     raise RuntimeError(f"psbt_id not found: {psbt_id}")
             else: db_psbt_id = psbt_id
 
-            reasons = normalize(result)
-            input_data = normalize(input_data)
-            result = normalize(result)
-
             # 2. insert policy decision
             cur.execute("""
                 INSERT INTO btc.opa_decision (
@@ -299,24 +308,16 @@ def insert_opa_decision(
                 )
                 VALUES (%s,%s,%s,%s,%s,%s,%s)
             """, (
-                db_psbt_id,
+                str(db_psbt_id),
                 policy_name,
                 actor,
                 action,
-                json.dumps(reasons),
-                input_data,
-                result
+                _jsonb(reasons),
+                _jsonb(input_data),
+                _jsonb(result)
             ))
 
         c.commit()
-
-def normalize(value):
-    if isModel(value):
-        return value.model_dump_json()
-    elif isinstance(value, (dict, list)):
-        return json.dumps(value)
-    else:
-        return str(value)
 
 #Hilfsfunktion psbt_id zu letzter id (unique) für referenzen auflösen
 def get_psbt_db_id(psbt_id: str) -> int | None:
@@ -331,7 +332,6 @@ def get_psbt_db_id(psbt_id: str) -> int | None:
             """, (psbt_id,))
             row = cur.fetchone()
             return row["id"] if row else None
-        c.commit()
         
 
 #Deduplication check, ob es psbt schon gab

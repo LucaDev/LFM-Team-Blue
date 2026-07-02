@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="http://localhost:8080/api/v1/importWallet"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../..")"
+COMPOSE="${PROJECT_ROOT}/docker-compose.yaml"
+EXT_DIR="${PROJECT_ROOT}/middleware_data/wallets/ext"
 
+# .env laden (SETUP_NATS_PASS)
+set -a; source "${PROJECT_ROOT}/.env"; set +a
+
+mkdir -p "$EXT_DIR"
 shopt -s nullglob
 
 for META_FILE in ./*.meta.json; do
@@ -17,7 +24,9 @@ for META_FILE in ./*.meta.json; do
   MASTER_FINGERPRINT=$(jq -r '.master_fingerprint // ""' "$META_FILE")
 
   # Payload bauen
-  PAYLOAD=$(jq -n \
+  # Payload ins (read-only in den Container gemountete) Volume schreiben
+  OUT="${EXT_DIR}/${WALLET_NAME}.json"
+  jq -n \
     --arg wallet_type "ext" \
     --arg wallet_name "$WALLET_NAME" \
     --arg network "$NETWORK" \
@@ -33,14 +42,18 @@ for META_FILE in ./*.meta.json; do
       descriptor: $descriptor,
       derivation_path: $derivation_path,
       master_fingerprint: $master_fingerprint
-    }'
-  )
+    }' > "$OUT"
 
-  # Request senden
-  RESPONSE=$(curl -s -X POST "$BASE" \
-    -H "Content-Type: application/json" \
-    -d "$PAYLOAD")
+ 
 
-  echo "$RESPONSE" | jq .
+  if docker compose -f "$COMPOSE" exec -T \
+      -e NATS_URL="nats://setup:${SETUP_NATS_PASS}@nats:4222" \
+      middleware python -m src.com.nats_pub \
+      wallet.import.requested "/run/wallets/ext/${WALLET_NAME}.json"
+  then
+      echo "OK: ext-Wallet '${WALLET_NAME}' import angestoßen"
+  else
+      echo "FEHLER: NATS-Publish für '${WALLET_NAME}' fehlgeschlagen (läuft der Stack?)"
+  fi
 
 done

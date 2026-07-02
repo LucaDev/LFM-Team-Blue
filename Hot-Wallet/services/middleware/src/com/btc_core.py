@@ -28,7 +28,8 @@ def rpc_call(url, method, params=None, rpc_id="middleware"):
         url,
         auth=(RPC_USER, RPC_PASS),
         json=payload,
-        headers={"content-type": "text/plain;"}
+        headers={"content-type": "text/plain;"},
+        timeout=(3.05, 30)
     )
 
     # Zuerst versuchen, die JSON-Fehlermeldung von Bitcoin Core zu lesen
@@ -92,13 +93,15 @@ def extr_psbtInfo(psbt_b64: str, network: str = "regtest", wallet_name: str = "k
     )
 
     psbt_filled = processed["psbt"]
-    fee_sats = processed.get("fee", None)
-
+    
     decoded = rpc_call(
         f"{RPC_URL}/wallet/{wallet_name}",
         "decodepsbt",
         [psbt_filled]
     )
+
+    fee_btc = decoded.get("fee")
+    fee_sats = btc_to_sats(fee_btc) if fee_btc is not None else None
 
     tx = decoded.get("tx", {})
     vout = tx.get("vout", [])

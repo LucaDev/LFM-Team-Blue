@@ -22,7 +22,8 @@ def rpc_call(url, method, params=None, rpc_id="tx-builder"):
         url,
         auth=(RPC_USER, RPC_PASS),
         json=payload,
-        headers={"content-type": "text/plain;"}
+        headers={"content-type": "text/plain;"},
+        timeout=(3.05, 30)
     )
 
     # Zuerst versuchen, die JSON-Fehlermeldung von Bitcoin Core zu lesen

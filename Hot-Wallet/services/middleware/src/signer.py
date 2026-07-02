@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 from .db import insert_psbt,get_pending_PSBT, get_psbt_byID
-from .models import PSBTModel,create_psbt_msg
+from .models import PSBTModel,create_psbt
 
 REFILL_FILE = Path(os.getenv("REFILL_PSBT", "/run/refill.psbt"))
 REFILL_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -77,11 +77,11 @@ async def sign_psbt_on_signer(
         sha256: str
     ):
     if os.path.isfile(SIGNER_HMAC_SECRET):
-        print("Gültige Datei")
+        log.info("Gültige HMAC Dateo")
         with open(SIGNER_HMAC_SECRET, "r") as f:
             secret = bytes.fromhex(f.read().strip())
     else:
-        print("Nicht vorhanden oder kein File")
+        log.error("HMAC nicht vorhanden oder kein File")
         raise FileNotFoundError(
                 f"HMAC secret not found: {SIGNER_HMAC_SECRET}"
         )
@@ -138,28 +138,30 @@ async def sign_psbt_on_signer(
                 headers=headers
             )
             
-            print(f"Status Code vom Signer erhalten: {r.status_code}")
+            log.info(f"Status Code vom Signer erhalten: {r.status_code}")
             
             r.raise_for_status() 
             
             return r.json()
  
     except httpx.HTTPStatusError as e:
-        print(f"Signer lieferte Fehler-Status: {e.response.status_code} - Text: {e.response.text}")
+        log.error(f"Signer lieferte Fehler-Status: {e.response.status_code} - Text: {e.response.text}")
         raise RuntimeError(f"Signer request failed with status {e.response.status_code}: {e.response.text}") from e
         
     except httpx.RequestError as e:
-        print(f"Netzwerkfehler beim Verbindungsaufbau: {e}")
+        log.error(f"Netzwerkfehler beim Verbindungsaufbau: {e}")
         raise RuntimeError(f"Signer network request failed: {e}") from e
     
     except httpx.HTTPError as e:
+        log.error(f"Signer request failed: {e}")
         raise RuntimeError(f"Signer request failed: {e}") from e
     
 
-def save_psbt(psbt: str):
-    psbt_info = get_pending_PSBT()
-    if psbt_info is not None:
-        delete_psbt(psbt_info.get("psbt_id", None))
+async def save_psbt(psbt: str):
+    pending = get_pending_PSBT()
+    if pending is not None:
+        log.info("deleting old refill PSBT", extra={"psbt_id": pending.get("psbt_id")})
+        await delete_psbt(pending["psbt_id"])   # COLD_STOPPED + unlink
 
     REFILL_FILE.write_text(psbt)
 
@@ -170,17 +172,23 @@ def load_psbt():
 
 
 #Löscht nicht, sondern schriebt COLD_STOPPED
-def delete_psbt(psbt_id = None):
+async def delete_psbt(psbt_id = None):
     if psbt_id is not None:
         psbt_info = get_psbt_byID(psbt_id)
-        psbt_info['rail'] = "OPA_cold"
-        psbt_info['psbt'] = psbt
-        psbt = create_psbt_msg(psbt_info)
-
-        psbt.state = "COLD_STOPPED"
-        asyncio.to_thread(
-            insert_psbt, psbt
-        )
+        if psbt_info is not None:
+            psbt = await create_psbt(
+                psbt_id=psbt_info["psbt_id"],
+                wallet_type=psbt_info["wallet_type"],
+                rail="OPA_cold",
+                psbt="",
+                network=psbt_info.get("network", "regtest"),
+                source_address=psbt_info["source_address"],
+                target_address=psbt_info["target_address"],
+                amount_sats=psbt_info.get("amount_sats") or 0,
+                state="COLD_STOPPED",
+                meta=psbt_info.get("meta") or {},
+            )
+            insert_psbt(psbt)
 
     if REFILL_FILE.exists():
         REFILL_FILE.unlink()

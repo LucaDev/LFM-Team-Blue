@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 import hashlib
-from dataclasses import dataclass, field
+from decimal import Decimal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from fastapi.responses import Response
 from nats.aio.client import Client as NATS
@@ -116,8 +116,10 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     intent_id = intent.id
     target_address = intent.target_address
 
+    #Standard werte
     confirmation_blocks = 6
     estimate_mode = "economical"
+    wallet_type = "hot" 
 
     #Variieren nach auszuführender Aktion
     if intent.type == "refill":
@@ -128,7 +130,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
         
     elif intent.type == "hot-tx":
         wallet_type = "hot"
-        if intent.rail == "OPA":
+        if intent.rail == "OPA_hot":
             target_address = get_outputAddress(intent.target_address)
 
 
@@ -144,7 +146,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
             source_address = intent.source_address,
             state = "PSBT_FAILED",
             meta = intent.meta | {"success":False},
-            error_code = "UNKNOWN_INTENT_TYPE"
+            error_code = {"code": "UNKNOWN_INTENT_TYPE"}
         )
 
     amount_sats = int(intent.amount_sats)
@@ -165,7 +167,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
             source_address = intent.source_address,
             state = "PSBT_FAILED",
             meta = intent.meta | {"success": False},
-            error_code = "INVALID_AMOUNT"
+            error_code = {"code": "INVALID_AMOUNT"}
         )
 
     
@@ -193,13 +195,13 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
             source_address = intent.source_address,
             state = "PSBT_FAILED",
             meta = intent.meta | {"success": False} | {"message": str(e)},
-            error_code = "RPC_ERROR"
+            error_code = {"code": "RPC_ERROR"}
         )
     
     psbt = result.get("psbt")
 
     fee_btc = result.get("fee")
-    fee_sats = int(fee_btc * 1e8)
+    fee_sats = int(Decimal(str(fee_btc)) * Decimal("100000000"))
 
     changepos = result.get("changepos")
 
