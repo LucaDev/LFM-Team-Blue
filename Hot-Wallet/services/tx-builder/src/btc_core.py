@@ -2,9 +2,9 @@ import os
 import requests
 from typing import List, Dict, Tuple
 
-BITCOIND_RPC_URL = os.getenv("BITCOIND_RPC_URL", "")
-RPC_USER = os.getenv("BITCOIND_RPC_USER", "")
-RPC_PASS = os.getenv("BITCOIND_RPC_PASS", "")
+RPC_URL = os.getenv("BTC_CORE_RPC_URL", "")
+RPC_USER = os.getenv("BTC_CORE_RPC_USER", "")
+RPC_PASS = os.getenv("BTC_CORE_RPC_PASS", "")
 
 
 class BitcoindRPCError(RuntimeError):
@@ -41,14 +41,14 @@ def rpc_call(url, method, params=None, rpc_id="tx-builder"):
 
 def get_changeAddress(wallet_name: str):
     return rpc_call(
-        f"{BITCOIND_RPC_URL}/wallet/{wallet_name}",
+        f"{RPC_URL}/wallet/{wallet_name}",
         "getrawchangeaddress"
     )
 
 
 def get_outputAddress(wallet_name: str):
     return rpc_call(
-        f"{BITCOIND_RPC_URL}/wallet/{wallet_name}",
+        f"{RPC_URL}/wallet/{wallet_name}",
         "getnewaddress"
     )
 
@@ -56,7 +56,7 @@ def get_outputAddress(wallet_name: str):
 #Alles in einer methode doch BTC CORE
 def get_psbt(outputs, wallet_name: str, confirmation_blocks: int, estimate_mode: str, lockTime: int = 0):
     result = rpc_call(
-        f"{BITCOIND_RPC_URL}/wallet/{wallet_name}",
+        f"{RPC_URL}/wallet/{wallet_name}",
         "walletcreatefundedpsbt",
         [
             [],              # inputs: auto coin selection

@@ -10,7 +10,7 @@ from src.db import create_wallet
 from .btc_core import rpc_call
 
 
-RPC_URL  = os.getenv("BTC-CORE_RPC_URL", "http://btc-core:18443")
+RPC_URL  = os.getenv("BTC_CORE_RPC_URL", "http://btc-core:18443")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 WALLET_DIR = os.getenv("WALLET_DIR", "/root/.bitcoin/regtest/wallets")
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")

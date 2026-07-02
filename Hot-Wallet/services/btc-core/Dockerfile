@@ -55,6 +55,9 @@ COPY --from=builder /root/bitcoin/build/bin/bitcoin-cli /root/
 
 EXPOSE 18444 18443
 
+RUN useradd -u 1000 -m app
+USER 1000
+
 ADD src/entrypoint.sh /root/entrypoint.sh
 RUN chmod +x /root/entrypoint.sh
 

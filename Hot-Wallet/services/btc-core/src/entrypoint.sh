@@ -6,12 +6,14 @@ echo "[regtest] starting bitcoind..."
 CONF_FILE="/root/.bitcoin/bitcoin.conf"
 LOG_FILE="/root/.bitcoin/regtest/debug.log"
 WALLET_FILE="/root/.bitcoin/scripts/load_wallets.sh"
+BTC_RPC_USER="${BTC_RPC_USER:-user}"
+BTC_RPC_PASS="${BTC_RPC_PASS:-pass}"
  
 
 /root/bitcoind -regtest -conf="$CONF_FILE" -daemon
  
 
-RPC="/root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
+RPC="/root/bitcoin-cli -regtest
  
 echo "[regtest] waiting for node..."
 sleep 2

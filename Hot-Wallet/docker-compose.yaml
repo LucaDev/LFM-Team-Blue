@@ -3,22 +3,31 @@ services:
   tx-builder:
     build: ./services/tx-builder
     container_name: tx-builder
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    mem_limit: 512m
+    pids_limit: 200
+    user: "1000:1000"
     environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+
       SERVICE_NAME: tx-builder
       NATS_URL: nats://txbuilder:${TXB_NATS_PASS}@nats:4222
-      WORK_ROOT: /run/psbts
 
       DATABASE_URL: postgresql://user:pass@postgres:5432/btc
 
       MIDDLEWARE_URL: http://middleware:8080
 
       BITCOIN_NETWORK: regtest
-      BITCOIND_RPC_URL: http://btc-core:18443
-      BITCOIND_RPC_USER: user
-      BITCOIND_RPC_PASS: pass
+      BTC_CORE_RPC_URL: http://btc-core:18443
+      BTC_CORE_RPC_USER: ${BTC_RPC_USER_TXB}
+      BTC_CORE_RPC_PASS: ${BTC_RPC_PASS_TXB}
 
-    volumes:
-      - tx_builder_data:/run/psbts
     depends_on:
       - nats
       - postgres
@@ -27,7 +36,19 @@ services:
   middleware:
     build: ./services/middleware
     container_name: middleware
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    mem_limit: 512m
+    pids_limit: 200
+    user: "1000:1000"
     environment:
+      PYTHONDONTWRITEBYTECODE: "1" 
+
       SERVICE_NAME: middleware
 
       NATS_URL: nats://middleware:${MW_NATS_PASS}@nats:4222
@@ -45,9 +66,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
 
       BITCOIN_NETWORK: regtest
-      BTC-CORE_RPC_URL: http://btc-core:18443
-      BTC-CORE_RPC_USER: user
-      BTC-CORE_RPC_PASS: pass
+      BTC_CORE_RPC_URL: http://btc-core:18443
+      BTC_CORE_RPC_USER: ${BTC_RPC_USER_MW}
+      BTC_CORE_RPC_PASS: ${BTC_RPC_PASS_MW}
 
       SIGNER_HMAC_SECRET: /run/secrets/signer-hmac.secret
       REFILL_PSBT:  /run/refill.psbt
@@ -66,6 +87,15 @@ services:
   opa:
     image: openpolicyagent/opa:1.17.1
     container_name: opa
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    mem_limit: 256m
+    pids_limit: 100
     command:
       - "run"
       - "--watch"
@@ -81,6 +111,15 @@ services:
     image: nats:2.10
     container_name: nats
     command: ["-c", "/etc/nats/nats-server.conf"]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    mem_limit: 256m
+    pids_limit: 100
     environment:
       MW_NATS_PASS: ${MW_NATS_PASS}
       TXB_NATS_PASS: ${TXB_NATS_PASS}
@@ -91,28 +130,47 @@ services:
 
   postgres:
     image: postgres:16
+    container_name: postgres
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    mem_limit: 1g
+    pids_limit: 200
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-    - postgres_data:/run/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     - ./services/postgres/001_psbt.sql:/docker-entrypoint-initdb.d/001_psbt.sql:ro
 
   btc-core:
     build: ./services/btc-core
     container_name: btc-core
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    mem_limit: 2g
+    pids_limit: 300
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      BTC_RPC_USER: ${BTC_RPC_USER}
+      BTC_RPC_PASS: ${BTC_RPC_PASS}
     volumes:
       - btcCore_data:/root/.bitcoin
       - ./services/btc-core/src/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
+      - ./services/btc-core/src/rpcauth.conf:/root/.bitcoin/rpcauth.conf:ro
     entrypoint: ["/root/entrypoint.sh"]
   
 
   
 
 volumes:
-  tx_builder_data:
   postgres_data:
   middleware_data:
   btcCore_data:

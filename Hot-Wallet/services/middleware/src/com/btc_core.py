@@ -8,9 +8,9 @@ SAT = Decimal("100000000")
 def btc_to_sats(v):
     return int((Decimal(str(v)) * SAT).to_integral_value())
 
-RPC_URL = os.getenv("BTC-CORE_RPC_URL", "")
-RPC_USER = os.getenv("BTC-CORE_RPC_USER", "")
-RPC_PASS = os.getenv("BTC-CORE_RPC_PASS", "")
+RPC_URL = os.getenv("BTC_CORE_RPC_URL", "")
+RPC_USER = os.getenv("BTC_CORE_RPC_USER", "")
+RPC_PASS = os.getenv("BTC_CORE_RPC_PASS", "")
 
 
 class BitcoindRPCError(RuntimeError):

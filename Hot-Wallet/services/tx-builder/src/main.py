@@ -3,7 +3,6 @@ import json
 import base64
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 import hashlib
 from decimal import Decimal
@@ -20,7 +19,6 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "tx-builder")
 NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
-WORK_ROOT = os.getenv("WORK_ROOT", "/var/lib/btc-work/psbt-work")
 
 MIDDLEWARE_URL= os.getenv("MIDDLEWARE_URL","http://middleware:8080")
 
@@ -35,9 +33,6 @@ def utc_now_iso() -> str:
 
 def sha256(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
-
-def ensure_dir(p: Path):
-    p.mkdir(parents=True, exist_ok=True)
 
 
 
@@ -228,7 +223,6 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
 @app.on_event("startup")
 async def startup():
     setup_logging(SERVICE_NAME)
-    ensure_dir(Path(WORK_ROOT))
 
     # NATS setup
     global nc
