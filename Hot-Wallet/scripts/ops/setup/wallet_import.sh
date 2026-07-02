@@ -7,10 +7,10 @@ USB_MOUNT="/mnt/usb"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../..")"
 
+# NATS-Credentials aus .env holen (SETUP_NATS_PASS)
+set -a; source "$PROJECT_ROOT/.env"; set +a
+
 WALLET_DIR="${PROJECT_ROOT}/middleware_data/wallets"
-
-
-MIDDLEWARE_URL="http://localhost:8080"
 
 patch_metadata() {
   local meta_file="$1"
@@ -123,18 +123,16 @@ do
     cp "$WALLET_TYPE_DIR/"* "$WALLET_DIR/$WALLET_TYPE/"
     find "$WALLET_DIR/$WALLET_TYPE" -type f -exec chmod 644 {} \;
     
-    if curl \
-      --fail \
-      --show-error \
-      --silent \
-      -X POST \
-      "${MIDDLEWARE_URL}/api/v1/importWallet" \
-      -H "Content-Type: application/json" \
-      --data @"$WALLET_META"
+        cp -f "$WALLET_META" "$WALLET_DIR/$WALLET_TYPE/metadata.json"
+
+    if docker compose -f "$PROJECT_ROOT/docker-compose.yaml" exec -T \
+        -e NATS_URL="nats://setup:${SETUP_NATS_PASS}@nats:4222" \
+        middleware python -m src.tools.publish \
+        wallet.import.requested "/run/wallets/$WALLET_TYPE/metadata.json"
     then
-      echo "OK: $WALLET_TYPE registered"
+        echo "OK: $WALLET_TYPE import gestartet"
     else
-      echo "middleware not reachable, container running?"
+        echo "FEHLER: NATS-Publish fehlgeschlagen (läuft der Stack?)"
     fi
 done
 

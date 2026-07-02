@@ -30,7 +30,12 @@ async def psbt():
         raise HTTPException(status_code=404, detail="No PSBT available")
 
     psbt_info = get_pending_PSBT()
+    if psbt_info is None:
+        raise HTTPException(status_code=404, detail="No pending PSBT")
+
     psbt_id = psbt_info.get("psbt_id")
+    if psbt_id is None:
+        raise HTTPException(status_code=404, detail="Unknown psbt_id")
     psbt_info['rail'] = "OPA_cold"
     psbt_info['psbt'] = psbt_str
     psbt = await create_psbt_msg(psbt_info)
@@ -55,7 +60,7 @@ async def psbt():
     return PlainTextResponse(payload)
 
 
-@router.post("/broadcast")
+@router.post("/broadcast/{psbt_id}")
 async def broadcast_psbt(psbt_id: str, request: Request):
 
     psbt_signed = (await request.body()).decode().strip()
@@ -64,6 +69,7 @@ async def broadcast_psbt(psbt_id: str, request: Request):
         raise HTTPException(status_code=400, detail="Empty PSBT")
     
     psbt_info = get_psbt_byID(psbt_id)
+
     if psbt_info.get("psbt_state") != "COLD_STARTED":
         log.warning(f"Invalid broadcast state psbt_id={psbt_id}")
         raise HTTPException(
@@ -74,8 +80,7 @@ async def broadcast_psbt(psbt_id: str, request: Request):
     psbt_info['rail'] = "OPA_cold"
     psbt_info['psbt'] = psbt_signed
 
-    psbt = create_psbt_msg(psbt_info)
-        
+    psbt = await create_psbt_msg(psbt_info)
 
     psbt_hash = hash_psbt(psbt_signed)
 
@@ -118,7 +123,7 @@ async def broadcast_psbt(psbt_id: str, request: Request):
 
     #Löschen aweiterer cold-Anfragen angekommen während cold-workflow (race condition)
     psbt_info_new = get_pending_PSBT()
-    if psbt_info_new.get("psbt_id") != psbt_id:
+    if psbt_info_new is not None and psbt_info_new.get("psbt_id") != psbt_id:
         delete_psbt(psbt_info_new.get("psbt_id"))
 
     return {

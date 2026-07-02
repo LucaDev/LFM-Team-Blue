@@ -13,10 +13,14 @@ from .btc_core import rpc_call
 RPC_URL  = os.getenv("BTC-CORE_RPC_URL", "http://btc-core:18443")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 WALLET_DIR = os.getenv("WALLET_DIR", "/root/.bitcoin/regtest/wallets")
+BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
+
 log = logging.getLogger(SERVICE_NAME)
+_subdir = {"test": "regtest", "signet": "signet", "main": ""}
+wallets_root = Path("/root/.bitcoin") / _subdir.get(BITCOIN_NETWORK, "regtest") / "wallets"
+
 
 nc = None
-router = APIRouter()
 
 def normalize(desc_string: str) -> str:
     # Whitespaces entfernen
@@ -29,9 +33,7 @@ def normalize(desc_string: str) -> str:
     return desc
 
 
-@router.post("/api/v1/importWallet")
-async def add_wallet(request: Request, metadata: dict = Body(...)):
-    nc = request.app.state.nc
+async def import_wallet(metadata: dict) -> dict:
 
     # Load data out of API call
     required_fields = ["wallet_type", "network"]
@@ -45,6 +47,8 @@ async def add_wallet(request: Request, metadata: dict = Body(...)):
     wallet_name = metadata.get("wallet_name")
     xpub_backup = metadata.get("xpub", "")
     wallet_id = metadata.get("wallet_id") or wallet_name or xpub_backup[:12] or "unknown_id"
+
+    walletName_dir = wallets_root / wallet_name
 
     # BTC-CORE registration
     WALLET_RPC_URL = f"{RPC_URL}/wallet/{wallet_name}"

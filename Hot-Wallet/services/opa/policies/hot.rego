@@ -21,6 +21,10 @@ skip_amount_fee_checks if {
     startswith(object.get(input, "rail", ""), "OPA")
 }
 
+skip_amount_fee_checks if {
+    object.get(input, "rail", "") == "manual"
+}
+
 #Input validation
 
 deny["missing psbt_id"] if {
