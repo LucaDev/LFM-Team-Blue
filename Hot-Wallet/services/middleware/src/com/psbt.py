@@ -85,10 +85,10 @@ async def broadcast_psbt(psbt_id: str, request: Request):
         )
     
     psbt_db['rail'] = "OPA_cold"
-    psbt_db['psbt'] = None
+    psbt_db['psbt'] = psbt_signed 
     psbt_db = await create_psbt_msg(psbt_db)
     
-    signed_parsed = create_psbt(
+    signed_parsed = await create_psbt(
         psbt_id=psbt_db.psbt_id,
         wallet_type=psbt_db.wallet_type,
         rail=psbt_db.rail,
@@ -97,13 +97,13 @@ async def broadcast_psbt(psbt_id: str, request: Request):
         changepos=psbt_db.changepos,
         source_address=psbt_db.source_address,
         state=psbt_db.state,
-        sha256=hash_psbt(psbt_signed),
         meta=psbt_db.meta,
         error_code=psbt_db.error_code,
     )
 
-    if signed_parsed["amount_sats"] != psbt_db["amount_sats"] \
-    or signed_parsed["target_address"] != psbt_db["target_address"]:
+
+    #Check between DB and actual signed PSBT
+    if signed_parsed.amount_sats != psbt_db.amount_sats or signed_parsed.target_address != psbt_db.target_address:
         raise HTTPException(status_code=409, detail="Signierte PSBT weicht vom DB-Eintrag ab")
 
     log.info(f"Broadcast request psbt_id={psbt_id} hash={signed_parsed.sha256}")
@@ -128,14 +128,14 @@ async def broadcast_psbt(psbt_id: str, request: Request):
         raise HTTPException(status_code=400, detail=f"broadcast failed: {e}")    
 
     #persist final state (optional tracking)
-    psbt.state = "BROADCASTED"
+    psbt_db.state = "BROADCASTED"
     await asyncio.to_thread(
-        insert_psbt, psbt
+        insert_psbt, psbt_db
     )
 
     await asyncio.to_thread(
         archive_psbt, {
-            **psbt.model_dump(),
+            **psbt_db.model_dump(),
             "final_tx": rawtx_hex,
             "txid": txid
         }
@@ -143,7 +143,7 @@ async def broadcast_psbt(psbt_id: str, request: Request):
 
     log.info(f"Broadcast success txid={txid}")
 
-    #Löschen aweiterer cold-Anfragen angekommen während cold-workflow (race condition)
+    #Löschen weiterer cold-Anfragen angekommen während cold-workflow (race condition)
     psbt_db_new = get_pending_PSBT()
     if psbt_db_new is not None and psbt_db_new.get("psbt_id") != psbt_id:
         await delete_psbt(psbt_db_new.get("psbt_id"))
