@@ -157,10 +157,10 @@ async def sign_psbt_on_signer(
         raise RuntimeError(f"Signer request failed: {e}") from e
     
 
-def save_psbt(psbt: str):
+async def save_psbt(psbt: str):
     psbt_info = get_pending_PSBT()
     if psbt_info is not None:
-        delete_psbt(psbt_info.get("psbt_id", None))
+        await delete_psbt(psbt_info.get("psbt_id", None))
 
     REFILL_FILE.write_text(psbt)
 

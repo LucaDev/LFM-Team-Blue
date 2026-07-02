@@ -44,7 +44,7 @@ async def psbt():
         raise HTTPException(status_code=404, detail="No refill PSBT available")
 
     #Nur loeschen der Datei, nicht Status überschreiben
-    delete_psbt()
+    await delete_psbt()
     
 
     psbt.state = "COLD_STARTED"
@@ -130,7 +130,7 @@ async def broadcast_psbt(psbt_id: str, request: Request):
     #Löschen aweiterer cold-Anfragen angekommen während cold-workflow (race condition)
     psbt_info_new = get_pending_PSBT()
     if psbt_info_new is not None and psbt_info_new.get("psbt_id") != psbt_id:
-        delete_psbt(psbt_info_new.get("psbt_id"))
+        await delete_psbt(psbt_info_new.get("psbt_id"))
 
     return {
         "txid": txid,

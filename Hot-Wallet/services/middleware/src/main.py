@@ -190,7 +190,7 @@ async def startup():
                         )       
 
                 elif psbt.wallet_type == "cold":
-                    await asyncio.to_thread(save_psbt, psbt_signed)
+                    await save_psbt(psbt_signed)
 
                     psbt.state = "WAITING_HUMAN"
                     await asyncio.to_thread(
