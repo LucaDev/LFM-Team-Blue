@@ -284,7 +284,7 @@ Der Zugriff auf die \texttt{btc}-\ac{DB} wird ausschließlich über den Middlewa
 Neben den Hot- und Cold-Wallets werden die Namen externer, whitelisted Wallets in der Wallet-\ac{DB} eingetragen. Dafür wurden die Skripte \path{wallet_import.sh} und \path{whiteWallet.sh} eingerichtet, sodass relevante Informationen wie Registrierungs-Name, Schlüssel-Fingerprint und Deskriptoren für die einzelnen Wallets kontrolliert aus einem \ac{USB}-Medium extrahiert werden können.
 
 Zusätzlich zu den für den Betrieb notwendigen Daten werden ebenfalls der vollständige Statusverlauf jeder \ac{PSBT} sowie die Entscheidungen des \ac{OPA} samt Begründung und Input gespeichert, und die \ac{PSBT} wird nach dem Broadcast als Artefakt archiviert.
-Nach dem Broadcast am Ende des \ac{PSBT}-Prozesses wird die verwendete \ac{PSBT} im Sinne einer Archivierung in der Tabelle \path{btc.psbt_artifact} gespeichert. Die Tabelle \path{btc.psbt}, welche die einzelnen Status nach den Microservice-Schritten enthält, soll dementsprechend eher als Runbook zum Nachvollziehen des operationellen Verlaufs der \ac{TX} verstanden werden und kann nach einer gewissen Zeit gelöscht werden.
+Nach dem Broadcast am Ende des \ac{PSBT}-Prozesses wird die verwendete \ac{PSBT} im Sinne einer Archivierung in der Tabelle \path{btc.psbt_archive} gespeichert. Die Tabelle \path{btc.psbt}, welche die einzelnen Status nach den Microservice-Schritten enthält, soll dementsprechend eher als Runbook zum Nachvollziehen des operationellen Verlaufs der \ac{TX} verstanden werden und kann nach einer gewissen Zeit gelöscht werden.
 
 \begin{figure}[H]
     \centering
@@ -420,7 +420,7 @@ Anschließend muss die \ac{PSBT} von Schlüssel~A signiert werden und wird dazu 
 
 Nach jedem Broadcast des Hot-Wallets wird über Bitcoin Core der Kontostand der Wallet über \path{/wallet getbalances()} abgefragt und anschließend wieder an \ac{OPA} weitergeleitet. Dieser bestimmt die Aktion, die Höhe der Transaktion und die \ac{PSBT}-Parameter. Anschließend wird die \ac{PSBT} wie im normalen Prozess gebaut und durch Key~A signiert. Im Fall einer Sicherungstransaktion vom Hot- zum Cold-Wallet wird sie am Ende automatisch gebroadcastet. Im Fall einer Nachfüllung von Cold zu Hot wird der Operator benachrichtigt, den manuellen Prozess des Signierens mit Key~B oder Key~C fortzuführen.
 
-Da bis zur Befüllung durch den asynchronen Cold-Prozess geraume Zeit vergehen kann, müssen die Schranken mit ausreichend Puffer gewählt werden. Diese wurden, wie beschrieben, als weitere \ac{OPA}-Policy umgesetzt und können in der \path{limits.json} durch den Mandanten an seine Geldmittel angepasst werden.
+Da bis zur Befüllung durch den asynchronen Cold-Prozess geraume Zeit vergehen kann, müssen die Schranken mit ausreichend Puffer gewählt werden. Diese wurden, wie beschrieben, als weitere \ac{OPA}-Policy umgesetzt und können in der \path{data.json} durch den Mandanten an seine Geldmittel angepasst werden.
 Da der automatisierte Hot-Flow während der Wartezeit des asynchronen Cold-Prozesses unverändert weiterläuft und nach jedem Broadcast erneut eine Balance-Prüfung über die \texttt{hot.limits}-Policy auslöst, kann der Nachbefüllungsbedarf in dieser Phase mehrfach gemeldet werden. Ohne Gegenmaßnahme entstünden dadurch konkurrierende Nachbefüllungs-\acp{PSBT} für unterschiedliche Höhen desselben Mangels, und der Operator könnte veraltete \acp{TX} signieren.
 Zudem kann deren Broadcast zu einer Überbefüllung des Hot-Wallets und damit zu einem gegenläufigen \texttt{hot\_to\_cold}-Intent führen, wodurch Zeit des Operators und Gebühren für die eiligen Transaktionen verschwendet würden.
 
@@ -475,7 +475,7 @@ includeWatching & True & Berücksichtigt \acp{UTXO} aus Watch-Only-Wallets. \\
 \hline
 replaceable & True & Aktiviert Replace-by-Fee zur nachträglichen Gebührenerhöhung für eine schnellere Bestätigung \cite{bip125}. \\
 \hline
-estimate\_mode & conservative & Bevorzugt höhere Gebühren für schnellere Bestätigung. \\
+estimate\_mode & economical & Bevorzugt geringer Gebühren für langsamere Bestätigung. \\
 \hline
 bip32derivs & True & Ermöglicht Ableitungspfadinformationen für Signaturprozesse. \\
 \hline
@@ -500,13 +500,12 @@ Folgende \ac{OPA}-Policies (siehe Tabelle~\ref{tab:opa_hot}) wurden im Zuge der 
     \midrule
     Pflichtparameter vorhanden
       & \texttt{id}, \texttt{psbt}, \texttt{hash}, \texttt{\seqsplit{target\_address}},
-        \texttt{\seqsplit{source\_address}} (Voraussetzung für die nachfolgenden Regeln) \\
+        \texttt{\seqsplit{source\_address}}, \texttt{\seqsplit{Wallet\_Typ}} (Voraussetzung für die nachfolgenden Regeln) \\
     \addlinespace
     Netzwerk                & nur \texttt{regtest} \\
-    \texttt{amount\_sats}   & $0 < x < 5\,000\,000$ \\
-    \texttt{wallet\_type}   & \texttt{hot} \\
+    \texttt{amount\_sats}   & $0 < x \le 5\,000\,000$ \\
     \texttt{fee\_sats}      & $\le 20\,000$ \\
-    \texttt{fee\_rate}      & $25 < x < 100$ \\
+    \texttt{fee\_rate}      & $20 \le x \le 100$ \\
     \bottomrule
   \end{tabular}
   \caption{\ac{OPA}-Policy zur \ac{PSBT}-Bestätigung (Hot-Wallet)}
@@ -526,7 +525,7 @@ Aufgrund dessen wurde sich für eine separate Logik entschieden, die das Extrahi
 Eine Möglichkeit, den \ac{OPA} in die Whitelisting-Verifizierung einzubeziehen, läge in der Verwendung statischer Zieladressen für Hot-Wallet-\acp{TX}. Aufgrund des erhöhten Datenschutzbestrebens des Mandanten und der zusätzlichen Anweisung an die Überweisungspartner wurde dieser Ansatz verworfen und außerhalb von \ac{OPA} implementiert.
 
 Wie bereits beschrieben, folgt nach dem \ac{OPA}-Service die Signierung und der Broadcast, woraufhin ein Nachbefüllungs- oder Sicherungs-Intent ausgelöst werden kann.
-Diese Notwendigkeit wird ebenfalls von \ac{OPA} unter der Schnittstelle \path{policy/hot/limits/output} evaluiert, wobei die Grenzen in \path{data/limits.json} angepasst werden können.
+Diese Notwendigkeit wird ebenfalls von \ac{OPA} unter der Schnittstelle \path{policy/hot/limits/output} evaluiert, wobei die Grenzen ebenfalls in \path{data/data.json} angepasst werden können.
 \begin{itemize}
     \item Wird die obere Grenze von 2~\ac{BTC} überschritten, erfolgt automatisch eine Transfer-Transaktion zum Cold-Wallet: \texttt{hot\_to\_cold}.
     \item Wird die untere Grenze von 0,5~\ac{BTC} unterschritten, wird ein Nachbefüllungs-Prozess initiiert, der eine Teiltransaktion vorbereitet und den Mandanten über den ntfy-Microservice zum Cold-Wallet-Prozess auffordert: \texttt{cold\_to\_hot}.
@@ -541,7 +540,7 @@ Zudem wird ein Risk-Score auf Basis des Abstands zur äußeren Grenze des optima
 \centering
 \begin{tabular}{l c c c}
 \toprule
-\textbf{\ac{PSBT}-Parameter} & $\le 30$ & $30 < x < 70$ & $x \ge 70$ \\
+\textbf{\ac{PSBT}-Parameter} & $\le 30$ & $30 < x \le 70$ & $risk score > 70$ \\
 \midrule
 Confirmation Blocks & 6 & 3 & 1 \\
 Estimate Mode & economical & conservative & conservative \\
@@ -563,6 +562,7 @@ Diese Entscheidung dient nicht dem Beobachten der Blockchain oder anderen Bitcoi
 
 \textbf{Internet-Verbindung} \\
 Eine besondere Härtung der Internet-Verbindung wurde durch die Regeln einer nftables-Konfiguration und die Verwendung von WireGuard erreicht. Dabei werden alle Ports außer \ac{UDP} 51820 für den WireGuard-Handshake geblockt und aller Verkehr über den verschlüsselten WireGuard-Tunnel geleitet. Dieser Tunnel wird für die \ac{HTTP}-\ac{API}-Kommunikation zwischen Main-System und Key~A verwendet.
+Zudem wird \texttt{egress} während des \texttt{\seqsplit{docker compose build}}-Befehls über die nftables-Konfiguration \texttt{\seqsplit{nftables-setup.conf}} erlaubt, nach dem Build jedoch final über \texttt{\seqsplit{nftables-locked.conf}} wieder entfernt und gehärtet.
 
 Die Erreichbarkeit der Key-A-\ac{VM} ausschließlich über WireGuard wird nicht allein durch die \texttt{nftables}-Regeln auf Betriebssystemebene sichergestellt, sondern zusätzlich auf Ebene der Container-Orchestrierung erzwungen. Da Docker für veröffentlichte Ports eigene \ac{NAT}-Weiterleitungsregeln anlegt, die unabhängig von der \texttt{input}/\texttt{output}-Policy der Firewall wirken, publiziert kein Container einen Port nach außen. Stattdessen übernimmt ein dedizierter, schlanker Reverse-Proxy-Container die externe Anbindung und bindet sich ausschließlich an die statische WireGuard-Interface-Adresse \texttt{10.10.0.2}. Die Container kommunizieren ausschließlich über das interne, nicht nach außen exponierte Docker-Netzwerk und adressieren sich dabei weiterhin gegenseitig über ihre jeweiligen Service-Namen. Auf der physischen Netzwerkschnittstelle existiert dadurch zu keinem Zeitpunkt ein Dienst, der unabhängig vom WireGuard-Pfad erreichbar wäre.
 
@@ -577,7 +577,7 @@ Schlägt eine dieser Prüfungen fehl, wird die Signierung abgebrochen und die \a
 Diese Prüfung ersetzt keine vollständige fachliche Transaktionsprüfung, welche im Basissystem durch Bitcoin Core und den Open Policy Agent erfolgt, verhindert aber bereits auf dem Signer strukturell ungültige oder unvollständige \acp{PSBT} und reduziert damit die Angriffsfläche des sicherheitskritischen Signiervorgangs.
 
 \textbf{Deduplizierung} \\
-Zur Verhinderung einer mehrfachen Verarbeitung identischer Transaktionen wird jede \ac{PSBT} über ihre eindeutige \ac{PSBT}-\ac{ID} erfasst. Diese \ac{ID} wird in der Datenbank des Signers als eindeutiger Schlüssel geführt, sodass das System bereits gesehene Signiervorgänge zuverlässig erkennt. Trifft eine \ac{PSBT} mit einer bereits bekannten \ac{ID} ein, wird sie nicht erneut signiert, sondern mit der Statusmeldung \texttt{\seqsplit{ALREADY\_PROCESSED}} quittiert. Dieser Mechanismus stellt den eigentlichen, zustandsbehafteten Schutz gegen das Wiedereinspielen vollständiger Signieraufträge dar und ergänzt die zeitfensterbasierte Prüfung aus Zeitstempel und Nonce um eine dauerhafte, nachvollziehbare Eindeutigkeitsgarantie.
+Zur Verhinderung einer mehrfachen Verarbeitung identischer Transaktionen wird jede \ac{PSBT} über ihre eindeutige \ac{PSBT}-\ac{ID} erfasst. Diese \ac{ID} wird in der Datenbank des Signers als eindeutiger Schlüssel geführt, sodass das System bereits gesehene Signiervorgänge zuverlässig erkennt. Trifft eine \ac{PSBT} mit einer bereits bekannten \ac{ID} ein, wird sie nicht erneut signiert, sondern mit der Statusmeldung \texttt{\seqsplit{ALREADY\_PROCESSED}} quittiert. Dieser Mechanismus stellt den eigentlichen, zustandsbehafteten Schutz gegen das Wiedereinspielen vollständiger Signieraufträge dar und ergänzt die zeitfensterbasierte Prüfung aus Zeitstempel und Nonce um eine dauerhafte, nachvollziehbare Eindeutigkeitsgarantie. Die Nonce jeder Anfrage wird dazu für die Dauer des Gültigkeitsfensters in einem Redis-Speicher als verwendet vermerkt, sodass eine erneut eingespielte Anfrage mit identischer, noch gültiger Nonce bereits vor der Signierung abgewiesen wird.
 
 \textbf{In-Transit-Tresor} \\
 Das System verwendet einen sogenannten \emph{In-Transit-Signer}-Ansatz, bei dem ausschließlich über \acp{PSBT} und \acp{TX} kommuniziert wird und das Schlüsselmaterial das System zu keinem Zeitpunkt verlässt.
@@ -600,13 +600,13 @@ Dieser Mechanismus dient nicht nur dem Schutz vor physischem Auslesen, sondern g
 
 Das Schlüsselmaterial ist somit kryptografisch an einen unveränderten, gehärteten Systemzustand gebunden und steht in einem manipulierten System nicht mehr zur Verfügung. Es kann gegebenenfalls durch einen Rückschritt zu einem früheren Build wieder entsiegelt werden oder erfordert eine neue Konfiguration mithilfe der physisch notierten Seed-Phrase.
 
-Das Schlüsselmaterial bildet sich in diesem Ansatz aus der Entropie, welche nach Ausgabe der 24 mnemonischen Wörter als Seed im \ac{TPM} versiegelt wird. Diese 24 Wörter sollten für eine spätere Wiederherstellung vom Mandanten sicher notiert werden. Dementsprechend muss bei jedem Signierungsprozess die Entropie entschlüsselt und der private Schlüssel zum Signieren abgeleitet werden. Dabei wurde exakt auf die Löschung nicht benötigter Geheimnisse geachtet; die Schlüssel selbst werden nur in den \ac{RAM} geladen und niemals auf der Festplatte gespeichert.
+Das Schlüsselmaterial bildet sich in diesem Ansatz aus der Entropie, welche als Seed im \ac{TPM} versiegelt und deren 24 mnemonische Wörter zur Sicherung in eine Datei auf dem Desktop ausgegeben werden. Diese 24 Wörter sollten für eine spätere Wiederherstellung vom Mandanten sicher notiert und die Datei anschließend über das automatisierte Skript \path{scripts/delete_seed.sh} kontrolliert entfernt werden. Dementsprechend muss bei jedem Signierungsprozess die Entropie entschlüsselt und der private Schlüssel zum Signieren abgeleitet werden. Dabei wurde exakt auf die Löschung nicht benötigter Geheimnisse geachtet. Die Schlüssel selbst werden nur in den \ac{RAM} geladen und niemals auf der Festplatte gespeichert.
 Eine andere Möglichkeit, dies zu realisieren, wäre, das \ac{TPM} anzuweisen, das Schlüsselmaterial intern zu generieren und nur private Schlüssel zum Signieren auszugeben, wodurch das Root-Schlüsselmaterial maximal geschützt wäre. Diese Implementation war leider nicht möglich, da das auf Proxmox virtualisierte \ac{TPM} die secp256k1-Kurve des Bitcoin-Algorithmus nicht unterstützte. Da dies ebenfalls im Fall der Hardware des Mandanten nicht garantiert werden kann, wurde sich gegen diese Umsetzung entschieden.
 
 \textbf{Docker-Härtung} \\
 Der Signer-Container, welcher als einziger Dienst unmittelbar mit angreiferkontrollierten \ac{PSBT}-Daten in Berührung kommen könnte, wurde zusätzlich auf Prozessebene gehärtet. Der Containerprozess wird unter einer dedizierten, nicht privilegierten Benutzerkennung ausgeführt und besitzt keine erweiterten Linux-Capabilities, da für den Betrieb des Signers keine davon benötigt wird: Der Zugriff auf den \ac{TPM}-Chip erfolgt über gewöhnliche Dateioperationen auf das Gerät. Die hierfür erforderliche Gerätegruppen-Zugehörigkeit wird beim Start automatisiert anhand des tatsächlichen Systemzustands ermittelt und dem Container zugewiesen. Ergänzend ist dem Prozess die Rechteausweitung über privilegierte Programmbits untersagt, und das Wurzeldateisystem des Containers ist unveränderlich eingebunden; Schreibvorgänge sind ausschließlich innerhalb der ohnehin für Wallet- und \ac{TPM}-Daten vorgesehenen, separat eingebundenen Datenverzeichnisse sowie eines flüchtigen Arbeitsspeicherbereichs für temporäre Dateien möglich. Eine erfolgreiche Kompromittierung des Signiervorgangs, etwa über einen Fehler beim Parsen einer \ac{PSBT}, bliebe dadurch auf die minimalen Rechte eines einzelnen, nicht privilegierten Prozesses beschränkt und führte nicht zu einer Rechteausweitung auf Betriebssystemebene.
 
-Ein automatisiertes Skript \path{wgHMAC_export.sh} zum Extrahieren der Wallet-Informationen samt \ac{xpub}, Public-Deskriptor und Meta-Informationen auf einen \ac{USB}-Stick wurde implementiert und hilft dem Mandanten beim Aufsetzen des Whitelistings auf der Hot-Wallet-\ac{VM} sowie beim Hinzufügen des \ac{xpub} im Multi-Signatur-Verfahren des Cold-Wallets.
+Ein automatisiertes Skript \path{wgHMAC_export.sh} zum Extrahieren der Wallet-Informationen samt \ac{xpub}, Public-Deskriptor und \seqsplit{Meta-Informationen} auf einen \ac{USB}-Stick wurde implementiert und hilft dem Mandanten beim Aufsetzen des Whitelistings auf der Hot-Wallet-\ac{VM} sowie beim Hinzufügen des \ac{xpub} im Multi-Signatur-Verfahren des Cold-Wallets.
 Dieses Skript schreibt gleichzeitig das \ac{HMAC}-Geheimnis und die WireGuard-Konfiguration samt Public Key auf diesen \ac{USB}-Stick. Alle nötigen Informationen können per automatisiertem Skript auf der Hot-Wallet extrahiert und eingespielt werden, was das Laden der Deskriptoren in die PostgreSQL-\ac{DB} und das Pflegen der Geheimnisse in die \path{env.runtime} des Middleware-Docker-Containers umfasst.
 
 Die für die Datenbankanbindung notwendigen Zugangsdaten werden nicht statisch vorgegeben, sondern bei der Erstinitialisierung der Key-A-\ac{VM} automatisiert und zufällig erzeugt. Sie verbleiben dabei außerhalb der versionierten Konfiguration in einer separaten, restriktiv berechtigten Laufzeitdatei, auf welche ausschließlich die beteiligten lokalen Prozesse Zugriff erhalten. In Verbindung mit der bereits beschriebenen Netzwerkisolation, durch welche die Datenbank ebenfalls keinen nach außen gerichteten Port mehr besitzt, wird damit ausgeschlossen, dass über einen direkten Datenbankzugriff von außen die \ac{ID}-basierte Eindeutigkeitsprüfung bereits verarbeiteter \acp{PSBT} umgangen werden könnte.

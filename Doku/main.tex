@@ -63,7 +63,7 @@
 \hypersetup{
 	colorlinks   = true, % Colours links instead of ugly boxes
 	urlcolor     = blue, % Colour for external hyperlinks
-	linkcolor    = darkblue, % Colour of internal links
+	linkcolor    = black, % Colour of internal links
 	citecolor    = darkred % Colour of citations
 }
 
@@ -151,17 +151,31 @@
 	\addcontentsline{toc}{chapter}{Literaturverzeichnis}
     \printbibliography[title={Literaturverzeichnis}]
 	
-	%%%%%%%%%%%%%%%%%%%%%%%%  Stichwortverzeichnis optional  %%%%%%%%%%%%%%%%%%%%%%%%
-	\include{Stichwortverzeichnis}
-
-    \input{Doku/Definitionen/Glossar}
+%%%%%%%%%%%%%%%%%%%%%%%%  Stichwortverzeichnis optional  %%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage
+\chapter*{Stichwortverzeichnis}
+\addcontentsline{toc}{chapter}{Stichwortverzeichnis}
+\input{Doku/Definitionen/Glossar}
     % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/stichwortverzeichnis/
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Anhang  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\appendix
-	\include{Anhang}
-    \include{Doku/Apphost/Anhang-Appverzeichnis}
-    \include{Doku/Apphost/Anhang-Security}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Anhang  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage
+\chapter*{Anhang}
+\addcontentsline{toc}{chapter}{Anhang}
+
+% Ab hier keine Unterpunkte des Anhangs mehr ins Inhaltsverzeichnis
+\addtocontents{toc}{\protect\setcounter{tocdepth}{-1}}
+
+\appendix
+\setcounter{section}{0}
+\renewcommand{\thesection}{A\arabic{section}}
+
+\include{Doku/Apphost/Anhang}
+\include{Doku/Apphost/Anhang-Appverzeichnis}
+\include{Doku/Apphost/Anhang-Security}
+
+% Danach ToC-Tiefe wiederherstellen, falls danach noch etwas kommt
+\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
 
 \end{document}
 
