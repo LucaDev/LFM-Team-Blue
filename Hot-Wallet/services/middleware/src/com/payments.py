@@ -53,6 +53,9 @@ async def request_bip21(request: Request, payload: dict = Body(...)):
             raise HTTPException(
                 status_code=400, detail="Invalid amount format in URI"
             )
+        
+    if amount_sats is None or amount_sats <= 0:
+        raise HTTPException(status_code=400, detail="BIP21 amount is required and must be > 0")
 
     intent_id = payload.get("id") or qs.get("id", [None])[0]
     if intent_id is None:

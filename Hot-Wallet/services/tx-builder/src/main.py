@@ -1,3 +1,4 @@
+import asyncio
 import os
 import json
 import base64
@@ -24,7 +25,7 @@ MIDDLEWARE_URL= os.getenv("MIDDLEWARE_URL","http://middleware:8080")
 
 log = logging.getLogger("tx-builder")
 
-nc: Optional[NATS] = None
+nc
 
 app = FastAPI()
 
@@ -226,8 +227,7 @@ async def startup():
 
     # NATS setup
     global nc
-    nc = NATS()
-    await nc.connect(servers=[NATS_URL])
+    nc = await _connect_nats(NATS_URL)
 
     log.info(
         "nats_connected",
@@ -258,3 +258,19 @@ async def shutdown():
     if nc:
         await nc.drain()
     log.info("tx-shutdown")
+
+async def _connect_nats(url: str, attempts: int = 15, base: float = 1.0) -> NATS:
+    nc = NATS()
+    for i in range(attempts):
+        try:
+            await nc.connect(
+                servers=[url],
+                max_reconnect_attempts=-1,     # danach dauerhaft reconnecten
+                reconnect_time_wait=2,
+            )
+            return nc
+        except Exception as e:
+            wait = min(base * (2 ** i), 30)
+            log.warning("NATS connect failed (%s), retry in %ss", e, wait)
+            await asyncio.sleep(wait)
+    raise RuntimeError("NATS not reachable after retries")

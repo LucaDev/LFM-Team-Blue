@@ -21,6 +21,7 @@ from .metrics import PSBT_SIGNED_TOTAL, BROADCAST_TOTAL
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 POLICY_SIGNER_URL = os.getenv("POLICY_SIGNER_URL", "http://policy-signer:8080")
+NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 log = logging.getLogger(SERVICE_NAME)
@@ -42,8 +43,7 @@ async def startup():
 
     #NATS setup
     global nc
-    nc = NATS()
-    await nc.connect(servers=[os.getenv("NATS_URL")])
+    nc = await _connect_nats(NATS_URL)
     #In API state packen
     app.state.nc = nc
 
@@ -134,7 +134,7 @@ async def startup():
                 if psbt_signed is None:
                     log.error("Signing failed, abort flow psbt_id=%s", psbt.psbt_id)
                     PSBT_SIGNED_TOTAL.labels(result="failed").inc()
-                    
+
                     return
                 
                 PSBT_SIGNED_TOTAL.labels(result="ok").inc()
@@ -254,3 +254,19 @@ async def shutdown():
         await nc.drain()
 
     log.info(SERVICE_NAME)
+
+async def _connect_nats(url: str, attempts: int = 15, base: float = 1.0) -> NATS:
+    nc = NATS()
+    for i in range(attempts):
+        try:
+            await nc.connect(
+                servers=[url],
+                max_reconnect_attempts=-1,     # danach dauerhaft reconnecten
+                reconnect_time_wait=2,
+            )
+            return nc
+        except Exception as e:
+            wait = min(base * (2 ** i), 30)
+            log.warning("NATS connect failed (%s), retry in %ss", e, wait)
+            await asyncio.sleep(wait)
+    raise RuntimeError("NATS not reachable after retries")

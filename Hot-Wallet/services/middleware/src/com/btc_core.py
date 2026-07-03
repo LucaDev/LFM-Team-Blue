@@ -46,11 +46,24 @@ def rpc_call(url, method, params=None, rpc_id="middleware"):
         raise
 
 def broadcast_to_bitcoind(raw_tx_hex: str):
-    return rpc_call(
-        f"{RPC_URL}",
-        "sendrawtransaction",
-        [raw_tx_hex]
-    )
+    try:
+        return rpc_call(
+            f"{RPC_URL}",
+            "sendrawtransaction",
+            [raw_tx_hex]
+        )
+    except RuntimeError as e:
+        #Fehlen catchen wenn die PSBT schon broadcasted wurde duplication oder race condition
+        msg = str(e).lower()
+        # TX ist bereits draußen -> idempotent als Erfolg werten
+        if ("already in block chain" in msg
+                or "txn-already-known" in msg
+                or "already in the mempool" in msg
+                or "-27" in msg):
+            decoded = rpc_call(f"{RPC_URL}", "decoderawtransaction", [raw_tx_hex])
+            return decoded.get("txid")
+        raise
+
 
 def psbt_finalize(psbt_b64: str):
     final_result = rpc_call(

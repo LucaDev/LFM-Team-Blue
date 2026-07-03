@@ -33,6 +33,8 @@ else
     echo "POSTGRES_USER=signer"
     echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
     echo "POSTGRES_DB=btc"
+    echo "MW_DB_USER=mw_app"
+    echo "MW_DB_PASSWORD=$(openssl rand -hex 24)"
     # Nur Klartext-Client-Creds (kein '$') in die .env:
     echo "BTC_RPC_USER_MW=${MW_USER}"
     echo "BTC_RPC_PASS_MW=${MW_PASS}"
