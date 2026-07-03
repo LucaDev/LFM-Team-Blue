@@ -25,7 +25,7 @@ MIDDLEWARE_URL= os.getenv("MIDDLEWARE_URL","http://middleware:8080")
 
 log = logging.getLogger("tx-builder")
 
-nc
+nc: Optional[NATS] = None
 
 app = FastAPI()
 

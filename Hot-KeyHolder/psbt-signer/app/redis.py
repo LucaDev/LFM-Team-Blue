@@ -6,7 +6,7 @@ from embit.psbt import PSBT
 
 WINDOW_SEC = int(os.getenv("VELOCITY_WINDOW_SEC", "86400"))     # 24h
 CAP_SATS   = int(os.getenv("VELOCITY_CAP_SATS", "35000000"))    # Backstop, > Basis-Cap
-META_FILE  = os.getenv("WALLET_META", "/psbt-signer/run/wallets/metadata.json")
+META_FILE  = os.getenv("WALLET_METADATA", "/psbt-signer/run/wallets/metadata.json")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 MAX_SKEW = int(os.getenv("MAX_SKEW", "30"))
 

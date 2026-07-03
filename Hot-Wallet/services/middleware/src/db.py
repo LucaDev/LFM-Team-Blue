@@ -196,17 +196,13 @@ def get_pending_PSBT():
     with conn() as c:
         with c.cursor() as cur:
             cur.execute("""
-                SELECT DISTINCT ON (psbt_id)
-                    psbt_id,
-                    psbt_type,
-                    psbt_state,
-                    network,
-                    amount_sats,
-                    source_address,
-                    target_address,
-                    meta
-                FROM btc.psbt
-                ORDER BY psbt_id, id DESC
+                SELECT * FROM (
+                    SELECT DISTINCT ON (psbt_id)
+                        psbt_id, psbt_type, psbt_state, network,
+                        amount_sats, source_address, target_address, meta
+                    FROM btc.psbt
+                    ORDER BY psbt_id, id DESC
+                ) s
                 WHERE psbt_state = 'WAITING_HUMAN';
             """)
 
