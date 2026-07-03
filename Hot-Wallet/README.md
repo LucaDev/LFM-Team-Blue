@@ -400,6 +400,19 @@ Der Betrieb von Prometheus/Loki/ntfy-Servern selbst ist Teil des Infrastruktur-S
 
 ***
 
+### Secret-Rotation
+
+`scripts/ops/setup/rotate_secrets.sh` rotiert die zur Laufzeit erzeugten Geheimnisse im laufenden Betrieb und zieht die Änderungen direkt nach. Rotiert werden die NATS-Passwörter, `OPERATOR_TOKEN`, `NTFY_TOKEN`, das `mw_app`- und das Superuser-Passwort sowie die btc-core-`rpcauth`-Credentials. Vor jeder Änderung werden `.env` und `rpcauth.conf` mit Zeitstempel gesichert.
+
+Die Datenbank-Passwörter werden nicht nur in `.env` ersetzt, sondern zusätzlich per `ALTER ROLE`/`ALTER USER` live in Postgres gesetzt – ein reiner `.env`-Tausch würde ein bestehendes Rollen-Passwort nicht ändern. Anschließend werden die betroffenen Container (`nats`, `btc-core`, `postgres`, `middleware`, `tx-builder`) neu erzeugt.
+
+    sudo bash scripts/ops/setup/rotate_secrets.sh              # rotieren + Container neu erzeugen
+    sudo NO_RESTART=1 bash scripts/ops/setup/rotate_secrets.sh # nur .env/DB, Neustart manuell
+
+Das **HMAC-Secret** wird bewusst nicht mitrotiert: Es liegt synchron auf Middleware und Signer-VM und kann nur über den USB-Weg getauscht werden (`wgHMAC_export.sh` auf der Signer-VM → `wgHMAC_import.sh` auf dem Hot-System → `middleware` neu erzeugen). Beide Seiten müssen im selben Schritt getauscht werden, sonst weist die Signer-API mit `401` ab.
+
+***
+
 ## Testing / Lokale Simulation
 
 Der Ordner `scripts/testing/` enthält ein Set für die Regtest-Umgebung. Ein vollständiger Durchlauf sieht so aus:

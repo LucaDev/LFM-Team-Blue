@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-RPC="docker exec btc-core /root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
+RPC="docker exec btc-core bitcoin-cli -regtest -datadir=/home/app/.bitcoin"
 
 ADDR1=$($RPC -rpcwallet=keyA getnewaddress)
 ADDR2=$($RPC -rpcwallet=cold-multi getnewaddress)

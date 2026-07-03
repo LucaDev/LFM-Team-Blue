@@ -70,12 +70,12 @@ services:
 
       SIGNER_HMAC_SECRET: /run/secrets/signer-hmac.secret
       REFILL_PSBT:  /run/refill.psbt
-      WALLET_DIR: /root/.bitcoin/regtest/wallets
+      WALLET_DIR: /home/app/.bitcoin
     depends_on:
       - nats
       - opa
     volumes:
-      - btcCore_data:/root/.bitcoin
+      - btcCore_data:/home/app/.bitcoin
       - ./middleware_data/wallets:/run/wallets:ro
       - ./middleware_data/secrets:/run/secrets:ro
       - ./middleware_data:/run
@@ -160,14 +160,11 @@ services:
     pids_limit: 300
     security_opt:
       - no-new-privileges:true
-    environment:
-      BTC_RPC_USER: ${BTC_RPC_USER}
-      BTC_RPC_PASS: ${BTC_RPC_PASS}
     volumes:
-      - btcCore_data:/root/.bitcoin
-      - ./services/btc-core/src/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
-      - ./services/btc-core/src/rpcauth.conf:/root/.bitcoin/rpcauth.conf:ro
-    entrypoint: ["/root/entrypoint.sh"]
+      - btcCore_data:/home/app/.bitcoin
+      - ./services/btc-core/src/bitcoin.conf:/home/app/.bitcoin/bitcoin.conf:ro
+      - ./services/btc-core/src/rpcauth.conf:/home/app/.bitcoin/rpcauth.conf:ro
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
   
 
   

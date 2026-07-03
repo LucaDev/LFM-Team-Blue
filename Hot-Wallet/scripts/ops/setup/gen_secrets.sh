@@ -17,6 +17,7 @@ gen_rpcauth() {
   printf '%s|%s|%s:%s$%s' "$user" "$pass" "$user" "$salt" "$hmac"
 }
 
+
 if [[ -f "$ENV_FILE" ]]; then
   echo "[*] .env existiert bereits – Secrets bleiben unverändert"
 else
@@ -24,10 +25,10 @@ else
   IFS='|' read -r TXB_USER TXB_PASS TXB_AUTH <<< "$(gen_rpcauth txbuilder)"
 
   {
-    echo "MW_NATS_PASS=$(openssl rand -hex 24)"
-    echo "TXB_NATS_PASS=$(openssl rand -hex 24)"
-    echo "OPERATOR_NATS_PASS=$(openssl rand -hex 24)"
-    echo "SETUP_NATS_PASS=$(openssl rand -hex 24)"
+    echo "MW_NATS_PASS=n$(openssl rand -hex 24)"
+    echo "TXB_NATS_PASS=n$(openssl rand -hex 24)"
+    echo "OPERATOR_NATS_PASS=n$(openssl rand -hex 24)"
+    echo "SETUP_NATS_PASS=n$(openssl rand -hex 24)"
     echo "OPERATOR_TOKEN=$(openssl rand -hex 24)"
     echo "NTFY_TOKEN=$(openssl rand -hex 24)"
     echo "POSTGRES_USER=signer"
@@ -35,21 +36,33 @@ else
     echo "POSTGRES_DB=btc"
     echo "MW_DB_USER=mw_app"
     echo "MW_DB_PASSWORD=$(openssl rand -hex 24)"
-    # Nur Klartext-Client-Creds (kein '$') in die .env:
     echo "BTC_RPC_USER_MW=${MW_USER}"
     echo "BTC_RPC_PASS_MW=${MW_PASS}"
     echo "BTC_RPC_USER_TXB=${TXB_USER}"
     echo "BTC_RPC_PASS_TXB=${TXB_PASS}"
   } > "$ENV_FILE"
   chmod 600 "$ENV_FILE"
+  rm -f "$RPCAUTH_FILE"     #damit neue rpcauth.conf erzeugt wird (siehe unten)
+  echo "[*] .env erzeugt"
+fi
 
-  #rpcauth-Hashes nicht in .env(wegen '$')
+
+if [[ -f "$RPCAUTH_FILE" ]]; then
+  echo "[*] rpcauth.conf existiert bereits – bleibt unverändert"
+else
+  set -a; . "$ENV_FILE"; set +a          # BTC_RPC_USER_*/PASS_* laden
+  make_rpcauth() {                        # $1=user  $2=klartext-pass  ->  rpcauth-Zeile
+    local user="$1" pass="$2" salt hmac
+    salt="$(openssl rand -hex 16)"
+    hmac="$(printf '%s' "$pass" | openssl dgst -sha256 -hmac "$salt" | sed 's/^.* //')"
+    printf 'rpcauth=%s:%s$%s\n' "$user" "$salt" "$hmac"
+  }
   {
-    echo "rpcauth=${MW_AUTH}"
-    echo "rpcauth=${TXB_AUTH}"
+    make_rpcauth "$BTC_RPC_USER_MW"  "$BTC_RPC_PASS_MW"
+    make_rpcauth "$BTC_RPC_USER_TXB" "$BTC_RPC_PASS_TXB"
   } > "$RPCAUTH_FILE"
-  chmod 600 "$RPCAUTH_FILE"
-  echo "[*] .env + rpcauth.conf erzeugt"
+  chmod 644 "$RPCAUTH_FILE"
+  echo "[*] rpcauth.conf erzeugt"
 fi
 
 #Verzeichnis-Eigentümer für non-root Container

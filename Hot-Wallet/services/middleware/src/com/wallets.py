@@ -12,14 +12,12 @@ from .btc_core import rpc_call
 
 RPC_URL  = os.getenv("BTC_CORE_RPC_URL", "http://btc-core:18443")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
-WALLET_DIR = os.getenv("WALLET_DIR", "/root/.bitcoin/regtest/wallets")
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 
-log = logging.getLogger(SERVICE_NAME)
 _subdir = {"regtest": "regtest", "signet": "signet", "main": ""}
-wallets_root = Path("/root/.bitcoin") / _subdir.get(BITCOIN_NETWORK, "regtest") / "wallets"
+WALLET_DIR = Path(os.getenv("WALLET_DIR", "/home/app/.bitcoin")) / _subdir.get(BITCOIN_NETWORK, "regtest") / "wallets"
 
-
+log = logging.getLogger(SERVICE_NAME)
 nc = None
 
 def normalize(desc_string: str) -> str:
@@ -48,7 +46,7 @@ async def import_wallet(metadata: dict) -> dict:
     xpub_backup = metadata.get("xpub", "")
     wallet_id = metadata.get("wallet_id") or wallet_name or xpub_backup[:12] or "unknown_id"
 
-    walletName_dir = wallets_root / wallet_name
+    walletName_dir = WALLET_DIR / wallet_name
 
     # BTC-CORE registration
     WALLET_RPC_URL = f"{RPC_URL}/wallet/{wallet_name}"

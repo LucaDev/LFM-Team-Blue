@@ -4,7 +4,7 @@
 #Wichtig für OPA whitelisting
 set -e
 
-RPC="docker exec btc-core /root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
+RPC="docker exec btc-core bitcoin-cli -regtest -datadir=/home/app/.bitcoin"
  
 until $RPC getblockchaininfo >/dev/null 2>&1; do
     echo "Waiting for Bitcoin RPC..."

@@ -10,7 +10,7 @@ from src.signer import load_psbt, delete_psbt
 from src.db import insert_psbt, archive_psbt, get_psbt_byID, get_pending_PSBT
 from .btc_core import broadcast_to_bitcoind, psbt_finalize
 from src.models import create_psbt_msg, create_psbt
-from .metrics import BROADCAST_TOTAL
+from src.metrics import BROADCAST_TOTAL
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 

@@ -55,10 +55,10 @@ gen_rpcauth(){
 
 #NATS-Identitäten, Operator-Token, ntfy-Token
 info "Rotiere NATS-Passwörter, OPERATOR_TOKEN, NTFY_TOKEN"
-set_env MW_NATS_PASS       "$(gen)"
-set_env TXB_NATS_PASS      "$(gen)"
-set_env OPERATOR_NATS_PASS "$(gen)"
-set_env SETUP_NATS_PASS    "$(gen)"
+set_env MW_NATS_PASS       "n$(gen)"
+set_env TXB_NATS_PASS      "n$(gen)"
+set_env OPERATOR_NATS_PASS "n$(gen)"
+set_env SETUP_NATS_PASS    "n$(gen)"
 set_env OPERATOR_TOKEN     "$(gen)"
 set_env NTFY_TOKEN         "$(gen)"
 
@@ -91,7 +91,7 @@ IFS='|' read -r TXB_USER TXB_PASS TXB_AUTH <<< "$(gen_rpcauth txbuilder)"
   echo "rpcauth=${MW_AUTH}"
   echo "rpcauth=${TXB_AUTH}"
 } > "$RPCAUTH_FILE"
-chmod 600 "$RPCAUTH_FILE"
+chmod 644 "$RPCAUTH_FILE"
 
 set_env BTC_RPC_USER_MW  "$MW_USER"
 set_env BTC_RPC_PASS_MW  "$MW_PASS"

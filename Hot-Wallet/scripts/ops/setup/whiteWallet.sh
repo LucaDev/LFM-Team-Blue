@@ -12,6 +12,19 @@ set -a; source "${PROJECT_ROOT}/.env"; set +a
 mkdir -p "$EXT_DIR"
 shopt -s nullglob
 
+SRC_DIR="${1:-.}"
+mapfile -t METAS < <(ls "${SRC_DIR}"/*.meta.json 2>/dev/null)
+
+echo "[*] Suche *.meta.json in: $(realpath "$SRC_DIR")"
+if (( ${#METAS[@]} == 0 )); then
+  echo "[!] Keine *.meta.json gefunden – nichts zu tun."
+  exit 0
+fi
+echo "[*] ${#METAS[@]} Datei(en) gefunden."
+
+for META_FILE in "${METAS[@]}"; do
+  echo "Processing: $META_FILE"
+
 for META_FILE in ./*.meta.json; do
   echo "Processing: $META_FILE"
 

@@ -1,6 +1,7 @@
 import requests
 import json
 from urllib.parse import quote
+import subprocess, json
 
 BASE = "http://localhost:8080/api/v1/request"
 
@@ -12,27 +13,19 @@ RPC_PASS = "pass"
 class BitcoindRPCError(RuntimeError):
     pass
 
-def rpc_call(url, method, params=None, rpc_id="tx-builder"):
-    payload = {
-        "jsonrpc": "1.0",
-        "id": rpc_id,
-        "method": method,
-        "params": params or []
-    }
 
-    response = requests.post(
-        url,
-        auth=(RPC_USER, RPC_PASS),
-        json=payload,
-        headers={"content-type": "text/plain;"}
-    )
-
-    response.raise_for_status()
-    return response.json()
+def rpc_call(wallet, method, params=None):
+    out = subprocess.check_output(
+        ["docker","exec","btc-core","bitcoin-cli","-regtest",
+         "-datadir=/home/app/.bitcoin", f"-rpcwallet={wallet}", method,
+         *[json.dumps(p) if not isinstance(p,str) else p for p in (params or [])]],
+        text=True).strip()
+    try:    return {"result": json.loads(out)}
+    except: return {"result": out}
 
 #TEST BIP21
 def test_bip21(wallet_name_target):
-    rpc_res = rpc_call(f"{RPC_URL}/wallet/{wallet_name_target}", "getnewaddress", ["BIP21-Test", "bech32"])
+    rpc_res = rpc_call(wallet_name_target, "getnewaddress", ["BIP21-Test", "bech32"])
     new_address = rpc_res["result"]
 
     print(f"Generierte Adresse für wallet2: {new_address}")
@@ -54,14 +47,14 @@ def test_bip21(wallet_name_target):
 
 #TEST PSBT
 def test_psbt(wallet_name_target: str, wallet_name_source: str, lockTime: int):
-    rpc_res_w2 = rpc_call(f"{RPC_URL}/wallet/{wallet_name_target}", "getnewaddress", ["BIP21-Empfang", "bech32"])
+    rpc_res_w2 = rpc_call(wallet_name_target, "getnewaddress", ["BIP21-Empfang", "bech32"])
     target_address = rpc_res_w2["result"]
     print(f" Zieladresse (wallet2): {target_address}")
 
     outputs = [{target_address: 0.012}]
     
     funded_res = rpc_call(
-        f"{RPC_URL}/wallet/{wallet_name_source}",
+        wallet_name_source,
         "walletcreatefundedpsbt",
         [
             [],              # inputs: auto coin selection

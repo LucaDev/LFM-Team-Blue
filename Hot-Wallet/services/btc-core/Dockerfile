@@ -49,16 +49,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /root/bitcoin/build/bin/bitcoind /root/
-COPY --from=builder /root/bitcoin/build/bin/bitcoin-cli /root/
-
+COPY --from=builder /root/bitcoin/build/bin/bitcoind /usr/local/bin/
+COPY --from=builder /root/bitcoin/build/bin/bitcoin-cli /usr/local/bin/
 
 EXPOSE 18444 18443
 
-RUN useradd -u 1000 -m app
+# ubuntu:24.04 bringt UID 1000 (User "ubuntu") schon mit -> erst löschen, dann app anlegen
+RUN userdel -r ubuntu && useradd -u 1000 -m app
+
+# >>> HIER kommt der mkdir hin: NACH useradd, VOR "USER 1000" <<<
+# Legt das Datadir an und übergibt es UID 1000, damit das leere Named-Volume
+# beim ersten Start die Ownership 1000:1000 erbt (sonst kann der non-root-Prozess nicht schreiben)
+RUN mkdir -p /home/app/.bitcoin && chown -R 1000:1000 /home/app
+
+COPY src/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 USER 1000
 
-ADD src/entrypoint.sh /root/entrypoint.sh
-RUN chmod +x /root/entrypoint.sh
-
-CMD ["/root/entrypoint.sh"]
+CMD ["/usr/local/bin/entrypoint.sh"]
