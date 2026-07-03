@@ -1,1 +1,4 @@
-.idea/workspace.xml
+.env
+Hot-KeyHolder/.env
+Hot-Wallet/services/btc-core/src/rpcauth.conf
+Hot-Wallet/middleware_data/

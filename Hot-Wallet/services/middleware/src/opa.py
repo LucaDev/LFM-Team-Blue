@@ -62,6 +62,7 @@ def parseOPA_PSBT(psbt: PSBTModel, spent_today: int = 0) -> dict:
         "network": psbt.network,
         "target_address": psbt.target_address,
         "source_address": psbt.source_address,
+        "sha256": psbt.sha256,
 
         "amount_sats": psbt.amount_sats,
         "fee_sats": psbt.fee_sats,

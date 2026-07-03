@@ -206,8 +206,8 @@ def get_pending_PSBT():
                     target_address,
                     meta
                 FROM btc.psbt
-                WHERE psbt_state = 'WAITING_HUMAN'
-                ORDER BY psbt_id, id DESC;
+                ORDER BY psbt_id, id DESC
+                WHERE psbt_state = 'WAITING_HUMAN';
             """)
 
             row = cur.fetchone()

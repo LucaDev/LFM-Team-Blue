@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS btc.psbt (
   source_address   TEXT REFERENCES btc.wallet(wallet_id) ON DELETE CASCADE,
   target_address   TEXT,
   meta             JSONB NOT NULL DEFAULT '{}'::jsonb,
-  error_code        TEXT
+  error_code       JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
 CREATE INDEX IF NOT EXISTS idx_psbt_type_created ON btc.psbt (psbt_type, created_utc DESC);

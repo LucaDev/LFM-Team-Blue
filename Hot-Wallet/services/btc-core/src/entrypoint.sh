@@ -13,7 +13,7 @@ BTC_RPC_PASS="${BTC_RPC_PASS:-pass}"
 /root/bitcoind -regtest -conf="$CONF_FILE" -daemon
  
 
-RPC="/root/bitcoin-cli -regtest
+RPC="/root/bitcoin-cli -regtest"
  
 echo "[regtest] waiting for node..."
 sleep 2

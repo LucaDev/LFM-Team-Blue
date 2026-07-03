@@ -86,15 +86,13 @@ async def sign(request: Request):
         log.warning("velocity cap hit: %s", e)
         raise HTTPException(429, str(e))
 
-    psbt_signed = sign_psbt(psbt_obj)
-
     response = {
         "psbt_id": data.get("psbt_id")
     }
 
     #Sign
     try:
-        psbt_signed = sign_psbt(decode_psbt(psbt_b64))
+        psbt_signed = sign_psbt(psbt_obj)
     except Exception as e:
         log.exception("signing failed")
         raise HTTPException(500, str(e))

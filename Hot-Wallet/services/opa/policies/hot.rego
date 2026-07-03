@@ -81,7 +81,7 @@ deny["tag required"] if{
 
 deny["missing psbt hash"] if {
     data.hot.require_sha256
-    input.sha256 == ""
+    object.get(input, "sha256", "") != ""
 }
 
 deny["fee exceeds limit"] if {
