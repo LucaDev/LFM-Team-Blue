@@ -59,7 +59,6 @@ set_env MW_NATS_PASS       "n$(gen)"
 set_env TXB_NATS_PASS      "n$(gen)"
 set_env OPERATOR_NATS_PASS "n$(gen)"
 set_env SETUP_NATS_PASS    "n$(gen)"
-set_env OPERATOR_TOKEN     "$(gen)"
 set_env NTFY_TOKEN         "$(gen)"
 
 

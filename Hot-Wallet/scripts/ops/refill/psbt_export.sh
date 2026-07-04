@@ -1,56 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../..")"        # Hot-Wallet
+COMPOSE="${PROJECT_ROOT}/docker-compose.yaml"
+STAGING="${PROJECT_ROOT}/middleware_data"
+MNT="/mnt/usb"; LABEL="USB"
+die(){ echo "ERROR: $*" >&2; exit 1; }; info(){ echo "[*] $*"; }
+[[ $EUID -eq 0 ]] || die "als root ausführen"
+set -a; source "${PROJECT_ROOT}/.env"; set +a
 
-MNT="/mnt/usb"
-LABEL="USB"
-
-API_BASE="${API_BASE:-http://localhost:8080}"
-
-die(){ echo "ERROR: $*" >&2; exit 1; }
-info(){ echo "[*] $*"; }
-
-[[ $EUID -eq 0 ]] || die "Bitte als root ausführen."
+PSBT_FILE="${STAGING}/refill.psbt"; ID_FILE="${STAGING}/refill.psbt.id"
+[[ -s "$PSBT_FILE" ]] || die "keine gestagte PSBT ($PSBT_FILE)"
+[[ -s "$ID_FILE"   ]] || die "keine psbt_id ($ID_FILE)"
+psbt_id="$(cat "$ID_FILE")"
 
 DEV="$(readlink -f /dev/disk/by-label/${LABEL} 2>/dev/null || true)"
-[[ -n "$DEV" ]] || die "Kein Device mit Label '${LABEL}' gefunden."
+[[ -n "$DEV" ]] || die "kein Device mit Label ${LABEL}"
+mkdir -p "$MNT"; mountpoint -q "$MNT" || mount "$DEV" "$MNT"; mkdir -p "$MNT/psbt"
+shopt -s nullglob; existing=( "$MNT/psbt"/unappr.*.psbt ); shopt -u nullglob
+[[ ${#existing[@]} -eq 0 ]] || die "USB hat bereits unappr.*.psbt (Single-TX)"
 
-mkdir -p "$MNT"
-mountpoint -q "$MNT" || mount "$DEV" "$MNT"
+cp -f "$PSBT_FILE" "$MNT/psbt/unappr.${psbt_id}.psbt"; sync
+info "Wrote unappr.${psbt_id}.psbt"; umount "$MNT"; info "USB unmounted"
 
-mkdir -p "$MNT/psbt"
-
-shopt -s nullglob
-existing=( "$MNT/psbt"/unappr.*.psbt )
-shopt -u nullglob
-[[ ${#existing[@]} -eq 0 ]] || die "USB enthält bereits unappr.*.psbt (Single-TX Regel verletzt): ${existing[*]}"
-
-URL="${API_BASE}/api/v1/request/psbt"
-info "Fetch PSBT: $URL"
-
-resp="$(curl -fsSL "$URL")" || die "PSBT fetch failed."
-[[ -n "$resp" ]] || die "Empty response."
-
-
-#JSON parse
-psbt_id="$(echo "$resp" | jq -r '.psbt_id')"
-psbt="$(echo "$resp" | jq -r '.psbt')"
-
-[[ -n "$psbt_id" && "$psbt_id" != "null" ]] || die "Missing psbt_id"
-[[ -n "$psbt" && "$psbt" != "null" ]] || die "Missing psbt"
-
-TMP="$(mktemp)"
-trap 'rm -f "$TMP" 2>/dev/null || true' EXIT
-
-echo "$psbt" > "$TMP"
-
-OUT="$MNT/psbt/unappr.${psbt_id}.psbt"
-
-cp -f "$TMP" "$OUT"
-
-info "Wrote: $OUT"
-
-sync
-umount "$MNT"
-
-info "USB unmounted"
-info "psbt_id=$psbt_id"
+echo '{}' > "${STAGING}/ops_export_done.json"
+docker compose -f "$COMPOSE" exec -T \
+  -e NATS_URL="nats://operator:${OPERATOR_NATS_PASS}@nats:4222" \
+  middleware python -m src.com.nats_pub refill.export.done /run/ops_export_done.json
+info "export.done published (psbt_id=${psbt_id})"

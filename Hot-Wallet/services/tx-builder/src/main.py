@@ -101,6 +101,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     confirmation_blocks = 6
     estimate_mode = "economical"
     wallet_type = "hot" 
+    replaceable = False
 
     #Variieren nach auszuführender Aktion
     if intent.type == "refill":
@@ -108,11 +109,13 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
         target_address = get_outputAddress(intent.target_address)
         confirmation_blocks = intent.meta.get("confirmation_blocks")
         estimate_mode = intent.meta.get("estimate_mode")
+        replaceable = True
         
     elif intent.type == "hot-tx":
         wallet_type = "hot"
         if intent.rail == "OPA_hot":
             target_address = get_outputAddress(intent.target_address)
+            replaceable = True
 
 
     else:
@@ -162,7 +165,7 @@ async def build_psbt_for_intent(intent: PaymentIntent) -> PSBTModel:
     #früher manuell fee stabilisierung + block abgragung bei RPC
     #Dann direkte Methode gefunden
     try:
-        result = get_psbt(outputs, intent.source_address, confirmation_blocks, estimate_mode)
+        result = get_psbt(outputs=outputs, wallet_name=intent.source_address, confirmation_blocks=confirmation_blocks, estimate_mode=estimate_mode, lockTime=intent.meta.get("lockTime", 0), replaceable=replaceable)
         
     except Exception as e:
         return await create_psbt(

@@ -25,9 +25,6 @@ echo "[*] ${#METAS[@]} Datei(en) gefunden."
 for META_FILE in "${METAS[@]}"; do
   echo "Processing: $META_FILE"
 
-for META_FILE in ./*.meta.json; do
-  echo "Processing: $META_FILE"
-
   #Werte aus meta.json lesen
   WALLET_NAME=$(jq -r '.wallet_name' "$META_FILE")
   NETWORK=$(jq -r '.network' "$META_FILE")

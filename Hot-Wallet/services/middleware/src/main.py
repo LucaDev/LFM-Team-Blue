@@ -12,11 +12,12 @@ from .signer import sign_psbt, save_psbt
 from .txBuilder import handle_psbt_created, handle_psbt_failed, whitelist_check
 from .logging_setup import setup_logging
 from .models import create_psbt, create_psbt_msg, create_paymentIntent_msg
-from src.com import payments, internal, psbt
+from src.com import payments, internal
+from src.com.psbt import cleanup_refill, load_manual, refill_broadcast
 from .db import archive_psbt, psbt_created_seen, insert_psbt
 from src.com.wallets import import_wallet
 from src.com.ntfy import notify
-from .metrics import PSBT_SIGNED_TOTAL, BROADCAST_TOTAL
+from .metrics import PSBT_SIGNED_TOTAL, BROADCAST_TOTAL, INTENTS_TOTAL
 
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
@@ -34,7 +35,6 @@ app = FastAPI()
 
 app.include_router(payments.router)
 app.include_router(internal.router)
-app.include_router(psbt.router)
     
 
 ############################################################################
@@ -206,7 +206,7 @@ async def startup():
                         )       
 
                 elif psbt.wallet_type == "cold":
-                    await save_psbt(psbt_signed)
+                    await save_psbt(psbt_signed, psbt.psbt_id)
 
                     psbt.state = "WAITING_HUMAN"
                     await asyncio.to_thread(
@@ -245,7 +245,28 @@ async def startup():
     await nc.subscribe(
         "wallet.import.requested", 
         cb=wallet_import_handler
-    )   
+    )
+
+    await nc.subscribe(
+        "refill.export.done",
+        cb=cleanup_refill
+    )
+    await nc.subscribe(
+        "refill.broadcast.requested",
+        cb=refill_broadcast
+    )
+
+    async def psbt_submit_handler(msg):
+        psbt_model = await load_manual(msg)
+        await nc.publish("psbt.created", psbt_model.model_dump_json().encode())
+        INTENTS_TOTAL.labels(rail="manual").inc()
+        log.info("manual psbt submitted", extra={"psbt_id": psbt_model.psbt_id})
+
+    await nc.subscribe(
+        "psbt.submit.requested",
+        cb=psbt_submit_handler
+    )
+
 
 @app.on_event("shutdown")
 async def shutdown():

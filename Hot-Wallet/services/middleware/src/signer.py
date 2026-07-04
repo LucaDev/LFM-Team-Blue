@@ -7,14 +7,11 @@ import json
 import httpx
 import logging
 import time
-from pathlib import Path
 
-from .db import insert_psbt,get_pending_PSBT, get_psbt_byID
-from .models import PSBTModel,create_psbt
+
+from .db import insert_psbt
+from .models import PSBTModel
 from src.com.ntfy import notify
-
-REFILL_FILE = Path(os.getenv("REFILL_PSBT", "/run/refill.psbt"))
-REFILL_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 SIGNER_URL = os.getenv("SIGNER_URL")
 SIGNER_PORT = os.getenv("SIGNER_PORT")
@@ -159,40 +156,3 @@ async def sign_psbt_on_signer(
     except httpx.HTTPError as e:
         log.error(f"Signer request failed: {e}")
         raise RuntimeError(f"Signer request failed: {e}") from e
-    
-
-async def save_psbt(psbt: str):
-    pending = get_pending_PSBT()
-    if pending is not None:
-        log.info("deleting old refill PSBT", extra={"psbt_id": pending.get("psbt_id")})
-        await delete_psbt(pending["psbt_id"])   # COLD_STOPPED + unlink
-
-    REFILL_FILE.write_text(psbt)
-
-def load_psbt():
-    if not REFILL_FILE.exists():
-        return None
-    return REFILL_FILE.read_text()
-
-
-#Löscht nicht, sondern schriebt COLD_STOPPED
-async def delete_psbt(psbt_id = None):
-    if psbt_id is not None:
-        psbt_info = get_psbt_byID(psbt_id)
-        if psbt_info is not None:
-            psbt = await create_psbt(
-                psbt_id=psbt_info["psbt_id"],
-                wallet_type=psbt_info["wallet_type"],
-                rail="OPA_cold",
-                psbt="",
-                network=psbt_info.get("network", "regtest"),
-                source_address=psbt_info["source_address"],
-                target_address=psbt_info["target_address"],
-                amount_sats=psbt_info.get("amount_sats") or 0,
-                state="COLD_STOPPED",
-                meta=psbt_info.get("meta") or {},
-            )
-            insert_psbt(psbt)
-
-    if REFILL_FILE.exists():
-        REFILL_FILE.unlink()

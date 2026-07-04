@@ -54,7 +54,7 @@ def get_outputAddress(wallet_name: str):
 
 
 #Alles in einer methode doch BTC CORE
-def get_psbt(outputs, wallet_name: str, confirmation_blocks: int, estimate_mode: str, lockTime: int = 0):
+def get_psbt(outputs, wallet_name: str, confirmation_blocks: int, estimate_mode: str, lockTime: int = 0, replaceable: bool = False) -> Dict:
     result = rpc_call(
         f"{RPC_URL}/wallet/{wallet_name}",
         "walletcreatefundedpsbt",
@@ -67,7 +67,7 @@ def get_psbt(outputs, wallet_name: str, confirmation_blocks: int, estimate_mode:
                 #"fee_rate": "1.2",                 fee rate nicht direkt angeben. BTC CORE überlassen + OPA kontrolle
                 "conf_target": confirmation_blocks,               #confirmation in ungefähr einer stunde (fee für 6 blöcke finden)
                 "includeWatching": True,
-                "replaceable": True,                #Start mit low fee. bei zu langem warten erhöhen ermöglichen
+                "replaceable": replaceable,        #Start mit low fee. bei zu langem warten erhöhen ermöglichen, hot tx non repleaceable
                 "estimate_mode": estimate_mode     #Sicherer
             },
             True            #bip32derivs 

@@ -50,7 +50,6 @@ services:
       SERVICE_NAME: middleware
 
       NATS_URL: nats://middleware:${MW_NATS_PASS}@nats:4222
-      OPERATOR_TOKEN: ${OPERATOR_TOKEN}
 
       OPA_URL: http://opa:8181
       

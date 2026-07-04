@@ -29,7 +29,6 @@ else
     echo "TXB_NATS_PASS=n$(openssl rand -hex 24)"
     echo "OPERATOR_NATS_PASS=n$(openssl rand -hex 24)"
     echo "SETUP_NATS_PASS=n$(openssl rand -hex 24)"
-    echo "OPERATOR_TOKEN=$(openssl rand -hex 24)"
     echo "NTFY_TOKEN=$(openssl rand -hex 24)"
     echo "POSTGRES_USER=signer"
     echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
