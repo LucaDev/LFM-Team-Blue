@@ -12,13 +12,13 @@ DEV="$(readlink -f /dev/disk/by-label/${LABEL} 2>/dev/null || true)"
 [[ -n "$DEV" ]] || die "kein Device mit Label ${LABEL}"
 mkdir -p "$MNT"; mountpoint -q "$MNT" || mount "$DEV" "$MNT"
 cd "$MNT/psbt" || die "psbt-Ordner fehlt"
-shopt -s nullglob; files=( appr.*.psbt ); shopt -u nullglob
-[[ ${#files[@]} -eq 1 ]] || die "genau eine appr.*.psbt nötig"
-FILE="${files[0]}"; base="$(basename "$FILE")"; psbt_id="${base#appr.}"; psbt_id="${psbt_id%.psbt}"
-PSBT="$(tr -d '[:space:]' < "$FILE")"; [[ -n "$PSBT" ]] || die "leere PSBT"
+shopt -s nullglob; files=( *.txn ); shopt -u nullglob
+[[ ${#files[@]} -eq 1 ]] || die "genau eine <id>.txn nötig"
+FILE="${files[0]}"; base="$(basename "$FILE")"; psbt_id="${base%.txn}"
+TX="$(tr -d '[:space:]' < "$FILE")"; [[ -n "$TX" ]] || die "leere TX"
 umount "$MNT"; info "USB unmounted"
 
-jq -n --arg id "$psbt_id" --arg psbt "$PSBT" '{psbt_id:$id, psbt:$psbt}' \
+jq -n --arg id "$psbt_id" --arg tx "$TX" '{psbt_id:$id, tx:$tx}' \
   > "${STAGING}/ops_broadcast.json"
 docker compose -f "$COMPOSE" exec -T \
   -e NATS_URL="nats://operator:${OPERATOR_NATS_PASS}@nats:4222" \

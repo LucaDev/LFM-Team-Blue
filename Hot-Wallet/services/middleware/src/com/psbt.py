@@ -7,7 +7,7 @@ from uuid import uuid4
 from pathlib import Path
 
 from src.db import insert_psbt, archive_psbt, get_psbt_byID, get_pending_PSBT, psbt_id_exists, get_walletName
-from .btc_core import broadcast_to_bitcoind, psbt_finalize
+from .btc_core import broadcast_to_bitcoind, decode_rawtx, btc_to_sats, address_wallet_match
 from src.models import create_psbt_msg, create_psbt
 from src.com.ntfy import notify
 from src.metrics import BROADCAST_TOTAL
@@ -51,75 +51,81 @@ async def cleanup_refill(msg):
 async def refill_broadcast(msg):
     data = json.loads(msg.data.decode())
 
-    psbt_id = data.get("psbt_id"); psbt_signed = (data.get("psbt") or "").strip()
-    if not psbt_id or not psbt_signed:
-        log.error("broadcast: missing psbt_id/psbt")
+    psbt_id = data.get("psbt_id"); rawtx = (data.get("tx") or "").strip()
+    if not psbt_id or not rawtx:
+        log.error("broadcast: missing psbt_id/tx")
         return
-    
+
     row = await asyncio.to_thread(get_psbt_byID, psbt_id)
     if row is None or row.get("state") != "COLD_STARTED":
         log.warning("broadcast: unknown/wrong state", extra={"psbt_id": psbt_id})
         return
-    
-    row['rail'] = "OPA_cold"; row['psbt'] = psbt_signed
-    
-    psbt_db = await create_psbt_msg(row)
 
-    signed_parsed = await create_psbt(
-        psbt_id=psbt_db.psbt_id,
-        wallet_type=psbt_db.wallet_type,
-        rail=psbt_db.rail,
-        psbt=psbt_signed,
-        network=psbt_db.network,
-        changepos=psbt_db.changepos,
-        source_address=psbt_db.source_address,
-        state=psbt_db.state,
-        meta=psbt_db.meta,
-        error_code=psbt_db.error_code
-    )
-
-    if (signed_parsed.amount_sats != psbt_db.amount_sats or signed_parsed.target_address != psbt_db.target_address):
-        log.error(
-            "broadcast: signed PSBT weicht vom DB-Eintrag ab", 
-            extra={"psbt_id": psbt_id}
-        )
-        await notify(
-            "Cold-Broadcast abgelehnt", 
-            f"id={psbt_id}: PSBT weicht ab",
-            priority="urgent",
-            tags="rotating_light"
-        )
-        return
-    
+    # .txn = fertige finalisierte Rawtx (keine PSBT). Manipulationsschutz:
+    # Rawtx dekodieren und gegen den gestageten DB-Eintrag pruefen.
     try:
-        rawtx_hex = await asyncio.to_thread(psbt_finalize, psbt_signed)
-        txid = await asyncio.to_thread(broadcast_to_bitcoind, rawtx_hex)
+        decoded = await asyncio.to_thread(decode_rawtx, rawtx)
+
+    except Exception:
+        log.exception("broadcast: rawtx nicht dekodierbar")
+        await notify("Cold-Broadcast abgelehnt", f"id={psbt_id}: rawtx ungueltig",
+                     priority="urgent", tags="rotating_light")
+        return
+
+    target = row.get("target_address"); want = row.get("amount_sats") or 0
+    cold  = row.get("source_address") or "cold-multi"
+    paid = 0
+    for o in decoded.get("vout", []):
+        spk = o.get("scriptPubKey", {})
+        addr = spk.get("address") or (spk.get("addresses") or [None])[0]
+        val = btc_to_sats(o["value"])
+        if addr == target:
+            paid += val
+        else:
+            # jede andere Ausgabe MUSS Change der Cold-Wallet sein
+            if not addr or not await asyncio.to_thread(address_wallet_match, cold, addr):
+                log.error("broadcast: fremde Ausgabe", extra={"psbt_id": psbt_id, "addr": addr})
+                await notify("Cold-Broadcast abgelehnt", f"id={psbt_id}: fremde Ausgabe {addr}",
+                             priority="urgent", tags="rotating_light")
+                return
+
+    if paid != want:
+        log.error("broadcast: Betrag weicht ab", extra={"psbt_id": psbt_id, "paid": paid, "want": want})
+        await notify("Cold-Broadcast abgelehnt", f"id={psbt_id}: Betrag {paid}!={want}",
+                     priority="urgent", tags="rotating_light")
+        return
+
+    # Bereits finalisiert -> direkt broadcasten (kein finalizepsbt)
+    try:
+        txid = await asyncio.to_thread(broadcast_to_bitcoind, rawtx)
         if not txid:
             raise RuntimeError("empty txid")
-        
     except Exception as e:
         log.exception("cold broadcast failed")
         BROADCAST_TOTAL.labels(flow="cold", result="broadcast_failed").inc()
-        await notify(
-            "Cold-Broadcast fehlgeschlagen",
-            f"id={psbt_id}: {e}",
-            priority="urgent",
-            tags="rotating_light"
-        )
+        await notify("Cold-Broadcast fehlgeschlagen", f"id={psbt_id}: {e}",
+                     priority="urgent", tags="rotating_light")
         return
-    
-    psbt_db.state = "BROADCASTED"
-    await asyncio.to_thread(
-        insert_psbt, psbt_db
-    )
 
-    await asyncio.to_thread(
-        archive_psbt, 
-        {**psbt_db.model_dump(),
-        "final_tx": rawtx_hex,
-        "txid": txid}
+    # State + Archiv aus dem DB-Row; psbt bleibt leer -> kein PSBT-Parsing
+    psbt_db = await create_psbt(
+        psbt_id=psbt_id,
+        wallet_type=row.get("wallet_type"),
+        rail="OPA_cold",
+        psbt="",
+        network=row.get("network", "regtest"),
+        amount_sats=row.get("amount_sats"),
+        target_address=row.get("target_address"),
+        source_address=row.get("source_address"),
+        changepos=row.get("changepos"),
+        sha256=row.get("sha256"),
+        meta=row.get("meta") or {},
+        state="BROADCASTED",
     )
-
+    await asyncio.to_thread(insert_psbt, psbt_db)
+    await asyncio.to_thread(
+        archive_psbt, {**psbt_db.model_dump(), "final_tx": rawtx, "txid": txid}
+    )
     BROADCAST_TOTAL.labels(flow="cold", result="ok").inc()
     log.info("cold broadcast ok", extra={"psbt_id": psbt_id, "txid": txid})
 

@@ -183,3 +183,10 @@ def extr_psbtInfo(psbt_b64: str, network: str = "regtest", wallet_name: str = "k
         "target_address": target_address,
         "outputs": outputs
     }
+
+def decode_rawtx(raw_tx_hex: str):
+    return rpc_call(
+        RPC_URL,
+        "decoderawtransaction",
+        [raw_tx_hex]
+    )

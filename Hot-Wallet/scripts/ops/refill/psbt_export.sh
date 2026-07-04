@@ -17,11 +17,11 @@ psbt_id="$(cat "$ID_FILE")"
 DEV="$(readlink -f /dev/disk/by-label/${LABEL} 2>/dev/null || true)"
 [[ -n "$DEV" ]] || die "kein Device mit Label ${LABEL}"
 mkdir -p "$MNT"; mountpoint -q "$MNT" || mount "$DEV" "$MNT"; mkdir -p "$MNT/psbt"
-shopt -s nullglob; existing=( "$MNT/psbt"/unappr.*.psbt ); shopt -u nullglob
-[[ ${#existing[@]} -eq 0 ]] || die "USB hat bereits unappr.*.psbt (Single-TX)"
+shopt -s nullglob; existing=( "$MNT/psbt"/*.psbt "$MNT/psbt"/*.txn ); shopt -u nullglob
+[[ ${#existing[@]} -eq 0 ]] || die "USB hat bereits eine TX (Single-TX)"
 
-cp -f "$PSBT_FILE" "$MNT/psbt/unappr.${psbt_id}.psbt"; sync
-info "Wrote unappr.${psbt_id}.psbt"; umount "$MNT"; info "USB unmounted"
+cp -f "$PSBT_FILE" "$MNT/psbt/${psbt_id}.psbt"; sync
+info "Wrote ${psbt_id}.psbt"; umount "$MNT"; info "USB unmounted"
 
 echo '{}' > "${STAGING}/ops_export_done.json"
 docker compose -f "$COMPOSE" exec -T \
