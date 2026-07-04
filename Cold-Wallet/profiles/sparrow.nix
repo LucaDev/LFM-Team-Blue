@@ -1,4 +1,4 @@
-{ pkgs, lib, config, ... }:
+{ pkgs, lib, config, ... }: #pkgsUnstable
 
 let
   sparrowPkg = pkgs.sparrow-wallet;
