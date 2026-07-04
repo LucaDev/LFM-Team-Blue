@@ -12,8 +12,6 @@ from src.models import create_psbt_msg, create_psbt
 from src.com.ntfy import notify
 from src.metrics import BROADCAST_TOTAL
 
-REFILL_FILE = Path(os.getenv("REFILL_PSBT", "/run/refill.psbt"))
-REFILL_FILE.parent.mkdir(parents=True, exist_ok=True)
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 

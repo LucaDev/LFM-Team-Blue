@@ -14,7 +14,6 @@ from src.metrics import INTENTS_TOTAL
 
 BITCOIN_NETWORK = os.getenv("BITCOIN_NETWORK", "regtest")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "middleware")
-OPERATOR_TOKEN = os.getenv("OPERATOR_TOKEN", "")
 log = logging.getLogger(SERVICE_NAME)
 
 router = APIRouter(prefix="/api/v1/request", tags=["payments"])
@@ -114,8 +113,6 @@ async def request_psbt(request: Request, payload: dict = Body(...)):
     nc = request.app.state.nc
 
     rail = "psbt"
-    if OPERATOR_TOKEN and request.headers.get("X-Operator-Token", "") == OPERATOR_TOKEN:
-        rail = "manual"                                        # Operator: Whitelist-Bypass, nur OPA-Struktur
 
     psbt = payload.get("psbt")
     if not psbt:

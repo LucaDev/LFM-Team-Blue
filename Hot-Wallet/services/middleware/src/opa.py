@@ -9,7 +9,7 @@ from .db import get_pending_PSBT, insert_psbt, insert_opa_decision, psbt_id_exis
 from .metrics import OPA_DECISIONS_TOTAL, VELOCITY_BLOCK_TOTAL, REFILL_TOTAL, HOT_BALANCE_BTC
 from .models import PSBTModel
 from src.com.ntfy import notify
-from .signer import delete_psbt
+from src.com.psbt import delete_psbt
 from src.com.btc_core import get_walletBalance
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181")

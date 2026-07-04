@@ -8,12 +8,12 @@ import logging
 
 from .opa import opa_evaluate, check_walletBalance, handle_refillDecision
 from src.com.btc_core import broadcast_to_bitcoind, psbt_finalize
-from .signer import sign_psbt, save_psbt
+from .signer import sign_psbt
 from .txBuilder import handle_psbt_created, handle_psbt_failed, whitelist_check
 from .logging_setup import setup_logging
 from .models import create_psbt, create_psbt_msg, create_paymentIntent_msg
 from src.com import payments, internal
-from src.com.psbt import cleanup_refill, load_manual, refill_broadcast
+from src.com.psbt import cleanup_refill, load_manual, refill_broadcast, save_psbt
 from .db import archive_psbt, psbt_created_seen, insert_psbt
 from src.com.wallets import import_wallet
 from src.com.ntfy import notify
@@ -258,6 +258,9 @@ async def startup():
 
     async def psbt_submit_handler(msg):
         psbt_model = await load_manual(msg)
+        if psbt_model is None:
+            return
+    
         await nc.publish("psbt.created", psbt_model.model_dump_json().encode())
         INTENTS_TOTAL.labels(rail="manual").inc()
         log.info("manual psbt submitted", extra={"psbt_id": psbt_model.psbt_id})
