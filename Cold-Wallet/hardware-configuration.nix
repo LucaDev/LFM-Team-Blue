@@ -6,7 +6,7 @@
   ];
 
   boot.initrd.availableKernelModules = [ "ahci" "xhci_pci" "virtio_pci" "virtio_scsi" ];
-  boot.kernelModules = [ ];
+    boot.kernelModules = [ "usb_storage" ];
   boot.extraModulePackages = [ ];
 
   boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-label/NIXCRYPT";

@@ -16,16 +16,6 @@
 
     security.sudo.wheelNeedsPassword = true;
 
-    boot.kernel.sysctl = {
-        "kernel.kptr_restrict"              = 2;
-        "kernel.dmesg_restrict"             = 1;
-        "kernel.kexec_load_disabled"        = 1;
-        "kernel.yama.ptrace_scope"          = 2;
-        "kernel.unprivileged_bpf_disabled"  = 1;
-        "net.core.bpf_jit_harden"           = 2;
-    };
-    security.protectKernelImage = true;
-
     environment.etc."scripts/wgHMAC_export.sh" = {
         source = ./files/wgHMAC_export.sh;
         mode = "0755";
