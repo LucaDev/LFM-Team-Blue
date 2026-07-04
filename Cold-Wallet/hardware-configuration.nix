@@ -16,10 +16,10 @@
     fsType = "ext4";
   };
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-label/NIXBOOT";
-      # ...
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-label/NIXBOOT";
+    fsType = "vfat";
+  };
 
   swapDevices = [ ];
   boot.kernel.sysctl."vm.swappiness" = 0;
