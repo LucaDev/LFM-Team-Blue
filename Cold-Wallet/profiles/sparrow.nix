@@ -5,9 +5,7 @@ let
     if pkgs ? sparrow-wallet then pkgs.sparrow-wallet
     else if pkgs ? sparrow then pkgs.sparrow
     else throw "Kein Sparrow-Paket in nixpkgs gefunden";
-    #if pkgsUnstable ? sparrow-wallet then pkgsUnstable.sparrow-wallet
-    #else if pkgsUnstable ? sparrow then pkgsUnstable.sparrow
-    #else throw "No sparrow package found in nixpkgs-unstable";
+
   sparrowExec = lib.getExe sparrowPkg;
 in
 {

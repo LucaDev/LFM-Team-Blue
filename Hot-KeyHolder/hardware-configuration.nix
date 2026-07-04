@@ -17,10 +17,10 @@
   };
 
   fileSystems."/boot" = { 
-      device = "/dev/disk/by-label/NIXBOOT";
-      fsType = "vfat";
-      options = [ "umask=0077" ];
-    };
+    device = "/dev/disk/by-label/NIXBOOT";
+    fsType = "vfat";
+    options = [ "fmask=0077" "dmask=0077" ];
+  };
 
   swapDevices = [ ];
   boot.kernel.sysctl."vm.swappiness" = 0;
