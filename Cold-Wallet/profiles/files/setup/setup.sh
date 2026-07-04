@@ -8,6 +8,8 @@ REPO_URL="https://github.com/LucaDev/LFM-Team-Blue.git"
 REPO_REF="<commit-sha-hier>"
 REPO_SUBDIR="Cold-Wallet"
 
+SWAP_SIZE_GB="2"
+
 # Robust partition naming
 part1="${DISK}1"
 part2="${DISK}2"
@@ -46,26 +48,8 @@ ensure_nixboot() {
   mkfs.fat -F 32 -n NIXBOOT "$part"
 }
 
-ensure_nixroot() {
-  local part="$part2"
-  [[ -b "$part" ]] || { echo "ERROR: $part not found"; exit 1; }
-
-  local fstype label
-  fstype="$(blkid -o value -s TYPE "$part" 2>/dev/null || true)"
-  label="$(blkid -o value -s LABEL "$part" 2>/dev/null || true)"
-
-  if [[ "$fstype" == "ext4" && "$label" == "NIXROOT" ]]; then
-    echo "[OK] NIXROOT already present on $part"
-    return 0
-  fi
-
-  echo "[DO] Creating/refreshing NIXROOT on $part (fstype=$fstype label=$label)"
-  mkfs.ext4 -F -L NIXROOT "$part"
-}
-
 echo "[3/9] Formatting partitions (FAT32 EFI + EXT4 root)"
 ensure_nixboot
-ensure_nixroot
 
 partprobe "$DISK"
 udevadm trigger
@@ -75,7 +59,6 @@ sleep 1
 cryptsetup luksFormat --type luks2 --label NIXCRYPT "$part2"
 cryptsetup open "$part2" cryptroot
 mkfs.ext4 -L NIXROOT /dev/mapper/cryptroot
-# ... danach mount /dev/mapper/cryptroot /mnt   (statt by-label/NIXROOT)
 
 echo "[4/9] Mounting"
 mountpoint -q /mnt && umount -R /mnt || true

@@ -10,7 +10,7 @@
     users.users.user = {
       isNormalUser = true;
       description = "Admin";
-      hashedPassword = "b14361404c078ffd549c03db443c3fede2f3e534d73f78f77301ed97d4a436a9fd9db05ee8b325c0ad36438b43fec8510c204fc1c1edb21d0941c00e9e2c1ce2";
+      hashedPassword = "$6$MZj5odB7Ybpv3/rZ$eiX32rlH4uqjk9BsfSUeBhv7Pc4vMOCQrf73pP5b/EyLX9xIYTX0jqgQ/BjQ3sUeK/aePuwve3CYchIiYeDRh.";
       extraGroups = [ "wheel" ];
     };
 
@@ -111,5 +111,15 @@
     };
 
    services.udisks2.enable = false
+
+    boot.kernel.sysctl = {
+        "kernel.kptr_restrict"              = 2;   # Kernel-Pointer verstecken
+        "kernel.dmesg_restrict"             = 1;   # dmesg nur für root
+        "kernel.kexec_load_disabled"        = 1;   # kein Kernel-Austausch zur Laufzeit
+        "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
+        "kernel.unprivileged_bpf_disabled"  = 1;
+        "net.core.bpf_jit_harden"           = 2;
+    };
+    security.protectKernelImage = true;
 
 }

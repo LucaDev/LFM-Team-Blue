@@ -27,5 +27,9 @@
 
   cold.sparrowNetwork = "regtest";
 
+  boot.loader.systemd-boot.editor = false;
+
+  editor = false
+
   system.stateVersion = "24.05";
 }
