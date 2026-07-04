@@ -38,20 +38,6 @@ in
       '';
     };
 
-    # --- deklarative Kernel-/IP-Härtung (ersetzt den kaputten sysctl-Loop) ---
-    boot.kernel.sysctl = {
-      "net.ipv6.conf.all.disable_ipv6"         = 1;
-      "net.ipv6.conf.default.disable_ipv6"     = 1;
-
-      "net.ipv4.ip_forward"                    = 0;
-      "net.ipv4.conf.all.accept_redirects"     = 0;
-      "net.ipv4.conf.default.accept_redirects" = 0;
-      "net.ipv4.conf.all.send_redirects"       = 0;
-      "net.ipv4.conf.default.send_redirects"   = 0;
-      "net.ipv4.conf.all.accept_source_route"  = 0;
-      "net.ipv4.conf.all.rp_filter"            = 1;
-    };
-
     # --- alle Nicht-Loopback-Interfaces beim Boot hart down + Adressen leeren ---
     systemd.services.airgap-down-links = {
       description = "Airgap: bring all non-loopback links down";

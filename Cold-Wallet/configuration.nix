@@ -25,17 +25,25 @@
 
   #Kernel
   boot.kernel.sysctl = {
-    "net.ipv4.conf.all.rp_filter" = 1;
-    "net.ipv4.conf.default.rp_filter" = 1;
-    "kernel.randomize_va_space" = 2;
-    "net.ipv6.conf.all.disable_ipv6" = 1;
-    "net.ipv6.conf.default.disable_ipv6" = 1;
-    "net.ipv4.conf.all.route_localnet" = 0;
+    "kernel.randomize_va_space" = 2;    
     "kernel.kptr_restrict"              = 2;   # Kernel-Pointer verstecken
     "kernel.dmesg_restrict"             = 1;   # dmesg nur für root
     "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
     "kernel.unprivileged_bpf_disabled"  = 1;
     "net.core.bpf_jit_harden"           = 2;
+
+    #IP-Härtung
+      "net.ipv6.conf.all.disable_ipv6"         = 1;
+      "net.ipv6.conf.default.disable_ipv6"     = 1;
+
+      "net.ipv4.ip_forward"                    = 0;
+      "net.ipv4.conf.all.route_localnet" = 0;
+      "net.ipv4.conf.all.accept_redirects"     = 0;
+      "net.ipv4.conf.default.accept_redirects" = 0;
+      "net.ipv4.conf.all.send_redirects"       = 0;
+      "net.ipv4.conf.default.send_redirects"   = 0;
+      "net.ipv4.conf.all.accept_source_route"  = 0;
+      "net.ipv4.conf.all.rp_filter"            = 1;
   };
   security.protectKernelImage = true;
 
