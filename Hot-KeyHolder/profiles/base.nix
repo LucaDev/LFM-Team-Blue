@@ -110,12 +110,9 @@
         };
     };
 
-   services.udisks2.enable = false
-
     boot.kernel.sysctl = {
         "kernel.kptr_restrict"              = 2;   # Kernel-Pointer verstecken
         "kernel.dmesg_restrict"             = 1;   # dmesg nur für root
-        "kernel.kexec_load_disabled"        = 1;   # kein Kernel-Austausch zur Laufzeit
         "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
         "kernel.unprivileged_bpf_disabled"  = 1;
         "net.core.bpf_jit_harden"           = 2;

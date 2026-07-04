@@ -72,10 +72,7 @@
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
-
-  system.stateVersion = "24.05";
-
   boot.loader.systemd-boot.editor = false;
 
-  editor = false
+  system.stateVersion = "24.05";
 }
