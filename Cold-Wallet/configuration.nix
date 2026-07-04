@@ -25,16 +25,19 @@
 
   #Kernel
   boot.kernel.sysctl = {
-    "kernel.kptr_restrict" = 2;
-    "kernel.dmesg_restrict" = 1;
-    "kernel.unprivileged_bpf_disabled" = 1;
     "net.ipv4.conf.all.rp_filter" = 1;
     "net.ipv4.conf.default.rp_filter" = 1;
     "kernel.randomize_va_space" = 2;
     "net.ipv6.conf.all.disable_ipv6" = 1;
     "net.ipv6.conf.default.disable_ipv6" = 1;
     "net.ipv4.conf.all.route_localnet" = 0;
+    "kernel.kptr_restrict"              = 2;   # Kernel-Pointer verstecken
+    "kernel.dmesg_restrict"             = 1;   # dmesg nur für root
+    "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
+    "kernel.unprivileged_bpf_disabled"  = 1;
+    "net.core.bpf_jit_harden"           = 2;
   };
+  security.protectKernelImage = true;
 
   systemd.coredump.enable = false;
 
@@ -42,6 +45,7 @@
   services.journald.extraConfig = ''
     Storage=volatile
     Compress=yes
+    RuntimeMaxUse=150M
   '';
 
   boot.loader.systemd-boot.enable = true;

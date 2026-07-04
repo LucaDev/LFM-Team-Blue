@@ -28,8 +28,16 @@
         source = ./files/mnt-USB.sh;
         mode   = "0755";
     };
+    environment.etc."scripts/umnt-USB.sh" = {
+        source = ./files/umnt-USB.sh;
+        mode   = "0755";
+    };
     environment.etc."scripts/format-USB.sh" = {
         source = ./files/format-USB.sh;
+        mode   = "0755";
+    };
+    environment.etc."scripts/rotate_wgKey.sh" = {
+        source = ./files/rotate_wgKey.sh;
         mode   = "0755";
     };
     environment.etc."scripts/delete_seed.sh" = {
@@ -51,8 +59,19 @@
         source = ./files/wrappers/mnt-USB.sh;
         mode   = "0755";
     };
+    environment.etc."scripts/wrappers/mnt-USB.sh" = {
+        source = ./files/wrappers/mnt-USB.sh;
+        mode   = "0755";
+    };environment.etc."scripts/wrappers/umnt-USB.sh" = {
+        source = ./files/wrappers/umnt-USB.sh;
+        mode   = "0755";
+    };
     environment.etc."scripts/wrappers/format-USB.sh" = {
         source = ./files/wrappers/format-USB.sh;
+        mode   = "0755";
+    };
+    environment.etc."scripts/wrappers/rotate_wgKey.sh" = {
+        source = ./files/wrappers/rotate_wgKey.sh;
         mode   = "0755";
     };
     environment.etc."scripts/wrappers/delete_seed.sh" = {
@@ -71,6 +90,8 @@
         "L+ /home/user/Desktop/scripts/wgPeer_setup.sh - - - - /etc/scripts/wrappers/wgPeer_setup.sh"
         "L+ /home/user/Desktop/scripts/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
         "L+ /home/user/Desktop/scripts/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
+        "L+ /home/user/Desktop/scripts/umnt-USB.sh - - - - /etc/scripts/wrappers/umnt-USB.sh"
+        "L+ /home/user/Desktop/scripts/rotate_wgKey.sh - - - - /etc/scripts/wrappers/rotate_wgKey.sh"
         "L+ /home/user/Desktop/scripts/delete_seed.sh - - - - /etc/scripts/wrappers/delete_seed.sh"
 
         #docker
@@ -99,14 +120,5 @@
             '';
         };
     };
-
-    boot.kernel.sysctl = {
-        "kernel.kptr_restrict"              = 2;   # Kernel-Pointer verstecken
-        "kernel.dmesg_restrict"             = 1;   # dmesg nur für root
-        "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
-        "kernel.unprivileged_bpf_disabled"  = 1;
-        "net.core.bpf_jit_harden"           = 2;
-    };
-    security.protectKernelImage = true;
 
 }

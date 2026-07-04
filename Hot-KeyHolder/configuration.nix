@@ -26,7 +26,10 @@
     "net.ipv6.conf.all.disable_ipv6" = 1;
     "net.ipv6.conf.default.disable_ipv6" = 1;
     "net.ipv4.conf.all.route_localnet" = 0;
+    "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
+    "net.core.bpf_jit_harden"           = 2;
   };
+    security.protectKernelImage = true;
 
   virtualisation.docker.enable = true;
 
@@ -43,6 +46,7 @@
   services.journald.extraConfig = ''
     Storage=volatile
     Compress=yes
+    RuntimeMaxUse=150M
   '';
 
   nix.settings.download-buffer-size = 268435456; # 256MB

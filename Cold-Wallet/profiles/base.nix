@@ -100,13 +100,6 @@
     "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
     "L+ /home/user/Desktop/scripts/setup/umnt-USB.sh - - - - /etc/scripts/wrappers/umnt-USB.sh"
   ];
-      
-  #Journald begrenzen (VM-Disk nicht zulaufen lassen)
-  services.journald.extraConfig = ''
-    SystemMaxUse=200M
-    RuntimeMaxUse=150M
-  '';
-
   
  systemd.user.services.thunar-exec-shell-scripts = {
     description = "Thunar: execute shell scripts by default";
@@ -121,13 +114,5 @@
       '';
     };
   };
-
-  boot.kernel.sysctl = {
-    "kernel.kptr_restrict"              = 2;   # Kernel-Pointer verstecken
-    "kernel.dmesg_restrict"             = 1;   # dmesg nur für root
-    "kernel.yama.ptrace_scope"          = 2;   # ptrace stark einschränken
-    "kernel.unprivileged_bpf_disabled"  = 1;
-    "net.core.bpf_jit_harden"           = 2;
-  };
-  security.protectKernelImage = true;
+  
 }
