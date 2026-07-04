@@ -2,7 +2,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET="/etc/scripts/setup/umnt-USB.sh"
+TARGET="/etc/scripts/umnt-USB.sh"
 
 # echte Pfade auflösen
 SELF_REAL="$(readlink -f "$0")"

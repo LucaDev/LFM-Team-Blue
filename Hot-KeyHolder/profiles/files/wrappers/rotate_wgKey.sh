@@ -1,14 +1,13 @@
-
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET="/etc/scripts/setup/rotate_wgKey.sh"
+TARGET="/etc/scripts/rotate_wgKey.sh"
 
 # echte Pfade auflösen
 SELF_REAL="$(readlink -f "$0")"
 TARGET_REAL="$(readlink -f "$TARGET")"
 
-# Rekursionsschutz
+# Rekursionsschutz 
 if [[ "$SELF_REAL" == "$TARGET_REAL" ]]; then
   echo "ERROR: Wrapper ruft sich selbst auf (Rekursion)."
   echo "SELF=$SELF_REAL"
@@ -16,7 +15,7 @@ if [[ "$SELF_REAL" == "$TARGET_REAL" ]]; then
   exit 1
 fi
 
-#Existenz / ausführbar prüfen
+#  Existenz / ausführbar prüfen
 if [[ ! -x "$TARGET_REAL" ]]; then
   echo "ERROR: Zielscript fehlt oder ist nicht ausführbar: $TARGET_REAL"
   echo "Tipp: chmod +x '$TARGET_REAL'"
@@ -24,5 +23,6 @@ if [[ ! -x "$TARGET_REAL" ]]; then
 fi
 
 # Root-Abfrage + Terminal offen lassen + sichtbares Feedback
-exec xfce4-terminal --hold --command \
+exec pkexec env DISPLAY="${DISPLAY:-}" XAUTHORITY="${XAUTHORITY:-}" \
+  xfce4-terminal --hold --command \
   "bash -lc '\"$TARGET_REAL\"; echo; read -n1 -rsp \"Taste zum Schließen…\"'"

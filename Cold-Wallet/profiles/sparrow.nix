@@ -1,10 +1,10 @@
 { pkgs, lib, pkgsUnstable, config, ... }:
 
 let
-  sparrowPkg =
-    if pkgsUnstable ? sparrow-wallet then pkgsUnstable.sparrow-wallet
-    else if pkgsUnstable ? sparrow then pkgsUnstable.sparrow
-    else throw "No sparrow package found in nixpkgs-unstable";
+  sparrowPkg = pkgs.sparrow-wallet;
+    #if pkgsUnstable ? sparrow-wallet then pkgsUnstable.sparrow-wallet
+    #else if pkgsUnstable ? sparrow then pkgsUnstable.sparrow
+    #else throw "No sparrow package found in nixpkgs-unstable";
   sparrowExec = lib.getExe sparrowPkg;
 in
 {

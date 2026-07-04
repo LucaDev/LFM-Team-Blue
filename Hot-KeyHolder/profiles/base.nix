@@ -59,9 +59,6 @@
         source = ./files/wrappers/mnt-USB.sh;
         mode   = "0755";
     };
-    environment.etc."scripts/wrappers/mnt-USB.sh" = {
-        source = ./files/wrappers/mnt-USB.sh;
-        mode   = "0755";
     };environment.etc."scripts/wrappers/umnt-USB.sh" = {
         source = ./files/wrappers/umnt-USB.sh;
         mode   = "0755";
