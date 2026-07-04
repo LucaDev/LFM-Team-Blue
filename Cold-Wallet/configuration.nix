@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [   
@@ -13,9 +13,19 @@
 
   nix.settings.download-buffer-size = 268435456; # 256MB
   
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.systemd-boot.enable = lib.mkForce false;
+  boot.lanzaboote = {
+    enable = true;
+    pkiBundle = "/etc/secureboot";
+  };
   
-  airgap.enable = false;   # Build-Mode
+  airgap.enable = true;
+
+  specialisation.online.configuration = {
+    airgap.enable = lib.mkForce false;
+  };
+
+  cold.sparrowNetwork = "regtest";
+
   system.stateVersion = "24.05";
 }

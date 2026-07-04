@@ -9,8 +9,10 @@
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
 
+  boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-label/NIXCRYPT";
+
   fileSystems."/" = {
-    device = "/dev/disk/by-label/NIXROOT";
+    device = "/dev/mapper/cryptroot";
     fsType = "ext4";
   };
 

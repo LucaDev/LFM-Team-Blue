@@ -113,6 +113,7 @@ if [[ -f "$USB_MOUNT/communication/signer-hmac.secret" ]]; then
     cp "$USB_MOUNT/communication/signer-hmac.secret" \
        "$SECRETS_DIR/signer-hmac.secret"
     chmod 600 "$SECRETS_DIR/signer-hmac.secret"
+    chown 1000:1000 "$SECRETS_DIR/signer-hmac.secret" 
     echo "Imported: signer-hmac.secret"
 else
     echo "Skipping: signer-hmac.secret "

@@ -7,15 +7,24 @@
 
     networking.hostName = "hot-keyA";
 
-    #User mit Sudo
     users.users.user = {
-        isNormalUser = true;
-        description = "Admin";
-        initialPassword = "changeme";
-        extraGroups = [ "wheel" ];
+      isNormalUser = true;
+      description = "Admin";
+      hashedPassword = "b14361404c078ffd549c03db443c3fede2f3e534d73f78f77301ed97d4a436a9fd9db05ee8b325c0ad36438b43fec8510c204fc1c1edb21d0941c00e9e2c1ce2";
+      extraGroups = [ "wheel" ];
     };
 
     security.sudo.wheelNeedsPassword = true;
+
+    boot.kernel.sysctl = {
+        "kernel.kptr_restrict"              = 2;
+        "kernel.dmesg_restrict"             = 1;
+        "kernel.kexec_load_disabled"        = 1;
+        "kernel.yama.ptrace_scope"          = 2;
+        "kernel.unprivileged_bpf_disabled"  = 1;
+        "net.core.bpf_jit_harden"           = 2;
+    };
+    security.protectKernelImage = true;
 
     environment.etc."scripts/wgHMAC_export.sh" = {
         source = ./files/wgHMAC_export.sh;
@@ -88,16 +97,19 @@
     ];
 
     systemd.user.services.thunar-exec-shell-scripts = {
-    description = "Thunar: execute shell scripts by default";
-    wantedBy = [ "graphical-session.target" ];
-    serviceConfig = {
-        Type = "oneshot";
-        ExecStart = ''
-        ${pkgs.xfce.xfconf}/bin/xfconf-query \
-            --channel thunar \
-            --property /misc-exec-shell-scripts-by-default \
-            --create --type bool --set true
-        '';
+        description = "Thunar: execute shell scripts by default";
+        wantedBy = [ "graphical-session.target" ];
+        serviceConfig = {
+            Type = "oneshot";
+            ExecStart = ''
+            ${pkgs.xfce.xfconf}/bin/xfconf-query \
+                --channel thunar \
+                --property /misc-exec-shell-scripts-by-default \
+                --create --type bool --set true
+            '';
+        };
     };
-    };
+
+   services.udisks2.enable = false
+
 }

@@ -2,59 +2,72 @@
 
 let
   airgap = config.airgap.enable;
-
 in
 {
   config = lib.mkIf airgap {
 
+    # --- keine Netzkonfiguration hochziehen ---
     networking.useDHCP = false;
-
     networking.networkmanager.enable = false;
+    networking.enableIPv6 = false;
     networking.useNetworkd = true;
     systemd.network.enable = true;
+    systemd.network.wait-online.enable = false;
 
     networking.defaultGateway = null;
     networking.defaultGateway6 = null;
 
-    networking.enableIPv6 = false;
-
     services.openssh.enable = false;
 
+        # --- Firewall auf nftables-Basis ---
+    networking.nftables.enable = true;
+
+    # Eingehend: NixOS-Firewall (default deny), keine offenen Ports
     networking.firewall.enable = true;
+    networking.firewall.allowedTCPPorts = [ ];
+    networking.firewall.allowedUDPPorts = [ ];
 
-    # kein Warten auf Netzwerk
-    systemd.network.wait-online.enable = false;
-
-    
-    # One-shot: bei jedem boot/switch alle aktuellen Interfaces härten
-    systemd.services.airgap-harden-interfaces = {
-      description = "Airgap: harden all current network interfaces";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "sysinit.target" ];
-      serviceConfig = { Type = "oneshot"; };
-      path = [ pkgs.procps pkgs.iproute2 pkgs.bash ];
-      script = ''
-        set -euo pipefail
-        for i in $(ip -o link show | awk -F': ' '{print $2}'); do
-          [ "$i" = "lo" ] && continue
-
-          sysctl -w "net.ipv6.conf.$i.disable_ipv6=1" >/dev/null || true
-          sysctl -w "net.ipv6.conf.$i.accept_ra=0" >/dev/null || true
-          sysctl -w "net.ipv6.conf.$i.autoconf=0" >/dev/null || true
-          sysctl -w "net.ipv6.conf.$i.accept_redirects=0" >/dev/null || true
-          sysctl -w "net.ipv6.conf.$i.dad_transmits=0" >/dev/null || true
-
-          sysctl -w "net.ipv4.conf.$i.disable_ipv4=1" >/dev/null || true
-          sysctl -w "networking.interfaces.$i.useDHCP=1;" >/dev/null || true
-        done
+    # Ausgehend: alles droppen, nur loopback erlaubt
+    networking.nftables.tables.airgap-egress = {
+      family = "inet";
+      content = ''
+        chain output {
+          type filter hook output priority 0; policy drop;
+          oifname "lo" accept
+        }
       '';
     };
 
-
+    # --- deklarative Kernel-/IP-Härtung (ersetzt den kaputten sysctl-Loop) ---
     boot.kernel.sysctl = {
-      "net.ipv4.ip_forward" = 0;
-      "net.ipv4.conf.all.accept_redirects" = 0;
-      "net.ipv4.conf.all.send_redirects" = 0;
+      "net.ipv6.conf.all.disable_ipv6"         = 1;
+      "net.ipv6.conf.default.disable_ipv6"     = 1;
+
+      "net.ipv4.ip_forward"                    = 0;
+      "net.ipv4.conf.all.accept_redirects"     = 0;
+      "net.ipv4.conf.default.accept_redirects" = 0;
+      "net.ipv4.conf.all.send_redirects"       = 0;
+      "net.ipv4.conf.default.send_redirects"   = 0;
+      "net.ipv4.conf.all.accept_source_route"  = 0;
+      "net.ipv4.conf.all.rp_filter"            = 1;
+    };
+
+    # --- alle Nicht-Loopback-Interfaces beim Boot hart down + Adressen leeren ---
+    systemd.services.airgap-down-links = {
+      description = "Airgap: bring all non-loopback links down";
+      wantedBy = [ "multi-user.target" ];
+      after    = [ "network-pre.target" ];
+      before   = [ "network.target" ];
+      serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+      path = [ pkgs.iproute2 ];
+      script = ''
+        set -euo pipefail
+        for i in $(ls /sys/class/net); do
+          [ "$i" = "lo" ] && continue
+          ip link set "$i" down
+          ip addr flush dev "$i"
+        done
+      '';
     };
   };
 }

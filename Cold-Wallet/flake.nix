@@ -24,5 +24,7 @@
         ./configuration.nix
       ];
     };
+
+    lanzaboote.url = "github:nix-community/lanzaboote";
   };
 }

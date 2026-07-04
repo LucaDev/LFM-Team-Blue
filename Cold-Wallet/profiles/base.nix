@@ -7,13 +7,12 @@
 
   networking.hostName = "cold-Signer";
 
-  #User mit Sudo
-  users.users.user = {
-    isNormalUser = true;
-    description = "Admin";
-    initialPassword = "changeme";
-    extraGroups = [ "wheel" ];
-  };
+    users.users.user = {
+      isNormalUser = true;
+      description = "Admin";
+      hashedPassword = "b14361404c078ffd549c03db443c3fede2f3e534d73f78f77301ed97d4a436a9fd9db05ee8b325c0ad36438b43fec8510c204fc1c1edb21d0941c00e9e2c1ce2";
+      extraGroups = [ "wheel" ];
+    };
 
   security.sudo.wheelNeedsPassword = true;
 
@@ -30,11 +29,6 @@
   #============================================
   #Echte scripte (referenziert in warpper)
   #============================================
-  environment.etc."scripts/psbt/README.md" = {
-    source = ./files/psbt/README.md;
-    mode   = "0644";
-  };
-
   environment.etc."scripts/setup/online.sh" = {
     source = ./files/setup/online.sh;
     mode   = "0755";
@@ -97,12 +91,7 @@
     "d /home/user/Desktop 0750 user users - -"
     "d /home/user/bin 0750 user users - -"
     "d /home/user/Desktop/scripts 0750 user users - -"
-    "d /home/user/Desktop/scripts/auth 0750 user users - -"
-    "d /home/user/Desktop/scripts/psbt 0750 user users - -"
     "d /home/user/Desktop/scripts/setup 0750 user users - -"
-    "d /var/lib/psbt-guard 0700 root root - -"
-    "d /var/lib/psbt-guard/gnupg 0700 root root - -"
-    "d /var/lib/psbt-guard/identity 0700 root root - -"
     "d /mnt/usb 0755 root root - -"
 
     "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/wrappers/online.sh"
@@ -133,4 +122,6 @@
       '';
     };
   };
+
+  services.udisks2.enable = false
 }

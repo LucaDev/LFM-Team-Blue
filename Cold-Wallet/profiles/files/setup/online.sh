@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CFG="/etc/nixos/configuration.nix"
-FLAKE_DIR="/etc/nixos"
-TARGET="cold"
+SYS="/nix/var/nix/profiles/system"
+SPEC="$SYS/specialisation/online"
 
-[ "$(id -u)" -eq 0 ] || { echo "Run as root: sudo $0" >&2; exit 1; }
-[ -f "$CFG" ] || { echo "ERROR: $CFG not found" >&2; exit 1; }
+[ "$(id -u)" -eq 0 ] || { echo "Bitte als root (pkexec) ausführen."; exit 1; }
 
-#already false?
-if grep -Eq '^\s*airgap\.enable\s*=\s*false\s*;' "$CFG"; then
-  echo "airgap.enable is already false (in $CFG). Nothing to do."
-  exit 0
-fi
-
-#only replace if the setting exists (avoid appending in wrong scope)
-if grep -Eq '^\s*airgap\.enable\s*=' "$CFG"; then
-  sed -i -E 's/^\s*airgap\.enable\s*=\s*(true|false)\s*;/  airgap.enable = false;/' "$CFG"
-  echo "Set airgap.enable=false"
-else
-  echo "ERROR: airgap.enable not found in $CFG. I won't append blindly (risk wrong scope)."
-  echo "Add 'airgap.enable = true/false;' once in the correct module scope, then rerun."
+[ -x "$SPEC/bin/switch-to-configuration" ] || {
+  echo "FEHLER: online-specialisation nicht gefunden ($SPEC)."
+  echo "Wurde das System mit 'specialisation.online' gebaut?"
   exit 1
-fi
+}
 
-#switch using flake (path: to avoid git+file behavior) + impure for dirty tree
-echo "Switching (flake: path:${FLAKE_DIR}#${TARGET})..."
-nixos-rebuild switch \
-  --flake "path:${FLAKE_DIR}#${TARGET}" \
-  --impure
+echo "== ONLINE aktivieren (Netz AN, nur zum Registrieren) =="
+"$SPEC/bin/switch-to-configuration" switch
 
-echo "Online mode applied (airgap disabled)."
+# Interfaces, die der Airgap heruntergefahren hat, wieder hochbringen
+for i in $(ls /sys/class/net); do
+  [ "$i" = "lo" ] && continue
+  ip link set "$i" up || true
+done
+
+# DHCP anstoßen und kurz warten
+systemctl restart dhcpcd 2>/dev/null || true
+sleep 2
+
+echo
+echo "Status (sollte eine IP zeigen):"
+ip -brief addr show | grep -vw lo || true
+echo
+echo "ONLINE aktiv. Zum Zurückschalten: airgap.sh doppelklicken"
+echo "(oder einfach rebooten — der Standard ist airgapped)."

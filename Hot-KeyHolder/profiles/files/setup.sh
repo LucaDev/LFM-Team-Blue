@@ -4,9 +4,9 @@ set -euo pipefail
 DISK="/dev/sda"
 EFI_SIZE="1024M"
 
-REPO_URL="https://github.com/overflowdo/NixOsHot.git"
-REPO_SUBDIR=""
-SWAP_SIZE_GB="2"
+REPO_URL="https://github.com/LucaDev/LFM-Team-Blue.git"
+REPO_REF="<commit-sha-hier>"
+REPO_SUBDIR="Hot-KeyHolder"
 
 # Robust partition naming
 part1="${DISK}1"
@@ -72,9 +72,14 @@ udevadm trigger
 udevadm settle
 sleep 1
 
+cryptsetup luksFormat --type luks2 --label NIXCRYPT "$part2"
+cryptsetup open "$part2" cryptroot
+mkfs.ext4 -L NIXROOT /dev/mapper/cryptroot
+# ... danach mount /dev/mapper/cryptroot /mnt   (statt by-label/NIXROOT)
+
 echo "[4/9] Mounting"
 mountpoint -q /mnt && umount -R /mnt || true
-mount /dev/disk/by-label/NIXROOT /mnt
+mount /dev/mapper/cryptroot /mnt
 mkdir -p /mnt/boot
 mount /dev/disk/by-label/NIXBOOT /mnt/boot
 
@@ -93,7 +98,8 @@ echo "[7/9] Replace /mnt/etc/nixos with repo content"
 rm -rf /mnt/etc/nixos/*
 mkdir -p /mnt/etc/nixos
 
-git clone --depth 1 "$REPO_URL" /mnt/etc/nixos/.repo
+git clone "$REPO_URL" /mnt/etc/nixos/.repo
+#git -C /mnt/etc/nixos/.repo checkout "$REPO_REF"
 
 if [[ -n "$REPO_SUBDIR" ]]; then
   if [[ ! -d "/mnt/etc/nixos/.repo/$REPO_SUBDIR" ]]; then
@@ -108,12 +114,21 @@ else
 fi
 
 rm -rf /mnt/etc/nixos/.repo
-rm -rf /etc/nixos/.git
+rm -rf /mnt/etc/nixos/.git
 
+
+echo "[8/9] Flake-Inputs pinnen (flake.lock)"
+export NIX_CONFIG="experimental-features = nix-command flakes"
+if [[ ! -f /mnt/etc/nixos/flake.lock ]]; then
+  nix flake lock /mnt/etc/nixos
+  echo "  -> flake.lock neu erzeugt (pinnt auf Installationszeitpunkt)."
+else
+  echo "  -> flake.lock aus Repo vorhanden, wird verwendet."
+fi
 
 echo "[9/9] Install NixOS"
 export NIX_CONFIG="experimental-features = nix-command flakes"
-nixos-install --no-root-passwd --flake /mnt/etc/nixos#hot
+nixos-install --no-root-passwd --flake /mnt/etc/nixos#cold
 
 echo "[*] Removing install-only swapfile"
 swapoff /mnt/.swapfile 2>/dev/null || true

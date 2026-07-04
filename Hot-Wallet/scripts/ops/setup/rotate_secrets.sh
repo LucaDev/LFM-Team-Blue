@@ -111,7 +111,7 @@ else
 fi
 
 echo
-info "Fertig. Rotiert: NATS x4, OPERATOR_TOKEN, NTFY_TOKEN, mw_app-PW, Superuser-PW, rpcauth (mw/txb)."
+info "Fertig. Rotiert: NATS x4, NTFY_TOKEN, mw_app-PW, Superuser-PW, rpcauth (mw/txb)."
 echo
 echo "  !!! HMAC-Secret wurde NICHT rotiert !!!"
 echo "  Es liegt synchron auf Middleware UND Signer-VM. Rotation nur über den USB-Weg:"
