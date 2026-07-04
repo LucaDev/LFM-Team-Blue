@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET="/etc/scripts/setup/setup.sh"
+TARGET="/etc/scripts/setup.sh"
 
 # echte Pfade auflösen
 SELF_REAL="$(readlink -f "$0")"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET="/etc/scripts/setup/airgap.sh"
+TARGET="/etc/scripts/airgap.sh"
 
 # echte Pfade auflösen
 SELF_REAL="$(readlink -f "$0")"

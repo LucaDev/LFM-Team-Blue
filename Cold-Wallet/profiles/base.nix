@@ -28,28 +28,28 @@
   #============================================
   #Echte scripte (referenziert in warpper)
   #============================================
-  environment.etc."scripts/setup/online.sh" = {
-    source = ./files/setup/online.sh;
+  environment.etc."scripts/online.sh" = {
+    source = ./files/online.sh;
     mode   = "0755";
   };
-  environment.etc."scripts/setup/setup.sh" = {
-    source = ./files/setup/setup.sh;
+  environment.etc."scripts/setup.sh" = {
+    source = ./files/setup.sh;
     mode   = "0755";
   };
-  environment.etc."scripts/setup/airgap.sh" = {
-    source = ./files/setup/airgap.sh;
+  environment.etc."scripts/airgap.sh" = {
+    source = ./files/airgap.sh;
     mode   = "0755";
   };
-  environment.etc."scripts/setup/mnt-USB.sh" = {
-    source = ./files/setup/mnt-USB.sh;
+  environment.etc."scripts/mnt-USB.sh" = {
+    source = ./files/mnt-USB.sh;
     mode   = "0755";
   };
-  environment.etc."scripts/setup/umnt-USB.sh" = {
-    source = ./files/setup/umnt-USB.sh;
+  environment.etc."scripts/umnt-USB.sh" = {
+    source = ./files/umnt-USB.sh;
     mode   = "0755";
   };
-  environment.etc."scripts/setup/format-USB.sh" = {
-    source = ./files/setup/format-USB.sh;
+  environment.etc."scripts/format-USB.sh" = {
+    source = ./files/format-USB.sh;
     mode   = "0755";
   };
 
@@ -93,12 +93,11 @@
     "d /home/user/Desktop/scripts/setup 0750 user users - -"
     "d /mnt/usb 0755 root root - -"
 
-    "L+ /home/user/Desktop/scripts/setup/online.sh - - - - /etc/scripts/wrappers/online.sh"
-    "L+ /home/user/Desktop/scripts/setup/airgap.sh - - - - /etc/scripts/wrappers/airgap.sh"
-    "L+ /home/user/Desktop/scripts/setup/setup.sh - - - - /etc/scripts/wrappers/setup.sh"
-    "L+ /home/user/Desktop/scripts/setup/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
-    "L+ /home/user/Desktop/scripts/setup/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
-    "L+ /home/user/Desktop/scripts/setup/umnt-USB.sh - - - - /etc/scripts/wrappers/umnt-USB.sh"
+    "L+ /home/user/Desktop/scripts/online.sh - - - - /etc/scripts/wrappers/online.sh"
+    "L+ /home/user/Desktop/scripts/airgap.sh - - - - /etc/scripts/wrappers/airgap.sh"
+    "L+ /home/user/Desktop/scripts/format-USB.sh - - - - /etc/scripts/wrappers/format-USB.sh"
+    "L+ /home/user/Desktop/scripts/mnt-USB.sh - - - - /etc/scripts/wrappers/mnt-USB.sh"
+    "L+ /home/user/Desktop/scripts/umnt-USB.sh - - - - /etc/scripts/wrappers/umnt-USB.sh"
   ];
   
  systemd.user.services.thunar-exec-shell-scripts = {
