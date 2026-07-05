@@ -304,24 +304,24 @@ Ergebnis:
 für das 2-aus-3-Cold-Wallet ab. Verwendet wird BIP48, Script-Typ 2
 (P2WSH, natives SegWit):
 
-​```bash
+```bash
 m/48h/1h/0h/2h
-​```
+```
 
 Key-Origin-Expression (geht 1:1 in den `wsh(sortedmulti(...))`-Descriptor
 des Cold-Wallets ein):
 
-​```bash
+```bash
 [fingerprint/48h/1h/0h/2h]xpub/<0;1>/*
-​```
+```
 
 Zusätzliche Ergebnis-Dateien (die 84h-Dateien bleiben unverändert):
 
-​```bash
+```bash
 /psbt-signer/run/wallets/descriptor.multisig.txt
 /psbt-signer/run/wallets/xpub.multisig.txt
 /psbt-signer/run/wallets/metadata.multisig.json
-​```
+```
 
 Wichtig: Für das Cold-Multisig ist ausschließlich der **48h**-Anteil zu verwenden, nicht der 84h-Single-Sig-xpub. 
 Beide stammen aus demselben Seed, gehören aber zu unterschiedlichen Ableitungspfaden. 

@@ -145,7 +145,7 @@ Ergebnis auf dem Medium:
 /mnt/usb/wallet/hot/descriptor.public.txt
 /mnt/usb/wallet/hot/xpub.txt
 /mnt/usb/wallet/cold/keyA.meta.json
-​```
+```
 
 Hinweis:
 Es wird ausschließlich der öffentliche Anteil exportiert. 
@@ -249,9 +249,9 @@ Nach jeder Nutzung zwingend aushängen:
 Der zusammengesetzte `wsh(sortedmulti(...))`-Descriptor wird als Datei auf dem
 Wechselmedium abgelegt:
 
-​```
+```
 /mnt/usb/wallet/cold/cold-signer.wsh
-​```
+```
 
 Der automatische Import auf dem Basis-System (`wallet_import.sh`) liest die
 letzte Zeile dieser Datei als Descriptor. Dateiname `cold-signer.wsh`(nicht
