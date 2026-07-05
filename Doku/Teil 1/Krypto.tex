@@ -67,10 +67,14 @@ Auf diesem System wird NixOS bewusst so konfiguriert, dass bestimmte nutzerfreun
 Darunter fallen ein deklarativer Desktop-Mount sowie automatisierte Skripte. Zudem führt der \ac{XFCE}-Dateimanager (Thunar) Shell-Skripte nicht standardmäßig per Doppelklick aus. Diese Einschränkung wird explizit aufgehoben, um dem Nutzer für bestimmte Skripte eine einfachere Nutzung zu ermöglichen.
 
 \paragraph{Sparrow Wallet} \mbox{}\\
-Sparrow Wallet fungiert als Multi-Signatur-Koordinator, \ac{PSBT}-Handler und Key Holder. Eine Instanz darf diese Rollen, wie oben bereits erwähnt, gleichzeitig halten \cite{sparrow_docs,sparrow_multisig}.
-Zudem verwaltet die Applikation keine vollständige Blockchain, da sie keine Netzwerkverbindung besitzt. Private Schlüssel verbleiben ausschließlich auf den jeweiligen Cold-Key-Systemen, während allein der interne und externe Multi-Signatur-Deskriptor des Cold-Wallets auf Bitcoin Core registriert wird.
+Sparrow Wallet ist eine quelloffene Desktop-Bitcoin-Wallet mit Fokus auf Self-Custody, Sicherheit und Transparenz, womit sie die inhaltlichen Anforderungen des Mandanten unterstützt. Sie unterstützt Single- und Multi-Signatur, Output-Deskriptoren und
+den vollständigen \ac{PSBT}-Workflow nach \cite{bip174}. 
+Außerdem wird eine Anbindung an einen eigene Bitcoin-Core- oder Electrum-Node ermöglicht, welche wir nicht nutzen, jedoch als Alternative anerkennen (siehe \ref{XXX}). 
+Es unterstützt zudem die Besonderheit der Cold-Wallet \acp{VM}, sodass es offline Signierung sowohl über Dateien, \ac{USB} und animierte \ac{QR}-Codes ermöglicht. Daneben zeichnet es sich ebenfalls durch eine breite Hardware-Wallet-Integration und eine Vielzahl an Konnektoren und Wallet Formaten aus, welche als weitere Alternativen beschrieben wurden und dem Mandaten offenstehen (Siehe \ref{XXX}).
+Ein besonderes Merkmal ist die transparente Darstellung aller Transaktions- und \ac{UTXO}-Details, die die manuelle Verifikation im Cold-Prozess erst sicher und praktikabel macht und dementsprechend fest eingeplant ist \ref{XXX}\cite{sparrow_docs,Sparrow_Wallets_Features}.
 
-Sparrow zeichnet sich zudem durch passende Eigenschaften aus, wodurch es sich für das Aufsetzen in unserer Architektur eignet. Unter diese Besonderheiten fallen die Möglichkeit des Einsatzes als Deskriptor-Wallet, die Watch-Only-Konfigurationen sowie die native \ac{PSBT}-Workflow-Unterstützung. Insbesondere die transparente Darstellung von Inputs, Outputs, Gebühren und Signaturstatus ermöglicht, wie bereits erwähnt, eine nachvollziehbare manuelle Prüfung durch den Operator, weshalb es auch im Hot-Wallet für eine bessere User Experience zum Einsatz kommt \cite{sparrow_multisig,sparrow_docs,Sparrow_Wallets_Features,airgap_psbt_guide}.
+In unserer Integration fungiert Sparrow Wallet als Multi-Signatur-Koordinator, \ac{PSBT}-Handler und Key Holder. Eine Instanz darf diese Rollen, wie oben bereits erwähnt, gleichzeitig halten \cite{sparrow_docs,sparrow_multisig}.
+Zudem verwaltet die Applikation keine vollständige Blockchain, da sie keine Netzwerkverbindung besitzt. Private Schlüssel verbleiben ausschließlich auf den jeweiligen Cold-Key-Systemen, während allein der interne und externe Multi-Signatur-Deskriptor des Cold-Wallets auf Bitcoin Core registriert wird \cite{sparrow_multisig, airgap_psbt_guide}.
 
 Sparrow übernimmt im Cold-Bereich folgende Aufgaben:
 \begin{itemize}
@@ -80,12 +84,35 @@ Sparrow übernimmt im Cold-Bereich folgende Aufgaben:
   \item Zusammenführung und Finalisierung der Signaturen.
 \end{itemize}
 
-Die Nutzung öffentlicher Electrum-Server entfällt, da diese zwar keine Gefährdung der Assets darstellen, jedoch Wallet-Metadaten gegenüber dem Serverbetreiber offenlegen, der diese gegebenenfalls größeren Anbietern bereitstellt. Eine mögliche zusätzliche Implementation verbleibt im Ermessen des Mandanten \cite{sparrow_quick,Sparrow_Wallets_Node_Connect}.
-
 Anzuführen ist ebenfalls, dass sich Sparrow im Zuge der Implementierung durch einen Fehler im stable-Release auszeichnete. Nach dem Download aus dem Nix-Store und dem Ausführen des Programms ergaben sich Probleme mit der JavaFX-Bibliothek, und verschiedene Fenster mit dem Fehler \textbf{Panes omitted} konnten nicht angezeigt werden.
-Aufgrund dessen wurde sich bei Sparrow für die unstable-Version entschieden, die Java~25 nativ unterstützt und diese Probleme behob.
+Aufgrund dessen wurde sich bei Sparrow für die unstable-Version entschieden, die Java~25 nativ unterstützt und diese Probleme behob. Während der Entwicklung wrde zudem NixOS 26.5 veröffentlicht, welche Java~25 direkt umfasst, weshalb der unstable channel während der Entwicklungsperiode wieder aufgehoben werden konnte.
 
-Zusätzlich wird die Wallet-Anwendung Sparrow deklarativ integriert: Installation über Nix (unstable channel), definierte Startparameter (Netzwerkmodus \texttt{-{}-regtest}) und Bereitstellung einer Desktop-Datei, welche den Start per Doppelklick auf das Desktop-Icon ermöglicht.
+Zusätzlich wird die Wallet-Anwendung deklarativ in NixOS integriert: Installation über den Nix Store, definierte Startparameter (Netzwerkmodus \texttt{-{}-regtest}) und Bereitstellung einer Desktop-Datei, welche den Start per Doppelklick auf das Desktop-Icon ermöglicht.
+
+\textbf{Alternativen zu Sparrow Wallet}
+
+Als air-gap-fähige Koordinatoren kämen ebenfalls \texttt{Electrum}, \texttt{Specter Desktop}, \texttt{Nunchuk}, \texttt{Caravan} sowie \texttt{Bitcoin Core} selbst in Frage. Diese decken jedoch jeweils nur Teile der benötigten Funktionalität netzunabhängig ab und fanden aufgrund dessen keine Verwendung.
+
+\begin{itemize}
+  \item \textbf{Electrum:} Benötigt in der Online-Variante standardmäßig einen öffentlichen Electrum-Server und legt dadurch Wallet-Metadaten gegenüber Dritten offen. Dementsprechend bietet es eine geringere Privatsphäre als Sparrow Wallet für den beschriebenen alternativen Broadcast-Ansatz (siehe \ref{XXX}). Zudem verfügt es im Offline-Modus über eingeschränkte Funktionen und besitzt beispielsweise keine Wallet-übergreifende Auflösung von Zieladressen zu bekannten Wallets und eignet sich daher nur bedingt für eine sicherheitskritische, manuelle Offline-Verifikation (siehe \ref{XXX}). Daneben verwendet es historisch eigene, nicht Deskriptor-native Schlüssel- und Ableitungskonventionen, die die Interoperabilität mit dem in  Bitcoin Core importierten \path{wsh}-Deskriptor erschweren \cite{electrum_docs}.  
+  \item \textbf{Bitcoin Core:} Anstelle der bloßen öffentlichen Deskriptoren könnten auch die privaten Schlüssel in diesem Dienst registriert werden, um die \ac{PSBT} zu analysieren und anschließend zu signieren. Dieser Dienst wurde jedoch nicht auf den Cold-\acp{VM} repliziert, da die Software standardmäßig keine für die manuelle Verifikation optimierte, grafische Darstellung von Zieladresse, Betrag und \acp{UTXO}-Flüssen besitzt \cite{bitcoin_core_docs}.
+  \item \textbf{Specter Desktop:} Ist als lokale Web-Applikation umgesetzt und damit ein architektonisch schwerfälligerer Dienst als Sparrow. Der Service enthält selbst im offline Modus kein Schlüsselmaterial, sondern fungiert als Koordinator für externe Signaturgeräte und bereitet die \ac{TX}-Details für die manuelle Prüfung visuell weniger umfassend auf. Als eigenständiger, air-gapped Schlüsselhalter der Cold-\ac{VM} ist es damit ungeeignet.
+  Ein möglicher gekoppelter Betrieb mit Bitcoin Core ermöglicht offline das Registrieren des Schlüsselmaterials in Bitcoin Core und eine GUI Analyse mit Specter. Diese Kombination zeichnet sich jedoch durch eine signifikant größere Codebasis und damit einer erweiterten Angriffsfläche im Vergleich zu Sparrow aus. Zudem bleibt die Software in der \ac{PSBT}-Detail Tiefe hinter Sparrow zurück und eignet sich ebenfalls als Teilservice nicht \cite{specter_devices, specter_faq_hotwallet, knowingbitcoin_coordinators}.
+  \item \textbf{Nunchuk:} Dieser stellt neben der mobilen App auch einen Desktop-Client (Windows, macOS, Linux) bereit und unterstützt eigene Bitcoin-Core-, Electrum- bzw.\ Fulcrum-Anbindung, Tor sowie einen selbst-gehosteten Sync-Relay. 
+  Jedoch ist Nunchuk als Koordinator konzipiert, der das Schlüsselmaterial bewusst auf externe Signaturgeräte (Hardware-Wallets, Tapsigner) auslagert. Die in der Anwendung erzeugten Software-Schlüssel werden vom Hersteller selbst als weniger sicher und primär für Testzwecke ausgewiesen \cite{nunchuk_software_key}.
+  Als eigenständiger, air-gapped Schlüsselhalter der Cold-\ac{VM} ist Nunchuk damit ungeeignet. Sein Einsatz würde weiterhin einen externen Hardware-Signer benötigen und lediglich eine zusätzliche Koordinationsschicht hinzufügen \cite{nunchuk_desktop, knowingbitcoin_coordinators}.
+  \item \textbf{Caravan:} Ist als zustandslose (\textit{stateless}) Web-Applikation konzipiert und hält selbst kein privates Schlüsselmaterial. Dadurch kann es ausschließlich als Watch-Only-Koordinator dienen und nicht die Signatur- und Schlüsselhalter-Rolle der Cold-\ac{VM} übernehmen. Zudem speichert es nach Sitzungsende keine Wallet-Konfiguration und stellt Transaktionsdetails nur rudimentär dar \cite{caravan_github, caravan_multiSig}.
+\end{itemize}
+
+\paragraph{Electrum-Server} \mbox{}\\
+Ein Electrum-Server wie \texttt{ElectrumX}, \texttt{electrs} oder \texttt{Fulcrum} ist eine Server-Software, die zwischen einer Bitcoin-Full-Node und leichtgewichtigen Wallet-Clients vermittelt. Er indexiert die Blockchain nach Adressen bzw.\ Script-Pubkeys, sodass eine Wallet über das Electrum-Protokoll effizient die \acp{UTXO} und die Transaktionshistorie ihrer Adressen abfragen kann, ohne selbst die gesamte Kette durchsuchen zu müssen. Sowohl Electrum als auch Sparrow lassen sich auf diese Weise anbinden.
+
+Bei Nutzung eines \emph{öffentlichen} Electrum-Servers übermittelt die Wallet dem Serverbetreiber sämtliche zugehörigen Adressen, wodurch dieser erkennt welche Adressen zu derselben Wallet gehören. Über die öffentliche Blockchain kann der Betreiber zudem deren Guthaben, Aktivität und Metadaten ermitteln und mit der IP-Adresse verknüpfen. Es besteht zwar keine Gefährdung der Assets, da beim Broadcast nur die fertig signierte, öffentliche Transaktion übertragen wird und kein privates Schlüsselmaterial, jedoch ein Verlust an Privatsphäre gegenüber Dritten.
+
+Im vorliegenden System entfällt ein Electrum-Server vollständig, da das Hot-System bereits einen eigenen Bitcoin-Core-Full-Node betreibt. Sämtliche Adress- und \ac{UTXO}-Abfragen zur Generierung der \acp{PSBT} verbleiben damit auf der selbst gehosteten Infrastruktur, ohne Offenlegung gegenüber Dritten. 
+Die air-gapped Cold-\acp{VM} benötigen ohnehin keinen Server, da sie die Transaktionsdetails ausschließlich aus der \ac{PSBT} selbst verifizieren. Die Möglichkeit des Anschluss von Sparrow zu Bitcoin Core als alternativer Broadcast Schritt bleibt dem Mandanten offen. \ref{XXX}.
+Der Betrieb eines \emph{selbst gehosteten} Electrum-Servers kann Adressabfragen bei Wallets mit umfangreicher Historie beschleunigen, bringt für die hier verwendeten, frisch erzeugten Watch-Only-Wallets jedoch keinen relevanten Vorteil und verbleibt im Ermessen des Mandanten \cite{sparrow_quick,Sparrow_Wallets_Node_Connect, electrumx_docs}.
+
 
 \subsubsection{Sicherheitsmodell}
 
