@@ -24,7 +24,7 @@ Die Cold-Signer-VMs sind über NixOS deklarativ gehärtet (nftables, Kernel-Här
 
 * **Festplattenverschlüsselung (LUKS):** Bei jedem Start der VM wird eine Disk-Passphrase abgefragt. Ohne diese bootet das System nicht.
 * **Air-Gap ist Standard:** Nach dem Build bootet die VM automatisch vollständig air-gapped. Ein Online-Modus existiert nur als separater Boot-Eintrag bzw. Skript (siehe Abschnitt *Air-Gap / Online umschalten*).
-* **Login:** Anmeldung als Benutzer `user` mit dem beim Setup gesetzten Passwort (es gibt kein Standardpasswort).
+* **Login:** Anmeldung als Benutzer `user`mit dem beim Setup gesetzten Passwort (es gibt kein Standardpasswort).
 
 ***
 
@@ -135,7 +135,7 @@ sudo journalctl --vacuum-time=5s
 Manuelle Schritte **auf dem Hot-System**:
 
 1. USB einstecken
-2. Skript `wgHMAC_export.sh` ausführen (Details siehe README des Hot-KeyHolders)
+2. Skript `wgHMAC_export.sh`ausführen (Details siehe README des Hot-KeyHolders)
 3. USB entfernen
 
 Ergebnis auf dem Medium:
@@ -152,7 +152,7 @@ Es wird ausschließlich der öffentliche Anteil exportiert.
 Privates Schlüsselmaterial verbleibt im Hot-System, TPM-versiegelt. 
 Eine ausführlichere Beschreibung steht in der README des Hot-KeyHolders (Key A).
 
-`wallet/cold/keyA.meta.json` ist der **48h-Cosigner-Anteil** von Key A für das Cold-Multisig (`[fingerprint/48h/1h/0h/2h]xpub`). 
+`wallet/cold/keyA.meta.json`ist der **48h-Cosigner-Anteil** von Key A für das Cold-Multisig (`[fingerprint/48h/1h/0h/2h]xpub`). 
 Dieser, nicht der 84h-Hot-Descriptor, wird beim Multisig-Aufbau als Key A eingesetzt.
 
 ***
@@ -168,7 +168,7 @@ Auf den VMs Key B und Key C:
 5. Optional (empfohlen): Sparrow-Wallet-Passwort setzen.
 6. Wallet-Informationen bzw. Xpubs/Deskriptoren kontrolliert exportieren.
 
-Hinweis: In der Laborumgebung startet Sparrow im Regtest-Modus. Für den produktiven Betrieb den Netzmodus über die deklarative Option setzen (`cold.sparrowNetwork = "mainnet";` in `configuration.nix`) und die VM neu bauen.
+Hinweis: In der Laborumgebung startet Sparrow im Regtest-Modus. Für den produktiven Betrieb den Netzmodus über die deklarative Option setzen (`cold.sparrowNetwork = "mainnet";`in `configuration.nix`) und die VM neu bauen.
 
 ***
 
@@ -182,8 +182,8 @@ Nur so leitet Sparrow jeden Cosigner korrekt unter BIP48/P2WSH (`m/48'/1'/0'/2'`
 3. **Script Type: Native SegWit (P2WSH)** → ergibt automatisch `m/48'/1'/0'/2'`
 4. Keystores:
    * **Key B** (lokal): „New or Imported Software Wallet" → Seed. Sparrow zeigt
-     Derivation `m/48'/1'/0'/2'` – nicht ändern.
-   * **Key A** (extern): xpub aus `wallet/cold/keyA.meta.json` importieren.
+     Derivation `m/48'/1'/0'/2'`– nicht ändern.
+   * **Key A** (extern): xpub aus `wallet/cold/keyA.meta.json`importieren.
      **Nicht** den 84h-Hot-Descriptor verwenden.
    * **Key C** (extern): dessen 48h-xpub importieren. (Von Schritt 4 auf einer anderen VM für Key C)
 5. Wallet erstellen.
@@ -192,7 +192,7 @@ Als Ergebnis haben wir 2 VMs auf denen je eine Multi-Sig Wallet liegt.
 Jede dieser Wallet besitzt nur einen geheimen Schlüssel, die anderen beiden sind als öffentliche xpubs integriert.
 
 Zu beachten ist, dass für jede VM erst die Seed phrase als geheimes Schlüsselmaterial festgelegt werden und dann ausgetauscht werden muss.
-Ein Bilder der 48er Ableitung durch eine Single-Wallet ist nicht möglich.
+Ein Bilden der 48er Ableitung durch eine Single-Wallet ist nicht möglich.
 
 Dementsprechend wird der öffentliche Schlüssel des geheimen Materials nach Eingabe und vor Finalisierung bereits mit dem richtigen Ableitungspfad angezeigt und muss mit dem je anderen Wallet per USB manuell ausgetauscht werden.
 Erst nach Eingabe aller Schlüssel kann finalisiert (apply) werden.
@@ -202,7 +202,7 @@ Bei korrektem Erstellen haben die Multi-Sig Wallet auf der VM von Key B und Key 
 Dies ist einfach an der Checksumme am Ende zu erkennen.
 
 **Merksatz:** Origin-Label und xpub müssen zusammenpassen. 
-Ein 84h-xpub unter einem 48h-Label führt dazu, dass Key A die Cold-PSBT nicht signieren kann (`sign_with` findet keinen passenden Schlüssel).
+Ein 84h-xpub unter einem 48h-Label führt dazu, dass Key A die Cold-PSBT nicht signieren kann (`sign_with`findet keinen passenden Schlüssel).
 
 
 
@@ -234,7 +234,7 @@ Dieses Skript:
 
 * fordert eine Bestätigung an, bevor es formatiert
 * entfernt vorhandene Dateien vollständig
-* vergibt das Volume-Label `USB` für die nachfolgenden Prozesse
+* vergibt das Volume-Label `USB`für die nachfolgenden Prozesse
 
 Nach jeder Nutzung zwingend aushängen:
 
@@ -254,7 +254,7 @@ Wechselmedium abgelegt:
 ​```
 
 Der automatische Import auf dem Basis-System (`wallet_import.sh`) liest die
-letzte Zeile dieser Datei als Descriptor. Dateiname `cold-signer.wsh` (nicht
+letzte Zeile dieser Datei als Descriptor. Dateiname `cold-signer.wsh`(nicht
 `.descriptor`), damit der Import ihn findet.
 
 ***
@@ -370,7 +370,7 @@ Auf dem Hot-System wird die PSBT importiert, finalisiert und über Bitcoin Core 
 
 # 3. Hilfsprogramme
 
-Die bereitgestellten Skripte unterstützen den operativen Ablauf, ersetzen jedoch keine Sicherheitsentscheidungen. Sie liegen auf dem Desktop unter `scripts/setup/` und sind – mit Ausnahme von `format-USB.sh` – per Doppelklick ausführbar.
+Die bereitgestellten Skripte unterstützen den operativen Ablauf, ersetzen jedoch keine Sicherheitsentscheidungen. Sie liegen auf dem Desktop unter `scripts/setup/`und sind – mit Ausnahme von `format-USB.sh`– per Doppelklick ausführbar.
 
 ***
 
@@ -421,7 +421,7 @@ Zweck:
 Zweck:
 
 * aktiviert kurzzeitig den Online-Modus (specialisation), z. B. zum Registrieren der Wallet
-* danach über `airgap.sh` oder Reboot wieder air-gappen
+* danach über `airgap.sh`oder Reboot wieder air-gappen
 
 ***
 
@@ -447,4 +447,4 @@ cd /etc/nixos
 nixos-rebuild build --flake .#cold --impure
 ```
 
-Die Inputs sind über `flake.lock` gepinnt; ein bewusstes Update erfolgt mit `nix flake update`. Änderungen an der Systemkonfiguration werden mit `nixos-rebuild switch --flake .#cold` aktiviert.
+Die Inputs sind über `flake.lock`gepinnt; ein bewusstes Update erfolgt mit `nix flake update`. Änderungen an der Systemkonfiguration werden mit `nixos-rebuild switch --flake .#cold`aktiviert.
