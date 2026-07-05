@@ -224,15 +224,15 @@ auf alle anderen Dienste zugreifen.
   \midrule
   traefik-public        & alle veröffentlichten Dienste & ja, nur über Traefik \\
   socket-proxy          & Traefik, Homepage              & nein \\
-  media-network         & Jellyfin, Immich, Postgres, Valkey & nein (nur Immich-Web) \\
-  documents-network     & Paperless, Bento-PDF, Valkey   & nein (nur Web) \\
-  cloud-network         & OpenCloud, Collabora           & nein (nur Web) \\
+  media-network         & Jellyfin, Immich, Postgres, Valkey & nein \\
+  documents-network     & Paperless, Bento-PDF, Valkey   & nein \\
+  cloud-network         & OpenCloud, Collabora           & nein \\
   storage-network       & Garage (S3)                    & nein \\
-  home-network          & Home Assistant, Mosquitto      & nein (nur Web) \\
-  monitoring-network    & Prometheus, Grafana, Loki      & nur Grafana, Prometheus, Alertmanager \\
-  communication-network & Ntfy, Alertmanager             & nein (nur Web) \\
-  dev-network           & Forgejo                        & nein (nur Web) \\
-  tools-network         & Homepage, Vaultwarden          & nein (nur Web) \\
+  home-network          & Home Assistant, Mosquitto      & nein \\
+  monitoring-network    & Prometheus, Grafana, Loki      & nein \\
+  communication-network & Ntfy, Alertmanager             & nein \\
+  dev-network           & Forgejo                        & nein \\
+  tools-network         & Homepage, Vaultwarden          & nein \\
   \bottomrule
 \end{tabular}
 \caption{Vereinfachte Übersicht der internen Docker-Netzwerke.}
@@ -348,6 +348,9 @@ Komforteinschränkung und kein Sicherheitsproblem. Wie wir damit umgehen und
 warum wir dem Mandanten dafür ergänzend einen WireGuard-Zugang empfehlen, steht
 im Abschnitt zu den eingegangenen Kompromissen.
 
+\subparagraph{Hintergrund}
+Der Zusammenhang mit dem HTTP Host-Header ist dabei ganz direkt. Authelia bestimmt zwar die Issuer URL aus einer statisch konfigurierten Basis-Adresse, prüft aber bei jeder Abfrage, ob der Host bzw X-Forwarded-Host Header zu dieser passt. Greift ein Client über eine andere Adresse zu (z.B. die Tor Adresse), schlägt dieser Abgleich fehl. Selbst wenn dieser Abgleich umgangen werden könnte, bliebe das Problem bestehen, da der ausgestellte \texttt{ID-Token} die falsche Issuer-URL trägt und die Anwendung sie gegen die hinterlegte validiert (oder: validieren sollte). Eine Lösung über den Browser (etwa durch Header-Manipulation) ist daher (meines erachtens nach) nicht sinnvoll möglich. Würden die OIDC-Clienten Host-Header nicht strikt validieren, wären sie für Injection-Angriffe anfällig. Die feste Bindung ist daher kein Mangel, sondern eine bewusste Sicherheitsfunktion von OIDC, welche wir nicht umgehen können, ohne die Sicherheit des gesamten Systems signifikant herabzusetzen.
+
 \subsubsection{Monitoring und Alerting}
 
 Für die Überwachung setzen wir auf den bekannten Stack aus Prometheus
@@ -391,13 +394,6 @@ die Benachrichtigungen die eigene Infrastruktur nicht. Beispiele für
 definierte Alarme sind hohe CPU-Last, knapper Speicherplatz, ausgefallene
 Container und ein nicht erreichbares Backend hinter Traefik.
 
-\subsubsection{Objektspeicher mit Garage}
-
-Garage ist ein leichtgewichtiger, S3-kompatibler Objektspeicher. Wir nutzen ihn
-als Speicher-Backend für OpenCloud. Auch Garage läuft mit minimalen Rechten
-(alle Capabilities entfernt, read-only Dateisystem) und ist nur innerhalb des
-Storage-Netzes erreichbar.
-
 \subsubsection{Absicherung der Container}
 \label{sec:apphost-container}
 
@@ -413,10 +409,7 @@ Compose-Dateien und sind damit für den Mandanten nachvollziehbar:
   \item \textbf{Capabilities auf null und gezielt zurück.} Wir entfernen mit
     \texttt{cap\_drop: ALL} zunächst sämtliche Linux-Capabilities und geben
     anschließend pro Dienst nur die wenigen wieder frei, die er wirklich
-    braucht. Traefik bekommt zum Beispiel nur \texttt{NET\_BIND\_SERVICE}, um die
-    Ports 80 und 443 zu binden, die Datenbanken nur die für den Wechsel des
-    Benutzers nötigen Capabilities. Die meisten Dienste laufen ganz ohne
-    zusätzliche Capabilities.
+    braucht. Typischerweise sind das SETUID oder SETGID, wenn der Container selbst intern den Benutzer welchselt. 
   \item \textbf{Read-only Dateisystem.} Wo es der Dienst zulässt (z.B. Traefik,
     Tor, Garage, Node-Exporter, Homepage, ntfy und Mosquitto), wird das
     Wurzeldateisystem des Containers schreibgeschützt eingebunden. Für die

@@ -13,14 +13,15 @@ Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständi
 \end{itemize}
 
 \subsection{Kernel-Härtung}
-\textcolor{OliveGreen}{Oliven-Grüne} Optionen sind unter NixOS 26.05 stand 02. Juli standardmäßig auf den gleichen Wert gesetzt.
+\textcolor{OliveGreen}{Oliven-Grüne} Optionen sind unter NixOS 26.05 (Stand 02. Juli 2026) auf den gleichen Wert wie der Standard gesetzt. Ein explizites setzen ist jedoch dennoch sinnvoll, um eine bessere Auditierbarkeit des Systems zu ermöglichen und vor unbeachteten Änderungen des Standards geschützt zu sein.
+Nicht alle Optionen sind für Virtuelle Maschinen relevant - dennoch setzen wir sie, um auch bei Bare-Metal ausführung möglichst viel Sicherheit zu bieten.
 
 \subsubsection*{Spectre/Meltdown/CPU-Mitigationen}
 \begin{itemize}
   \item Page Table Isolation: \texttt{pti=on}
-  \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on}
-  \item TSX deaktiviert + TAA/MDS vollständig mitigiert (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt})
-  \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt}
+  \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on} Erzwingt Speculative Store Bypass für alle anwendungen, nicht nur sandboxed. Default: seccomp
+  \item TSX deaktiviert + TAA/MDS vollständig mitigiert (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt}). Kein Standard. Deaktiviert SMT (Simultaneous Multithreading) und TSX (Transactional Memory) komplett, schützt jedoch vor Exploits ähnlich zu Rebtleed. 
+  \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt} Kein Standard. Deaktiviert SMT 
 \end{itemize}
 
 \subsubsection*{Speicher- \& Adressraumschutz}
@@ -34,8 +35,8 @@ Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständi
 \subsubsection*{DMA-Schutz (IOMMU)}
 \begin{itemize}
   \item IOMMU erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \texttt{intel\_iommu=on}. Oftmals automatisch aktiviert, jedoch nicht immer.
-  \item DMA Passthrough deaktiviert: \texttt{iommu.passthrough=0}
-  \item Early PCI DMA blockiert: \texttt{efi=disable\_early\_pci\_dma}
+  \item DMA Passthrough deaktiviert: \texttt{iommu.passthrough=0}. Verschlechtert Performance bei Thunderbolt/USB4, schützt aber verlässlich gegen DMA Angriffe
+  \item Early PCI DMA blockiert: \texttt{efi=disable\_early\_pci\_dma}. Schließt mögliches Early-Boot Thunderbolt /USB 4/ Angriffsfenster.
 \end{itemize}
 
 \subsubsection*{Kernel-Informationslecks}
