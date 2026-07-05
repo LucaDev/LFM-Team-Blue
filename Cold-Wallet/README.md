@@ -1,6 +1,6 @@
 # Runbook – Air-gapped PSBT-Workflow (Cold-Wallet)
 
----
+***
 
 ## Ziel
 
@@ -16,7 +16,7 @@ Der Standardmodus ist:
 * Die manuelle Prüfung in Sparrow Wallet ist verpflichtend.
 * Der Broadcast erfolgt ausschließlich im Hot-Kontext.
 
----
+***
 
 ## Systemhärtung – operative Auswirkungen
 
@@ -26,7 +26,7 @@ Die Cold-Signer-VMs sind über NixOS deklarativ gehärtet (nftables, Kernel-Här
 * **Air-Gap ist Standard:** Nach dem Build bootet die VM automatisch vollständig air-gapped. Ein Online-Modus existiert nur als separater Boot-Eintrag bzw. Skript (siehe Abschnitt *Air-Gap / Online umschalten*).
 * **Login:** Anmeldung als Benutzer `user` mit dem beim Setup gesetzten Passwort (es gibt kein Standardpasswort).
 
----
+***
 
 ## Rollen und Systeme
 
@@ -43,7 +43,7 @@ Aufgaben:
 
 Das Hot-System hält Key A beziehungsweise kann die Transaktion initial vorbereiten oder teilweise signieren, abhängig von der konkreten Wallet-Konfiguration.
 
----
+***
 
 ### Key-B-VM
 
@@ -55,7 +55,7 @@ Aufgaben:
 * Manuelle Prüfung der Transaktionsdetails
 * Signatur mit Key B
 
----
+***
 
 ### Key-C-VM
 
@@ -67,7 +67,7 @@ Aufgaben:
 * Manuelle Prüfung der Transaktionsdetails
 * Signatur mit Key C
 
----
+***
 
 ### Cold-Wallet
 
@@ -83,7 +83,7 @@ Aufgabe:
 * Zusammenführen von Signaturen
 * Finalisierung der Transaktion
 
----
+***
 
 ### Wechselmedium
 
@@ -97,7 +97,7 @@ Regeln:
 * Das Medium nach jedem Schritt sauber aushängen.
 * Kein automatischer Bulk-Transfer mehrerer Transaktionen.
 
----
+***
 
 ## Phase 0 – Einmaliges Setup
 
@@ -141,12 +141,19 @@ Manuelle Schritte **auf dem Hot-System**:
 Ergebnis auf dem Medium:
 
 ```
-/mnt/usb/wallets/hot/meta.json
-/mnt/usb/wallets/hot/hot-wallet.descriptor
-/mnt/usb/wallets/hot/xpub.txt
-```
+/mnt/usb/wallet/hot/metadata.json
+/mnt/usb/wallet/hot/descriptor.public.txt
+/mnt/usb/wallet/hot/xpub.txt
+/mnt/usb/wallet/cold/keyA.meta.json
+​```
 
-Hinweis: Es wird ausschließlich der öffentliche Anteil exportiert. Privates Schlüsselmaterial verbleibt im Hot-System, TPM-versiegelt. Eine ausführlichere Beschreibung steht in der README des Hot-KeyHolders (Key A).
+Hinweis:
+Es wird ausschließlich der öffentliche Anteil exportiert. 
+Privates Schlüsselmaterial verbleibt im Hot-System, TPM-versiegelt. 
+Eine ausführlichere Beschreibung steht in der README des Hot-KeyHolders (Key A).
+
+`wallet/cold/keyA.meta.json` ist der **48h-Cosigner-Anteil** von Key A für das Cold-Multisig (`[fingerprint/48h/1h/0h/2h]xpub`). 
+Dieser, nicht der 84h-Hot-Descriptor, wird beim Multisig-Aufbau als Key A eingesetzt.
 
 ***
 
@@ -165,21 +172,39 @@ Hinweis: In der Laborumgebung startet Sparrow im Regtest-Modus. Für den produkt
 
 ***
 
-### 0.3 Sparrow-Wallet auf Key B einrichten
+### 0.3 Cold-Multisig in Sparrow einrichten (Key B)
 
-Auf Key B wird das Cold-Multisig-Wallet bzw. das Watch-Only-Koordinationswallet eingerichtet.
+Das Cold-Wallet wird **direkt** als Multisig angelegt und nicht aus drei Single-Sig-Wallets zusammenkopiert. 
+Nur so leitet Sparrow jeden Cosigner korrekt unter BIP48/P2WSH (`m/48'/1'/0'/2'`) ab.
 
-Vorgehen:
+1. Sparrow → File → New Wallet → Name vergeben
+2. **Policy Type: Multi Signature**, Schwelle `2 of 3`
+3. **Script Type: Native SegWit (P2WSH)** → ergibt automatisch `m/48'/1'/0'/2'`
+4. Keystores:
+   * **Key B** (lokal): „New or Imported Software Wallet" → Seed. Sparrow zeigt
+     Derivation `m/48'/1'/0'/2'` – nicht ändern.
+   * **Key A** (extern): xpub aus `wallet/cold/keyA.meta.json` importieren.
+     **Nicht** den 84h-Hot-Descriptor verwenden.
+   * **Key C** (extern): dessen 48h-xpub importieren. (Von Schritt 4 auf einer anderen VM für Key C)
+5. Wallet erstellen.
 
-1. Sparrow starten
-2. Neues Wallet → Multisig
-3. Policy setzen: `2 aus 3`
-4. Schlüssel hinzufügen:
-   * Key A (importieren)
-   * Key B (lokal)
-   * Key C (importieren)
-5. Script-Typ: Native SegWit
-6. Wallet erstellen
+Als Ergebnis haben wir 2 VMs auf denen je eine Multi-Sig Wallet liegt.
+Jede dieser Wallet besitzt nur einen geheimen Schlüssel, die anderen beiden sind als öffentliche xpubs integriert.
+
+Zu beachten ist, dass für jede VM erst die Seed phrase als geheimes Schlüsselmaterial festgelegt werden und dann ausgetauscht werden muss.
+Ein Bilder der 48er Ableitung durch eine Single-Wallet ist nicht möglich.
+
+Dementsprechend wird der öffentliche Schlüssel des geheimen Materials nach Eingabe und vor Finalisierung bereits mit dem richtigen Ableitungspfad angezeigt und muss mit dem je anderen Wallet per USB manuell ausgetauscht werden.
+Erst nach Eingabe aller Schlüssel kann finalisiert (apply) werden.
+
+Der genaue Fingerprint muss ebenfalls übertragen werden.
+Bei korrektem Erstellen haben die Multi-Sig Wallet auf der VM von Key B und Key C denselben wsh-deskriptor.
+Dies ist einfach an der Checksumme am Ende zu erkennen.
+
+**Merksatz:** Origin-Label und xpub müssen zusammenpassen. 
+Ein 84h-xpub unter einem 48h-Label führt dazu, dass Key A die Cold-PSBT nicht signieren kann (`sign_with` findet keinen passenden Schlüssel).
+
+
 
 ***
 
@@ -221,15 +246,18 @@ Nach jeder Nutzung zwingend aushängen:
 
 ### 0.5 Descriptor exportieren
 
-Der Multisig-Descriptor wird exportiert und auf dem Wechselmedium gespeichert, z. B. unter:
+Der zusammengesetzte `wsh(sortedmulti(...))`-Descriptor wird als Datei auf dem
+Wechselmedium abgelegt:
 
-```
-/mnt/usb/wallets/cold/cold-signer.descriptor
-```
+​```
+/mnt/usb/wallet/cold/cold-signer.wsh
+​```
 
-Dieser dient zur Registrierung im Hot-System.
+Der automatische Import auf dem Basis-System (`wallet_import.sh`) liest die
+letzte Zeile dieser Datei als Descriptor. Dateiname `cold-signer.wsh` (nicht
+`.descriptor`), damit der Import ihn findet.
 
----
+***
 
 ## Air-Gap / Online umschalten
 
@@ -251,7 +279,7 @@ Alternativ beim Reboot im systemd-boot-Menü den Eintrag **„NixOS (online)"** 
 
 Ein normaler Reboot landet immer im air-gapped Standard. Nach Abschluss der Registrierung sollte die VM dauerhaft air-gapped betrieben werden.
 
----
+***
 
 # 1. Transaktionsprozess (Standard-Flow)
 
@@ -325,7 +353,7 @@ Danach aushängen:
 
 Auf dem Hot-System wird die PSBT importiert, finalisiert und über Bitcoin Core gebroadcastet (Skriptdetails siehe README des Hot-Wallets).
 
----
+***
 
 # 2. Operative Regeln
 
@@ -338,7 +366,7 @@ Auf dem Hot-System wird die PSBT importiert, finalisiert und über Bitcoin Core 
 * nach jedem Schritt aushängen: `/home/user/Desktop/scripts/setup/umnt-USB.sh`
 * Broadcast erfolgt ausschließlich im Hot-System
 
----
+***
 
 # 3. Hilfsprogramme
 
@@ -408,7 +436,7 @@ Einsatz:
 
 * Initial-Setup von der Installer-ISO
 
----
+***
 
 # 4. Reproduzierbarkeit / Build
 
