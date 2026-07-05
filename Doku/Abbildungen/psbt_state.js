@@ -4,6 +4,7 @@ config:
     defaultRenderer: elk
   theme: redux
   look: classic
+  layout: elk
 ---
 stateDiagram
   direction TB
@@ -14,7 +15,10 @@ stateDiagram
   PSBT_CREATED --> OPA_REJECTED:OPA-Policy
   OPA_APPROVED --> SIGNED:Signatur Key A
   OPA_APPROVED --> SIGNING_FAILED:Signatur fehlgeschlagen
-  SIGNED --> BROADCASTED:Hot 1/1 (Bitcoin Core)
+  SIGNED --> FINALIZED:Hot 1/1 finalisiert (finalizepsbt)
+  SIGNED --> FINALIZE_FAILED:Finalisierung fehlgeschlagen
+  FINALIZED --> BROADCASTED:Broadcast (sendrawtransaction)
+  FINALIZED --> BROADCAST_FAILED:Broadcast fehlgeschlagen
   SIGNED --> WAITING_HUMAN:Cold 1/3
   WAITING_HUMAN --> COLD_STARTED:psbt_export.sh auf USB
   WAITING_HUMAN --> COLD_STOPPED:alte Nachbefuell-PSBT gestoppt/geloescht
@@ -23,6 +27,8 @@ stateDiagram
   OPA_REJECTED --> [*]
   PSBT_FAILED --> [*]
   SIGNING_FAILED --> [*]
+  FINALIZE_FAILED --> [*]
+  BROADCAST_FAILED --> [*]
   COLD_STOPPED --> [*]
   note right of COLD_STARTED 
   keine Abbruchbedingung;
