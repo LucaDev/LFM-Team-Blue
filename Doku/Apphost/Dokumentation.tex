@@ -356,7 +356,7 @@ im Abschnitt zu den eingegangenen Kompromissen.
 \subparagraph{Hintergrund}
 Der Zusammenhang mit dem HTTP Host-Header ist dabei ganz direkt. Authelia bestimmt zwar die Issuer URL aus einer statisch konfigurierten Basis-Adresse, prüft aber bei jeder Abfrage, ob der Host bzw X-Forwarded-Host Header zu dieser passt. Greift ein Client über eine andere Adresse zu (z.B. die Tor Adresse), schlägt dieser Abgleich fehl. Selbst wenn dieser Abgleich umgangen werden könnte, bliebe das Problem bestehen, da der ausgestellte \texttt{ID-Token} die falsche Issuer-URL trägt und die Anwendung sie gegen die hinterlegte validiert (oder: validieren sollte). Eine Lösung über den Browser (etwa durch Header-Manipulation) ist daher (meines erachtens nach) nicht sinnvoll möglich. Würden die OIDC-Clienten Host-Header nicht strikt validieren, wären sie für Injection-Angriffe anfällig. Die feste Bindung ist daher kein Mangel, sondern eine bewusste Sicherheitsfunktion von OIDC, welche wir nicht umgehen können, ohne die Sicherheit des gesamten Systems signifikant herabzusetzen.
 
-\subsubsection{Monitoring und Alerting}
+\subsubsection{Monitoring und Alerting} \label{sec:apphost-monitoring}
 
 Für die Überwachung setzen wir auf den bekannten Stack aus Prometheus
 (Metriken), Loki (Logs), Grafana (Dashboards) und Alertmanager (Alarmierung).
