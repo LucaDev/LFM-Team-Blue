@@ -96,6 +96,16 @@ Reproduzierbarkeit
 
 Die schlüsselhaltende Hot-\ac{VM} (Key~A) wird analog gehärtet, ist jedoch nicht vollständig air-gapped, sondern ausschließlich über einen einzelnen, per WireGuard authentifizierten \ac{UDP}-Port erreichbar. Sämtlicher übriger Verkehr wird per \texttt{nftables} verworfen.
 
+\paragraph{Warnung bei NixOS installation} \mbox{}\\
+Bei der Installation von NixOS werden die folgenden Warnmeldung ausgegeben:
+\begin{itemize}
+    \item "Mount point '/boot' which backs the random seed file is world accessible, which is a security hole! ..."
+    \item "Random seed file '/boot/loader/.#bootctlrandom-seedc5706ea22f8895b0' is world accessible, which is a security hole! ..."
+\end{itemize}
+
+Diese stammen daraus, dass die gesetzten Berechtigungen für die vfat Boot-Partition nicht erkannt werden.
+Diese Warnung wurde recherchiert, ist der Community bekannt und wird als fälschlicherweise ausgelöst und damit unbedrohlich eingestuft \cite{nixOS_warnung}.
+
 \subsection{Cold-Wallet}
 
 Das Cold-Wallet ist vollständig air-gapped und besitzt keinerlei Netzwerkverbindung. Die Systeme werden auf dedizierten virtuellen Maschinen in der Proxmox-Umgebung betrieben, deren Netzwerkfunktionen sowohl auf Betriebssystem- als auch auf Hypervisor-Ebene deaktiviert sind \cite{airgap_psbt_guide, Wallets}.
@@ -214,13 +224,14 @@ Dabei werden die öffentlichen Deskriptoren für die \ac{BIP}84 Ableitung als de
 
 Der Deskriptor für das Multi-Signatur Wallet muss auf beiden \ac{VM} der Key~B und C Wallet importiert und als einer der drei Signaturen in Form eines xpub samt Fingerprint eingetragen werden.
 Um ein neues Wallet für Key~B und C zu erstellen, muss je \ac{VM} \emph{eine} neue (oder bekannte) Seed Phrase eingegeben werden. Durch das Eintragen der Seed-Phrase im Multi-Signatur-Wallet Kontext wird von dieser Seed-Phrase automatisch der richtig Ableitungskontext von \path{m/48h/1h/0h/2h} (regtest) gebildet.
+Die Sparrow Konfiguration wird in Abbildung \ref{fig6:sparrow_multiSetup} dargestellt.
 Diese muss als neuen Datei in Form ihres xpubs und Fingerprint auf das Wechselmedium kopiert werden und wie Key~A als watch-only Bestandteil auf der je anderen \ac{VM} eingetragen werden.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=1.0\textwidth]{Doku/Abbildungen/sparrow/sparrow_multiSetup.png}
     \caption{Sparrow Multi-Signatur - Einstellungen. Quelle: Eigenes Bildschirm-Foto aus Sparrow.}
-    \label{fig6:sparrow_openTX}
+    \label{fig6:sparrow_multiSetup}
 \end{figure}
 
 Der \ac{BIP}84 Schlüssel wird primär für das automatische Signieren für das Hot-Wallet verwendet. Es empfiehlt sich jedoch ebenfalls, diesen direkt in Sparrow als separate Watch-Only-Wallet zu registrieren. Dadurch werden dynamische Adressen, die zu diesem Wallet gehören, automatisch aufgelöst und als Zieladresse der Transaktion angezeigt. \label{sec:sparrow_keyA_load}
@@ -234,7 +245,7 @@ Der daraus generierte wsh-Deskriptor muss anschließend als separate Datei auf d
     \label{fig3:cold_setup}
 \end{figure}
 
-Um diesen Prozess zu vereinfachen, stehen auf den Cold- und Hot-Wallet-\acp{VM} folgende Skripte zur Verfügung:
+Um den in Abbildung \ref{sec:cold_setup} dargestellten Prozess zu vereinfachen, stehen auf den Cold- und Hot-Wallet-\acp{VM} folgende Skripte zur Verfügung:
 \begin{itemize}
   \item \path{psbt/setup/mnt_usb.sh}: Voraussetzung für manuelle Operationen auf dem \ac{USB}-Medium,
   \item \path{psbt/setup/umnt_usb.sh}: synchronisiert das Wechselmedium und wirft es sicher aus,
@@ -256,7 +267,7 @@ Diese Verifizierung stellt sich wie im weiteren Verlauf in \ref{sec:alt_hash} ku
     \label{fig6:sparrow_output_verif}
 \end{figure}
 
-Nach der Signierung kann eine finalisierte \ac{TX} direkt als Datei mit der neuen Endung \path{.txn} auf dem Wechselmedium gespeichert werden (siehe \ref{XXX}). Dies ist wie in Abbildung \ref{fig6:sparrow_broadcast} direkt über den Knopf \texttt{Save Final Transaction} auf Sparrow möglich. Das dargestellte Bild zeigt zudem das als Alternative beschriebene direkte broadcasting über Sparrow im online Modus aus Kapitel \ref{sec:alt_Sparrow_broadcast}.
+Nach der Signierung kann eine finalisierte \ac{TX} direkt als Datei mit der neuen Endung \path{.txn} auf dem Wechselmedium gespeichert werden. Dies ist wie in Abbildung \ref{fig6:sparrow_broadcast} direkt über den Knopf \texttt{Save Final Transaction} auf Sparrow möglich. Das dargestellte Bild zeigt zudem das als Alternative beschriebene direkte broadcasting über Sparrow im online Modus aus Kapitel \ref{sec:alt_Sparrow_broadcast}.
 Danach kann das \ac{USB}-Medium wieder in das Hot-Wallet eingesteckt und über das Skript \path{psbt_broadcast.sh} importiert sowie automatisch über Bitcoin Core gebroadcastet werden.
 
 \begin{figure}[H]
@@ -508,7 +519,7 @@ Der bereitgestellte verschlüsselten Tunnel fungiert über Basic Authentication 
 Die Verbindung basiert auf einem schlanken \ac{UDP}-Protokoll und nutzt moderne kryptographische Verfahren zur Authentifizierung und Schlüsselvereinbarung.
 Diese Konfiguration erfolgt zum einen deklarativ per oneShot über NixOS und zum anderen als automatisiertes Skript, sodass reproduzierbare und gehärtete Netzwerkkonfigurationen ermöglicht werden.
 Für das besonders kritische Schlüsselmaterial auf NixOS können so alle Ports außer dem \ac{UDP}-Port für den WireGuard-Handshake blockiert werden \cite{wireguard}.
-Folgende Skripte zum automatisierten Installieren von WireGuard auf dem Basissystem und zur Peer-Verbindung auf beiden Systemen wurden aufgesetzt:
+Folgende Skripte, einsahbar in Tabelle \ref{tab:wireguard_scripts}, zum automatisierten Installieren von WireGuard auf dem Basissystem und zur Peer-Verbindung auf beiden Systemen wurden aufgesetzt:
 
 \begin{table}[htbp]
 \centering
@@ -636,8 +647,7 @@ Dies wurde direkt ersetzt durch die Methode \path{walletcreatefundedpsbt} \cite{
 \end{itemize}
 übernimmt.
 
-Verschiedene Parameter wurden für die Standard-Hot-Wallet-\ac{PSBT}-Erstellung festgelegt und können vom Mandaten in der Applikationslogik angepasst werden. Für Nachbefüllungs- und Sicherungs-Intents bestimmt der \ac{OPA} diese Werte dynamisch auf Basis eines Risk Scores.
-Wie dieser Score aus dem Wallet-Saldo bestimmt wird und welche konkreten \ac{PSBT}-Parameter dieser festlegt, zeigt Tabelle~\ref{tab:OPA_fundSwitch}.
+Verschiedene Parameter wurden für die Standard-Hot-Wallet-\ac{PSBT}-Erstellung festgelegt und können vom Mandaten in der Applikationslogik angepasst werden.  Diese können in Tabelle \ref{tab:psbt_params} nachvollzogen werden.
 \begin{table}[h]
 \centering
 \begin{tabular}{|l|l|p{7cm}|}
@@ -662,6 +672,8 @@ bip32derivs & True & Ermöglicht Ableitungspfadinformationen für Signaturprozes
 \caption{Parameter der \ac{PSBT}-Erstellung}
 \label{tab:psbt_params}
 \end{table}
+
+Für Nachbefüllungs- und Sicherungs-Intents bestimmt der \ac{OPA} diese Parameter-Werte dynamisch auf Basis eines Risk Scores. Wie dieser Score aus dem Wallet-Saldo bestimmt wird und welche konkreten \ac{PSBT}-Parameter dieser festlegt, zeigt Tabelle~\ref{tab:OPA_fundSwitch}.
 
 \paragraph{Open Policy Agent} \label{sec:opa} \mbox{}\\
 Die autorisierende Entscheidung über Transaktionen erfolgt zentral über den Open Policy Agent. \ac{OPA} evaluiert Transaktionsanfragen anhand konfigurierbarer Regeln wie Betragslimits, Gebühren und dem Vorhandensein benötigter Eingaben. Die Policy-Logik und die Limits sind dabei vollständig von der Applikationslogik entkoppelt und können vom Mandanten frei bearbeitet werden \cite{opa_docs,opa_microservices}.
@@ -884,10 +896,3 @@ Dementsprechend ist ein Angriff auf die Redis-Komponente nur bei einer fast voll
 \paragraph{Partner Authentifizierung} \label{sec:partner_auth} \mbox{}\\
 Eine weitergehende Absicherung der externen Schnittstellen bestünde in einer expliziten Authentifizierung der Überweisungspartner, etwa über \ac{HMAC}-signierte Anfragen, Basic Authentication oder OAuth auf der \ac{HTTP}-Eingangsschnittstelle. Ein solches Verfahren ist jedoch stark partnerabhängig, da Schlüsselaustausch, Token-Format und Gültigkeitsdauer je Partner individuell ausgehandelt werden müssten. Daher wurde dieser Ansatz nicht als fester Bestandteil der Architektur umgesetzt. 
 Die Authentizität eingehender Zahlungsanfragen wird stattdessen bereits teilweise durch das Whitelisting der Ziel-Wallet-Adressen abgedeckt: Da ausschließlich Transaktionen an registrierte, dem jeweiligen Partner zugeordnete Wallets signiert werden, bleibt die Wirkung einer gefälschten Anfrage begrenzt. Eine ergänzende partnerspezifische Authentifizierung bleibt dem Mandanten als Erweiterung im Approval-Gate offen.
-
-\paragraph{Warnung bei NixOS installation} \mbox{}\\
-Bei der Installation von NixOS werden die Warnmeldung:
-"Mount point '/boot' which backs the random seed file is world accessible, which is a security hole!" und "Random seed file '/boot/loader/.#bootctlrandom-seedc5706ea22f8895b0' is world accessible, which is a security hole!" ausgegeben.
-
-Diese stammen daraus, dass die gesetzten Berechtigungen für die vfat Boot-Partition nicht erkannt werden.
-Diese Warnung wurde recherchiert, ist der Community bekannt und wird als fälschlicherweise ausgelöst und damit unbedrohlich eingestuft \cite{nixOS_warnung}.
