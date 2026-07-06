@@ -4,9 +4,9 @@ Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständi
 
 \subsection{Boot \& Firmware}
 \begin{itemize}
-  \item \textbf{Secure Boot (lanzaboote):} Alle NixOS-Generationen werden beim Build automatisch signiert. Der Boot schlägt fehl, wenn die Signatur nach dem Key-Enrollment ungültig ist. (\texttt{boot.lanzaboote.enable = true})
+  \item \textbf{Secure Boot (lanzaboote):} Alle NixOS-Generationen werden beim Build automatisch signiert. Der Boot schlägt fehl, wenn die Signatur nach dem Key-Enrollment ungültig ist.
   \item \textbf{TPM-Integration:} Der TPM-Chip ist in den Secure-Boot-Prozess eingebunden (\texttt{tpm-eventlog}); ermöglicht Measured Boot.
-  \item \textbf{Bootloader-Editor deaktiviert:} \texttt{boot.loader.systemd-boot.editor = false} verhindert das Umgehen des Passworts über den Boot-Editor.
+  \item \textbf{Bootloader-Editor deaktiviert:} \texttt{systemd-boot.editor = false} verhindert das Umgehen des Passworts über den Boot-Editor.
   \item \textbf{Kernel-Modul-Signatur erzwungen:} \texttt{module.sig\_enforce=1} - nur signierte Kernel-Module dürfen geladen werden.
   \item \textbf{Kernel-Lockdown:} \texttt{lockdown=confidentiality} sperrt privilegierten Zugriff auf Kernel-Speicher.
   \item \textbf{UEFI-Passwort (Host):} Muss im Mainboard-BIOS gesetzt werden (herstellerspezifisch).
@@ -20,7 +20,8 @@ Nicht alle Optionen sind für Virtuelle Maschinen relevant - dennoch setzen wir 
 \begin{itemize}
   \item Page Table Isolation: \texttt{pti=on}
   \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on} Erzwingt Speculative Store Bypass für alle anwendungen, nicht nur sandboxed. Default: seccomp
-  \item TSX deaktiviert + TAA/MDS vollständig mitigiert (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt}). Kein Standard. Deaktiviert SMT (Simultaneous Multithreading) und TSX (Transactional Memory) komplett, schützt jedoch vor Exploits ähnlich zu Rebtleed. 
+  \item TSX deaktiviert + TAA/MDS vollständig mitigiert\\
+  (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt}). Kein Standard. Deaktiviert SMT (Simultaneous Multithreading) und TSX (Transactional Memory) komplett, schützt jedoch vor Exploits ähnlich zu Rebtleed. 
   \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt} Kein Standard. Deaktiviert SMT 
 \end{itemize}
 
@@ -43,9 +44,11 @@ Nicht alle Optionen sind für Virtuelle Maschinen relevant - dennoch setzen wir 
 \begin{itemize}
   \item Kernel-Pointer versteckt: \texttt{kernel.kptr\_restrict=2}. Default=1. Stärkere Restriktion aktiviert
   \item dmesg nur für root: \texttt{\textcolor{OliveGreen}{kernel.dmesg\_restrict=1}}. Standard jedoch explizit gesetzt.
-  \item Unprivilegiertes BPF deaktiviert: \texttt{\textcolor{OliveGreen}{kernel.unprivileged\_bpf\_disabled=1, net.core.bpf\_jit\_enable=0}}, Standard unter NixOS jedoch explizit gesetzt.
+  \item Unprivilegiertes BPF deaktiviert: \\
+  \textcolor{OliveGreen}{\texttt{kernel.unprivileged\_bpf\_disabled=1},\\
+  \texttt{net.core.bpf\_jit\_enable=0}}, Standard unter NixOS jedoch explizit gesetzt.
   \item perf\_events nur privilegiert: \texttt{kernel.perf\_event\_paranoid=3}. Standard=2. Höheres Schutzlevel
-  \item ptrace eingeschränkt: \texttt{kernel.yama.ptrace\_scope=2} (nur \texttt{PTRACE\_TRACEME}). Default=1. Noch stärkere Einschränkung von ptrace
+  \item ptrace eingeschränkt: \texttt{kernel.yama.ptrace\_scope=2}\\(nur \texttt{PTRACE\_TRACEME}). Default=1. Noch stärkere Einschränkung von ptrace
   \item SysRq deaktiviert: \texttt{kernel.sysrq=0}. Default=1
   \item setuid-Core-Dumps deaktiviert: \texttt{fs.suid\_dumpable=0}. Default=2
 \end{itemize}
@@ -54,7 +57,7 @@ Nicht alle Optionen sind für Virtuelle Maschinen relevant - dennoch setzen wir 
 \begin{itemize}
   \item \textcolor{OliveGreen}{\texttt{fs.protected\_hardlinks=1}, \texttt{fs.protected\_symlinks=1}}. Nur explizit gesetzt
   \item \texttt{fs.protected\_fifos=2}, \texttt{fs.protected\_regular=2}. Default=1. Erweitert FIFO und regular File Schutz
-  \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}. Default=nosuid,nodev. noexec für zusätzlichere Absicherung
+  \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}. Default=nosuid,nodev. noexec für zusätzliche Absicherung
 \end{itemize}
 
 \subsubsection*{Blacklisted Kernel-Module (Angelehnt an CIS Benchmark)}
