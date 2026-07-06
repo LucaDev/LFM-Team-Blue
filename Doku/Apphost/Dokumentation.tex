@@ -207,7 +207,7 @@ dem Wegfall von Kubernetes ist das die naheliegende Wahl: Die Konfiguration ist
 kompakt, gut lesbar und für den Mandanten leicht nachvollziehbar. Der gesamte
 Stack wird über eine zentrale \texttt{docker-compose.yml} zusammengesetzt, die
 per \texttt{include} einzelne, nach Themen gruppierte Compose-Dateien einbindet
-(zum Beispiel \texttt{media}, \texttt{documents}, \texttt{monitoring},
+(zum Beispiel \texttt{media}, \texttt{documents},\\ \texttt{monitoring},
 \texttt{cloud}). Dadurch bleibt jede Datei überschaubar und ist einem klaren
 Zweck zugeordnet.
 
@@ -408,7 +408,7 @@ Container nach demselben Grundmuster. Diese Einstellungen stehen direkt in den
 Compose-Dateien und sind damit für den Mandanten nachvollziehbar:
 
 \begin{itemize}
-  \item \textbf{Keine neuen Privilegien.} Jeder Container läuft mit
+  \item \textbf{Keine neuen Privilegien.} Jeder Container läuft mit\\
     \texttt{no-new-privileges:true}. Damit kann ein Prozess im Container seine
     Rechte nicht nachträglich erhöhen, etwa über setuid-Binaries.
   \item \textbf{Capabilities auf null und gezielt zurück.} Wir entfernen mit
@@ -466,7 +466,7 @@ sobald er die passende Kette an Middlewares referenziert.
     Subdomains, damit Browser gar nicht erst versuchen, sich unverschlüsselt zu verbinden.
     Browser haben zwar in den letzten Jahren aufgrund der hohen Verbreitung von HTTPS auf ein HTTPS by default Modell gewechselt, HSTS erzwingt HTTPS jedoch permanent im Browser.
     Das Eintragen in die Preload-Listen der Browser erfordert jedoch einen öffentlich erreichbaren Webserver nach außen und das Beantragen auf \texttt{hstspreload.org}. Das Preload-Flag hat daher momentan keine Wirkung und stellt lediglich eine Vorbereitung dar.
-  \item \textbf{Security-Header für alle Dienste:} Über die Middleware
+  \item \textbf{Security-Header für alle Dienste:} Über die Middleware\\
     \texttt{security-headers} setzt Traefik sicherheitsrelevante Header wie
     \texttt{Content-Security-Policy}, \texttt{X-Frame-Options},
     \texttt{X-Content-Type-Options: nosniff}, eine restriktive Referrer- und
@@ -487,7 +487,8 @@ sobald er die passende Kette an Middlewares referenziert.
   \item \textbf{Auswertbare Logs.} Das Access-Log läuft im
     JSON-Format und wird an Loki weitergereicht. Sensible Header wie
     \texttt{Authorization} und \texttt{Cookie} werden dabei grundsätzlich
-    verworfen, während \texttt{User-Agent} und \texttt{X-Forwarded-For} für
+    verworfen, während \\
+    \texttt{User-Agent} und \texttt{X-Forwarded-For} für
     potentielle zukünftige forensische Auswertungen erhalten bleiben.
 \end{itemize}
 
@@ -556,7 +557,7 @@ Supply-Chain-Angriffe auf Abhängigkeiten.
   \item \textbf{Keine offenen Ports.} Da Web-Zugriff nur über das Heimnetz
     und über Tor erfolgt und die Zertifikate per DNS-01 geholt
     werden, muss kein einziger Port ins Internet geöffnet werden. Das nimmt
-    klassischen Remote-Angriffen von vornherein die Angriffsfläche. Auch intern wird zusätzlich  ledigtlich SSH für die Wartung benötigt.
+    klassischen Remote-Angriffen von vornherein die Angriffsfläche. Auch intern wird zusätzlich lediglich SSH für die Wartung benötigt.
   \item \textbf{Starke, zentrale Authentifizierung.} Authelia mit Argon2id und
     Mehr-Faktor-Authentifizierung schützt die Dienste. Fail2ban sperrt nach
     wenigen Fehlversuchen sowohl bei SSH als auch bei fehlgeschlagenen
@@ -612,7 +613,7 @@ setzen wir an mehreren Stellen an:
     sodass DNS-Anfragen nicht im Klartext beim Provider landen.
   \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über NTS
     (Network Time Security), also authentifiziert über TLS.
-  \item \textbf{Keine fremde Cloud für Alarme.} Wie beschrieben laufen
+  \item \textbf{Keine fremde Cloud für Benachrichtigungen.} Wie beschrieben laufen
     Push-Benachrichtigungen ausschließlich über das selbst gehostete ntfy.
 \end{itemize}
 

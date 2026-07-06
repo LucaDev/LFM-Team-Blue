@@ -19,8 +19,10 @@
 \usepackage{makeidx} % Index
 \makeindex % nur, wenn Index benutzt wird!
 \usepackage{microtype} % optischer Randausgleich
+\usepackage{ragged2e} % Für \RaggedRight in Tabellen
 \setlength{\parindent}{0pt}  % Absatz-Einrückung verhindern
 \usepackage[pdftex]{color,graphicx} % Bilder und Farben
+\usepackage{tikz} % Für tikzpicture-Umgebung
 \usepackage{caption}
 \usepackage{seqsplit} %Für Zeilenumbrüche
 \usepackage{subcaption} % Subcaptions für Abbildungen
@@ -170,7 +172,7 @@ Tabellenverzeichnis
 \setcounter{section}{0}
 \renewcommand{\thesection}{A\arabic{section}}
 
-\include{Doku/Apphost/Anhang}
+\include{Doku/Anhang-KI}
 \include{Doku/Apphost/Anhang-Appverzeichnis}
 \include{Doku/Apphost/Anhang-Security}
 

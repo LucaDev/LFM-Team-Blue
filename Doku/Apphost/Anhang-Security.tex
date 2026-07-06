@@ -142,13 +142,12 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 Überwacht werden u.\,a.:
 \begin{itemize}
   \item Zeitänderungen (\texttt{clock\_settime}, \texttt{/etc/localtime})
-  \item Benutzer-/Gruppenänderungen (\texttt{/etc/passwd}, \texttt{/etc/shadow}, \texttt{/etc/group})
+  \item Benutzer-/Gruppenänderungen (\texttt{/etc/\{passwds,shadow,group\}})
   \item Privilege Escalation (execve mit UID-Wechsel zu root)
   \item Kernel-Modul-Laden/Entladen (\texttt{init\_module}, \texttt{delete\_module})
   \item Änderungen an \texttt{/etc/sudoers} und \texttt{/etc/docker/}
   \item Dateilösch- und Berechtigungsänderungen
   \item Netzwerkkonfigurationsänderungen (\texttt{sethostname}, \texttt{/etc/hosts})
-  \item Backlog-Limit: 8192 Einträge
 \end{itemize}
 
 \subsubsection*{Fail2ban - Progressives Banning}
@@ -156,7 +155,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
   \item SSH-Jail: 3 Fehlversuche $\Rightarrow$ 2 Stunden Sperre
   \item Traefik-Jail: 5 Fehlversuche (HTTP 401) $\Rightarrow$ 1 Stunde Sperre
   \item Progressives Banning aktiv: jede weitere Sperre verlängert sich automatisch, bis max.\ 48 Stunden
-  \item Backend: nftables (kein iptables)
+  \item Backend: nftables (systemweit kein iptables mehr im Einsatz)
 \end{itemize}
 
 \subsubsection*{AIDE - Dateisystem-Integrität}
@@ -171,12 +170,13 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \subsection{Container-Sicherheit}
 \begin{itemize}
   \item \textbf{User-Namespace-Remapping:} \texttt{userns-remap=default} - Root im Container wird auf UID 100000-165536 auf dem Host gemappt. Ein Container-Ausbruch liefert dem Angreifer keinen root-Zugriff auf den Host.
-  \item \textbf{Docker-Socket nur via Unix-Socket:} kein TCP-Listener (\texttt{hosts=[\textquotedbl{}unix:///var/run/docker.sock\textquotedbl{}]}), kein Userland-Proxy.
+  \item \textbf{Docker-Socket nur via Unix-Socket:} kein TCP-Listener \\
+  (\texttt{hosts=[\textquotedbl{}unix:///var/run/docker.sock\textquotedbl{}]}), kein Userland-Proxy.
   \item \textbf{Socket-Proxy:} Traefik greift nur über einen eingeschränkten Docker-Socket-Proxy auf die Docker-API zu. Direkter API-Zugriff ist geblockt.
   \item \textbf{Seccomp-Profil:} Standard-Docker-Seccomp-Profil aktiv.
   \item \textbf{Strikte Verzeichnisrechte:} \texttt{/opt/apphost/secrets} ist \texttt{0700} (kein Gruppen-Zugriff); alle anderen App-Verzeichnisse \texttt{0750}.
   \item \textbf{Core-Dumps deaktiviert:} \texttt{LimitCORE=0} im Docker-Daemon.
-  \item \textbf{Wöchentlicher CVE-Scan:} Trivy scannt alle laufenden Images montags 02:00 auf HIGH/CRITICAL-Schwachstellen (\texttt{/var/log/docker-security-scan.log}).
+  \item \textbf{Wöchentlicher CVE-Scan:} Trivy scannt alle laufenden Images montags 02:00 auf HIGH/CRITICAL-Schwachstellen.
 \end{itemize}
 
 \subsubsection*{Kata Containers \& gVisor (optional, standardmäßig deaktiviert)}
@@ -186,7 +186,8 @@ Primär geeignet für nicht vertrauenswürdigen Code. Für den normalen Betrieb 
 
 \subsection{Festplatte \& Daten}
 \begin{itemize}
-  \item \textbf{Swap verschlüsselt:} Zufälliger Schlüssel pro Boot (\texttt{randomEncryption=true}) (keine persistenten Daten im Swap. Standardmäßig nicht unter NixOS aktiviert).
+  \item \textbf{Swap verschlüsselt:} Zufälliger Schlüssel pro Boot \\
+  (\texttt{randomEncryption=true}) keine persistenten Daten im Swap. Standardmäßig nicht unter NixOS aktiviert.
   \item \textbf{Btrfs mit zstd-Kompression} auf allen Subvolumes.
   \item \textbf{/tmp eingeschränkt:} Mount-Optionen \texttt{nosuid,nodev,noexec}.
   \item \textbf{ESP (\texttt{/boot}):} Umask \texttt{0077} (nur root darf lesen). 
@@ -195,7 +196,7 @@ Primär geeignet für nicht vertrauenswürdigen Code. Für den normalen Betrieb 
 \subsection{Update-Management}
 
 \begin{itemize}
-  \item \textbf{NixOS-Auto-Upgrade:} Täglich 04:30 Uhr (± 15 min zufällige Verzögerung). Neustart muss manuell durchgeführt werden (\texttt{allowReboot=false}).
+  \item \textbf{NixOS-Auto-Upgrade:} Täglich 04:30 Uhr (± 15 min zufällige Verzögerung). Neustart muss manuell durchgeführt werden.
   \item \textbf{RenovateBot:} Container-Images werden automatisch aktuell gehalten (siehe Abschnitt~\ref{sec:renovate}).
   \item \textbf{Nix-Store GC:} Wöchentlich, löscht Generationen älter als 30 Tage.
 \end{itemize}
