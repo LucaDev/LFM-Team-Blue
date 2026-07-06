@@ -194,8 +194,14 @@ Subvolumes für \texttt{/}, \texttt{/nix}, \texttt{/var}, \texttt{/opt} und
 Swap wird bei jedem Start mit einem zufälligen Schlüssel verschlüsselt, damit
 keine sensiblen Daten ungeschützt im Swap landen.
 
-\subsubsection{Warum Docker Compose}
+Optional lässt sich die Root-Partition mit LUKS2 verschlüsseln.
+Standardmäßig ist das jedoch deaktiviert, weil die Annahme getroffen wird,
+dass der gesamte Proxmox Host durch den Nutzer mit Festplattenverschlüsselung installiert wurde.
+Wer die zusätzliche Schutzschicht dennoch möchte, kann sie bei der Installation aktivieren.
+Die Umschaltung wirkt nur bei einer Neuinstallation, da dafür die Festplatte neu partitioniert
+wird.
 
+\subsubsection{Warum Docker Compose}
 Die Dienste selbst laufen als Container, orchestriert über Docker Compose. Nach
 dem Wegfall von Kubernetes ist das die naheliegende Wahl: Die Konfiguration ist
 kompakt, gut lesbar und für den Mandanten leicht nachvollziehbar. Der gesamte
@@ -207,7 +213,6 @@ Zweck zugeordnet.
 
 \subsubsection{Netzwerksegmentierung}
 \label{sec:apphost-netze}
-
 Statt alle Container in ein gemeinsames Netzwerk zu hängen, bekommt jede
 Dienstgruppe ihr eigenes Docker-Netzwerk. Eine Datenbank ist nur in dem Netz
 erreichbar, in dem auch die zugehörige Anwendung liegt, und nicht von überall.
@@ -438,8 +443,59 @@ laufend aktuell gehaltenen Images entsteht so ein kontinuierlicher Kreislauf:
 Neue Schwachstellen werden zeitnah erkannt, und das passende Update steht meist
 schon als Pull Request bereit.
 
-\subsubsection{Umgang mit Geheimnissen}
 
+\subsubsection{Härtung von Webanfragen mit Traefik}
+Weil Traefik der einzige Einstiegspunkt für Web-Verkehr ist, bündeln wir dort
+auch die Härtungsmaßnahmen, die für den HTTPS-Verkehr aller Dienste gelten.
+Statt Security-Header, TLS-Einstellungen und Zugriffsschutz in mehr als zwanzig
+einzelnen Diensten separat zu pflegen, definieren wir sie zentral als
+Traefik Middleware und binden sie über sog. Chains an die
+jeweiligen Router. Ein neuer Dienst erbt damit automatisch den vollen Schutz,
+sobald er die passende Kette an Middlewares referenziert.
+
+\begin{itemize}
+  \item \textbf{TLS-Konfiguration nach BSI TR-02102-2:} Traefik bevorzugt
+    TLS~1.3 und erlaubt als Fallback TLS~1.2 nur mit den vom BSI empfohlenen
+    AEAD-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven X25519,
+    P-256 und P-384. \texttt{sniStrict} sorgt dafür, dass Anfragen ohne
+    passenden Hostnamen abgewiesen werden, statt auf ein Default-Zertifikat
+    auszuweichen.
+  \item \textbf{Erzwungenes HTTPS und HSTS:} Der HTTP-Entrypoint leitet jede
+    Anfrage permanent auf HTTPS um. Zusätzlich setzt Traefik einen
+    HSTS-Header (HTTP Strict Transport Security) mit zwei Jahren Gültigkeit, Preload-Flag für alle
+    Subdomains, damit Browser gar nicht erst versuchen, sich unverschlüsselt zu verbinden.
+    Browser haben zwar in den letzten Jahren aufgrund der hohen Verbreitung von HTTPS auf ein HTTPS by default Modell gewechselt, HSTS erzwingt HTTPS jedoch permanent im Browser.
+    Das Eintragen in die Preload-Listen der Browser erfordert jedoch einen öffentlich erreichbaren Webserver nach außen und das Beantragen auf \texttt{hstspreload.org}. Das Preload-Flag hat daher momentan keine Wirkung und stellt lediglich eine Vorbereitung dar.
+  \item \textbf{Security-Header für alle Dienste:} Über die Middleware
+    \texttt{security-headers} setzt Traefik sicherheitsrelevante Header wie
+    \texttt{Content-Security-Policy}, \texttt{X-Frame-Options},
+    \texttt{X-Content-Type-Options: nosniff}, eine restriktive Referrer- und
+    Permissions-Policy (deaktiviert u.a. Kamera, Mikrofon, Standort) sowie
+    Cross-Origin-Opener/Embedder/Resource-Policy. Gleichzeitig werden
+    \texttt{Server}- und \texttt{X-Powered-By}-Header geleert, damit
+    Angreifer aus einer Antwort nicht ableiten können, welche Software und
+    Version dahintersteckt. Ein \texttt{X-Robots-Tag: noindex} verhindert
+    außerdem unter Umständen, dass interne Dienste in Suchmaschinen landen.
+  \item \textbf{Schutz vor gefälschten Auth-Headern.} Dienste wie Grafana oder
+    Paperless vertrauen im Onion-Pfad einem \texttt{Remote-User}-Header, den
+    Authelia nach erfolgreicher Prüfung setzt. Über das Clearnet darf dieser
+    Header niemals vom Client selbst kommen. Die Middleware
+    \texttt{strip-remote-user} entfernt deshalb auf allen normalen Routern
+    jeden vom Client mitgeschickten \texttt{Remote-*}-Header, bevor die
+    Anfrage den Dienst erreicht, sodass sich niemand durch einen gefälschten
+    Header als anderer Benutzer ausgeben kann.
+  \item \textbf{Auswertbare Logs.} Das Access-Log läuft im
+    JSON-Format und wird an Loki weitergereicht. Sensible Header wie
+    \texttt{Authorization} und \texttt{Cookie} werden dabei grundsätzlich
+    verworfen, während \texttt{User-Agent} und \texttt{X-Forwarded-For} für
+    potentielle zukünftige forensische Auswertungen erhalten bleiben.
+\end{itemize}
+
+Diese Maßnahmen ergänzen die oben beschriebene Container-Härtung von Traefik selbst (u.a. \texttt{cap\_drop:
+ALL}, read-only Dateisystem und Zugriff auf die Docker-API ausschließlich über den Socket-Proxy).
+
+
+\subsubsection{Umgang mit Geheimnissen}
 Alle Geheimnisse (Passwörter, Token, Schlüssel) liegen in einer
 \texttt{.env}-Datei und einem \texttt{secrets/}-Verzeichnis, die beide nicht im
 Git eingecheckt werden. Aus den Klartextwerten der \texttt{.env} erzeugen kleine
