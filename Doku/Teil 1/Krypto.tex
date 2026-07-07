@@ -136,141 +136,6 @@ Bei der Installation von NixOS werden die folgenden Warnmeldungen ausgegeben:
 Diese rühren daher, dass die gesetzten Berechtigungen für die vfat-Boot-Partition nicht erkannt werden.
 Diese Warnung wurde recherchiert, ist der Community bekannt und wird als fälschlich ausgelöst und damit unbedrohlich eingestuft \cite{nixOS_warnung}.
 
-\subsection{Cold-Wallet}
-
-Das Cold-Wallet ist vollständig air-gapped und besitzt keinerlei Netzwerkverbindung. Die Systeme werden auf dedizierten virtuellen Maschinen in der Proxmox-Umgebung betrieben, deren Netzwerkfunktionen sowohl auf Betriebssystem- als auch auf Hypervisor-Ebene deaktiviert sind \cite{airgap_psbt_guide, Wallets}.
-
-Das vom Internet isolierte Cold-Wallet bildet den architektonischen Kern des Systems und verwaltet ca.\ 95\,\% der Bitcoin-Bestände. Diese gilt es dementsprechend besonders zu schützen, weshalb sich für ein Air-Gap und ein 2-aus-3-Multi-Signatur-Wallet entschieden wurde. Die Isolierung des Systems reduziert die Angriffsfläche gegenüber netzwerkbasierten Angriffen erheblich und verhindert direkte Remote-Kompromittierungen.
-
-Unter der Voraussetzung eines sicheren Perimeters am Standort des Mandanten verbleiben als Bedrohungen im Wesentlichen der operationelle Signierprozess selbst, der Datentransfer über das Wechselmedium sowie die Software-Lieferkette der eingesetzten Komponenten. Diese werden in der Sicherheitsbetrachtung
-(siehe \ref{sec:sicherheitsbetrachtung}) einzeln bewertet.
-Um den operationellen Prozess sicher zu gestalten, wurde sich für einen 2-aus-3-Multi-Signatur-Prozess entschieden, wobei über einen \ac{USB}-Stick \acp{PSBT} transferiert werden können \cite{riskpublishing_hotcold,bip174,Sparrow_Wallets_Best_Practices,knowingbitcoin_hotcold,psbt_dcentral,airgap_psbt_guide}.
-Dieser Multi-Signatur-Prozess wird besonders für hohe Geldsummen und professionelle Architekturen empfohlen und findet dementsprechend Verwendung \cite{Sparrow_Wallets_Best_Practices}. Ein Hinzufügen weiterer benötigter Signaturen durch einfaches Ergänzen zusätzlicher Cold-\acp{VM} und das Erhöhen des Reglers bleibt im Ermessen des Mandanten.
-
-\subsubsection{Architektur}
-
-\paragraph{Hardware und Betriebssystem} \mbox{}\\
-Die Aufteilung auf zwei getrennte \acp{VM} (Key~B und Key~C) ergibt sich unmittelbar aus dem 2-aus-3-Multi-Signatur-Modell. Zusammen mit dem im Hot-System gehaltenen Key~A bilden sie drei unabhängige Cosigner, von denen zwei zur Freigabe einer Cold-Transaktion genügen. 
-Die physische Trennung auf zwei Maschinen verhindert, dass die Kompromittierung eines einzelnen Cold-Systems bereits zwei Schlüssel preisgibt. Key~C dient zusätzlich als Recovery-Schlüssel (siehe~\ref{sec:backup}), sodass, wenn eine Maschine ausfällt, die Spend-Fähigkeit über die verbleibenden zwei Schlüssel erhalten bleibt und die gesamten Assets auf ein neues Wallet transportiert werden können. Der Mandant kann die beiden \acp{VM} an getrennten, physisch gesicherten Orten betreiben oder das Verfahren durch weitere Cold-Signer auf ein 3-aus-4-Schema verschärfen.
-
-Als air-gap-fähiger Multi-Signatur-Koordinator und Schlüsselhalter der Cold-\acp{VM} wurde Sparrow Wallet gewählt. Ausschlaggebend waren die vollständige Offline-Fähigkeit, die transparente Darstellung der Zieladressen, \ac{TX}- und \ac{UTXO}-Details für die manuelle Verifikation (siehe \ref{sec:sparrow_signierung}) sowie die native Unterstützung von Deskriptoren und dem \ac{PSBT}-Prozess. Die konkrete Abwägung gegen die Alternativen folgt im Anschluss (siehe \ref{sec:alt_sparrow}).
-
-Das Multi-Signatur-Wallet selbst enthält auf jeder \ac{VM} je einen geheimen kryptographischen Schlüssel und je zwei öffentliche Schlüssel (siehe \ref{sec:cold_setup}). Jeder einzelne Schlüssel bleibt isoliert, und eine manuelle Verifikation durch den Mandanten bleibt als Voraussetzung für den Broadcast bestehen.
-
-Für die sicherheitskritische Komponente des kryptographischen Schlüsselmaterials wird NixOS als Betriebssystem verwendet. Dies ermöglicht reproduzierbare, deklarative und minimalistische Konfigurationen. Eine besondere Härtung der Hardware- und Netzwerk-Schicht sichert gegen unbeabsichtigtes Mounten von \ac{USB}-Medien und Zugriff über offene Ports ab \cite{nixos_funktionsweise}.
-
-Auf diesem System wird NixOS bewusst so konfiguriert, dass bestimmte nutzerfreundliche Funktionen bereitgestellt werden, die nicht Teil einer Standard-NixOS-Installation sind. Ziel ist es, sicherheitskritische Skripte kontrolliert und dennoch einfach nutzbar zu machen.
-Darunter fallen ein deklarativer Desktop-Mount sowie automatisierte Skripte. Zudem führt der \ac{XFCE}-Dateimanager (Thunar) Shell-Skripte nicht standardmäßig per Doppelklick aus. Diese Einschränkung wird explizit aufgehoben, um dem Nutzer für bestimmte Skripte eine einfachere Nutzung zu ermöglichen.
-
-\paragraph{Sparrow Wallet} \mbox{}\\
-Sparrow Wallet ist eine quelloffene Desktop-Bitcoin-Wallet mit Fokus auf Self-Custody, Sicherheit und Transparenz, womit sie die inhaltlichen Anforderungen des Mandanten unterstützt. Sie unterstützt Single- und Multi-Signatur, Output-Deskriptoren und
-den vollständigen \ac{PSBT}-Prozess nach \cite{bip174}. 
-Außerdem wird eine Anbindung an einen eigenen Bitcoin Core Node ermöglicht, welche wir nicht nutzen, jedoch als Alternative anerkennen (siehe \ref{sec:alt_Sparrow_broadcast}). 
-Es unterstützt zudem die Besonderheit der Cold-Wallet \acp{VM}, sodass es offline Signierung sowohl über Dateien, \ac{USB} als auch animierte \ac{QR}-Codes ermöglicht. Daneben zeichnet es sich ebenfalls durch eine breite Hardware-Wallet-Integration und eine Vielzahl an Konnektoren und Wallet Formaten aus, welche als weitere Alternativen beschrieben wurden und dem Mandanten offenstehen (Siehe \ref{sec:alt_alg}).
-Ein besonderes Merkmal ist die transparente Darstellung aller Transaktions- und \ac{UTXO}-Details, die die manuelle Verifikation im Cold-Prozess erst sicher und praktikabel macht und dementsprechend fest eingeplant ist (siehe \ref{sec:sparrow_signierung}) \cite{sparrow_docs,Sparrow_Wallets_Features}.
-
-In unserer Integration fungiert Sparrow Wallet als Multi-Signatur-Koordinator, \ac{PSBT}-Handler und Key Holder. Eine Instanz darf diese Rollen, wie oben bereits erwähnt, gleichzeitig halten \cite{sparrow_docs,sparrow_multisig}.
-Zudem verwaltet die Applikation keine vollständige Blockchain, da sie keine Netzwerkverbindung besitzt. Private Schlüssel verbleiben ausschließlich auf den jeweiligen Cold-Key-Systemen, während allein der interne und externe Multi-Signatur-Deskriptor des Cold-Wallets auf Bitcoin Core registriert wird \cite{sparrow_multisig, airgap_psbt_guide}.
-
-Sparrow übernimmt im Cold-Bereich folgende Aufgaben:
-\begin{itemize}
-  \item Import und Anzeige freigegebener \acp{PSBT},
-  \item Koordination der Multi-Signatur-Signaturen,
-  \item Überprüfung der Skript- und Adressstruktur,
-  \item Zusammenführung und Finalisierung der Signaturen.
-\end{itemize}
-
-Anzuführen ist ebenfalls, dass sich Sparrow während der Entwicklung durch einen Fehler im stable-Release auszeichnete. Nach dem Download aus dem Nix-Store und dem Ausführen des Programms ergaben sich Probleme mit der JavaFX-Bibliothek, und verschiedene Fenster mit dem Fehler \textbf{Panes omitted} konnten nicht angezeigt werden.
-Aufgrund dessen wurde sich während der Entwicklung für die unstable-Version entschieden, die Java~25 nativ unterstützt und diese Probleme behob. Während der Entwicklung wurde zudem NixOS 26.05 veröffentlicht, welche Java~25 direkt umfasst, weshalb der unstable-channel während der Entwicklungsperiode wieder aufgehoben werden konnte.
-Die Channels \texttt{nixos-stable} und \texttt{nixos-unstable} sind beide offizielle, von den NixOS-Maintainern betreute Zweige desselben Repositories. \texttt{unstable} ist dabei nicht schlechter gepflegt, sondern lediglich der schneller aktualisierte Rolling-Zweig mit neueren Paketversionen (hier Java~25), der kürzer stabilisiert wurde. Die zwischenzeitliche Nutzung von \texttt{unstable} war daher eine bewusste, temporäre Wahl zur Behebung des JavaFX-Fehlers.
-
-Zusätzlich wird die Wallet-Anwendung deklarativ in NixOS integriert: Installation über den Nix Store, definierte Startparameter (Netzwerkmodus \texttt{-{}-regtest}) und Bereitstellung einer Desktop-Datei, welche den Start per Doppelklick auf das Desktop-Icon ermöglicht.
-
-\label{sec:dyn_adress}
-Eine Besonderheit von Bitcoin, die extra beachtet werden musste, stellt die Adressierung von Wallets dar.
-Während für jede \ac{TX} dieselbe statische Empfangsadresse verwendet werden kann, stellt dies nicht den Standard dar.
-Zur Verringerung der Nachvollziehbarkeit von \ac{TX}-Abläufen und damit Erhöhung des Datenschutzes werden oft Zieladressen dynamisch aus dem öffentlichen externen Deskriptor nach der \ac{BIP}32-Hierarchie gebildet.
-Dies ist ebenfalls für den internen Deskriptor und die Quell-Adresse der Fall, wobei diese bereits im Signierprozess als von dieser Wallet stammend verifiziert wird und kein größeres Problem darstellt.
-
-Dieser Sachverhalt stellt ein Problem für die manuelle Verifikation von \ac{PSBT}-Details wie im Signierungsprozess (siehe \ref{sec:cold_sign}) beschrieben dar, da die Zieladresse als zugehörig zur Hot-Wallet von Key~A verifiziert werden soll.
-Dafür sollte der externe Deskriptor von Key~A als Watch-Only-Wallet integriert werden, sodass Sparrow die dynamische Adresse zu dem hinterlegten Wallet vollautomatisch auflösen kann. Der Mandant kann so direkt verifizieren, dass die Cold-Wallet-\ac{PSBT} Geld nur an das Hot-Wallet sendet. 
-
-Die Wahl des Koordinators ist eine architektonische Grundsatzentscheidung und wird der Implementierung bewusst vorangestellt: Erst wenn feststeht, welche Software die Rollen Koordinator, \ac{PSBT}-Handler und Schlüsselhalter air-gapped vereinen kann, ergibt der konkrete Setup- und Signierprozess Sinn.
-\textbf{Alternativen zu Sparrow Wallet} \label{sec:alt_sparrow} \\
-Als air-gap-fähige Koordinatoren kämen ebenfalls \texttt{Electrum}, \texttt{Specter Desktop}, \texttt{Nunchuk}, \texttt{Caravan} sowie \texttt{Bitcoin Core} selbst in Frage. Diese decken jedoch jeweils nur Teile der benötigten Funktionalität netzunabhängig ab und fanden aufgrund dessen keine Verwendung.
-
-\begin{table}[htbp]
-\centering
-\footnotesize
-\renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\linewidth}{@{} l c c >{\RaggedRight}X @{}}
-\toprule
-\textbf{Kandidat} & \textbf{Offline-} & \textbf{Air-gapped} & \textbf{Ausschlussgrund} \\
-                  & \textbf{fähig}    & \textbf{Key-Halter} & \\
-\midrule
-\texttt{Electrum} & teilw. & nein
-  & Online-Variante benötigt öffentlichen Electrum-Server (Metadaten-Leak),
-    offline keine Wallet-übergreifende Adressauflösung, nicht Deskriptor-native
-    Konventionen erschweren \path{wsh}-Interoperabilität. \\
-\addlinespace
-\texttt{Bitcoin Core} & ja & ja (nur Keys)
-  & Kein für die manuelle Verifikation optimiertes \ac{GUI}
-    (Zieladresse, Betrag, \ac{UTXO}-Flüsse). \\
-\addlinespace
-\texttt{Specter Desktop} & ja & nein
-  & Reiner Koordinator ohne eigenes Schlüsselmaterial, nur gekoppelt mit
-    Bitcoin Core nutzbar, dann größere Codebasis/Angriffsfläche und geringere
-    \ac{PSBT}-Detailtiefe. \\
-\addlinespace
-\texttt{Nunchuk} & ja & nein
-  & Auf externe Signer (Hardware/Tapsigner) ausgelegt, eigene Software-Keys
-    vom Hersteller als testweise/unsicher deklariert. \\
-\addlinespace
-\texttt{Caravan} & ja & nein
-  & Zustandslose Web-App, nur Watch-Only-Koordinator, keine Persistenz der
-    Wallet-Konfiguration, rudimentäre \ac{TX}-Darstellung. \\
-\midrule
-\textbf{Sparrow (gewählt)} & \textbf{ja} & \textbf{ja}
-  & Vereint Koordinator, \ac{PSBT}-Handler und Key-Halter offline, transparente
-    \ac{TX}-/\ac{UTXO}-Anzeige für die manuelle Verifikation, native
-    Deskriptor- und \ac{PSBT}-Unterstützung. \\
-\bottomrule
-\end{tabularx}
-\caption{Bewertung air-gap-fähiger Multi-Signatur-Koordinatoren gegenüber Sparrow Wallet}
-\label{tab:sparrow_alternativen}
-\end{table}
-
-
-\subsubsection{Sicherheitsmodell}
-
-\paragraph{Backup und Wiederherstellung} \label{sec:backup} \mbox{}\\
-Für die Wiederherstellbarkeit des Systems sind drei Artefakte relevant, die
-getrennt und redundant zu sichern sind:
-\begin{itemize}
-    \item \textbf{Seeds:} Die 24-Wort-Phrasen aller drei Schlüssel (Key~A bis Key~C) werden ausschließlich analog verwahrt (siehe \ref{sec:seed_notieren}), idealerweise an räumlich getrennten, physisch gesicherten Orten.
-    \item \textbf{Wallet-Deskriptor:} Der \path{wsh(sortedmulti(...))}-Deskriptor samt der \ac{xpub}-Fingerprints ist für die Wiederherstellung des Multi-Signatur-Wallets funktional zwingend erforderlich: Zwei Seeds allein genügen nicht, um die Wallet-Struktur und die Ableitungspfade zu rekonstruieren. Da der Deskriptor kein Geheimnis darstellt, kann er mehrfach kopiert und gemeinsam mit jedem Seed-Backup abgelegt werden.
-    \item \textbf{Systemkonfiguration:} Die deklarativen NixOS-Konfigurationen samt gepinntem Flake erlauben den identischen Neuaufbau jeder \ac{VM}.
-\end{itemize}
-Auf dieser Grundlage sind alle relevanten Ausfallszenarien abgedeckt:
-\begin{itemize}
-    \item \textbf{Ausfall einer Cold-\ac{VM} (Key~B oder Key~C):} Durch das 2-aus-3-Modell bleibt die Spend-Fähigkeit über die verbleibenden zwei Schlüssel erhalten. Die ausgefallene Maschine wird aus der Konfiguration neu aufgebaut und der Schlüssel aus dem Seed-Backup wiederhergestellt. Alternativ werden die Bestände auf ein neu aufgesetztes Wallet transferiert.
-    \item \textbf{Ausfall der Key~A \ac{VM} (inklusive \ac{TPM}-Defekt):} Das \ac{TPM} versiegelt lediglich die lokal vorgehaltene Entropie. Die maßgebliche Sicherung ist die analog notierte Seed-Phrase. Auf einer neu aufgebauten \ac{VM} wird der Seed eingespielt und erneut im \ac{TPM} der neuen Maschine versiegelt.
-    \item \textbf{Verlust oder Defekt des Wechselmediums:} Da sich pro Zeitpunkt höchstens eine \ac{PSBT} auf dem Medium befindet und deren Zustand in der \ac{PSBT}-\ac{DB} geführt wird, geht kein Schlüsselmaterial verloren. Der betroffene Vorgang wird verworfen und neu angestoßen.
-    \item \textbf{Gleichzeitiger Verlust zweier Schlüssel:} Dieser Fall ist durch die räumlich getrennte Seed-Verwahrung abzufangen und markiert die Grenze des Modells. Er ist organisatorisch, nicht technisch zu verhindern.
-\end{itemize}
-
-
-
-\paragraph{Broadcast} \mbox{}\\
-Eine zusätzliche Integritätssicherung der finalisierten \ac{TX} auf dem Rückweg zum Basis-System ist nicht erforderlich. Jede nachträgliche Veränderung an Inputs, Outputs oder Beträgen invalidiert die bereits geleisteten Signaturen, sodass eine derart veränderte \ac{TX} bei der Validierung durch das Bitcoin-Netzwerk zwangsläufig abgewiesen wird. 
-Auch ein vollständiger Austausch der Datei gegen eine andere, in sich gültige
-\ac{TX} gefährdet die Bestände nicht: Eine fremde Transaktion trägt keine Signaturen des Cold-Wallets und kann dessen \acp{UTXO} daher nicht bewegen.
-Eine Kompromittierung dieses letzten Schrittes beträfe somit ausschließlich das Schutzziel der Verfügbarkeit und der Broadcast unterbliebe oder müsste
-wiederholt werden. Es zöge keinen Verlust von Assets nach sich. Gleichwohl gilt es, diesen Zustand über das Monitoring zu erkennen und zu vermeiden.
-
-Die operativen Abläufe des Cold-Wallets, welche das einmalige Setup sowie den manuelle Signierungs-Prozess beinhalten, umfassen Komponenten beider Systeme und werden daher nach der Vorstellung der Hot-Wallet-Services gesammelt in Abschnitt~\ref{sec:prozesse} beschrieben.
-
-
 
 \subsection{Hot-Wallet}
 
@@ -300,7 +165,7 @@ Die Infrastruktur teilt sich in Microservices für die direkte \ac{TX}-Verarbeit
 \subsubsection{Unterstützende Komponenten}
 Als unterstützende Komponenten wird die Basis-Infrastruktur bezeichnet, die nicht speziell auf \ac{BTC}-\acp{TX} zugeschnitten ist und so auch von den anderen Services des Self-Hosted-Setups verwendet werden kann beziehungsweise wird.
 
-Wie für die schlüsselmaterialverwaltenden \acp{VM} des Cold-Signers kommt ebenfalls im Hot-Wallet für Key~A NixOS zum Einsatz, wodurch eine Vielzahl an Sicherheitsvorkehrungen direkt deklarativ im Betriebssystem vorgenommen werden kann.
+Wie bei den deklarativ gehärteten Schlüsselhalter-\acp{VM} (siehe Tabelle~\ref{tab:nixos_hardening}) kommt auch im Hot-Wallet für Key~A NixOS zum Einsatz, wodurch eine Vielzahl an Sicherheitsvorkehrungen direkt deklarativ im Betriebssystem vorgenommen werden kann.
 
 \paragraph{Bitcoin Core Node} \mbox{}\\
 Bitcoin Core wird verwendet, um eine wesentliche Vereinfachung von Bitcoin-Operationen zu erreichen. Betrieben als Full Node ohne aktivierte Wallet-Funktion übernimmt dieser Service sowohl die Validierung von Blöcken und Transaktionen, die Mempool-Verwaltung als auch Gebührenschätzungen, besitzt jedoch keine kryptographischen Schlüssel \cite{bitcoin_core_docs,Sparrow_Wallets_Node_Connect}.
@@ -616,7 +481,7 @@ Da diese Transaktionen einen abnormalen Zustand des Basis-Systems revidieren sol
 Die gebaute und bestätigte \ac{PSBT} wird anschließend über die Middleware an den Key-Holder weitergeleitet.
 Da das Schlüsselmaterial selbst die sicherheitskritischste Komponente darstellt, wurde dieser auf eine weitere \ac{VM} ausgelagert.
 
-Wie die Cold-Wallet-\acp{VM} basiert diese auf NixOS mit einer besonderen Härtung, ist jedoch im Unterschied zu den Cold-VMs weiterhin mit dem Internet verbunden.
+Wie die übrigen Schlüsselhalter-\acp{VM} basiert diese auf NixOS mit der beschriebenen Härtung (siehe Tabelle~\ref{tab:nixos_hardening}), ist jedoch im Unterschied zu den nachfolgend vorgestellten Cold-\acp{VM} weiterhin mit dem Internet verbunden.
 Diese Entscheidung dient nicht dem Beobachten der Blockchain oder anderen Bitcoin-Operationen, sondern dem Aufbau einer Kommunikationsbrücke zum Haupt-System. Im realen Nachbau durch den Mandanten kann diese durch ein \ac{USB}- oder \ac{LAN}-Kabel ersetzt werden. Eine Substitution durch eine Hardware-Wallet bietet sich nicht an, da die Automatisierung des Signierungsprozesses verloren ginge.
 
 \textbf{Internet-Verbindung} \\
@@ -693,6 +558,144 @@ Die für die Datenbankanbindung notwendigen Zugangsdaten werden nicht statisch v
 Ausgegeben werden nach den beiden Abläufen \acp{PSBT} für den Nachfüll-Prozess sowie finalisierte Hot-\acp{TX} für das vollautomatisierte Hot-Wallet.
 
 Eine tiefere Beschreibung der Konfiguration und des gesamten Setup- und Signierungsprozesses kann in der \path{README.md} des NixOsHot- und Basis-System-GitHub nachgelesen werden \cite{NixOsHot_github, Krypto_Basis_github}. Eine Kurzübersicht aller Skripte bietet Tabelle~\ref{tab:skripte} im Anhang.
+
+\subsection{Cold-Wallet}
+
+Das Cold-Wallet ist vollständig air-gapped und besitzt keinerlei Netzwerkverbindung. Die Systeme werden auf dedizierten virtuellen Maschinen in der Proxmox-Umgebung betrieben, deren Netzwerkfunktionen sowohl auf Betriebssystem- als auch auf Hypervisor-Ebene deaktiviert sind \cite{airgap_psbt_guide, Wallets}.
+
+Das vom Internet isolierte Cold-Wallet bildet den architektonischen Kern des Systems und verwaltet ca.\ 95\,\% der Bitcoin-Bestände. Diese gilt es dementsprechend besonders zu schützen, weshalb sich für ein Air-Gap und ein 2-aus-3-Multi-Signatur-Wallet entschieden wurde. Die Isolierung des Systems reduziert die Angriffsfläche gegenüber netzwerkbasierten Angriffen erheblich und verhindert direkte Remote-Kompromittierungen.
+
+Unter der Voraussetzung eines sicheren Perimeters am Standort des Mandanten verbleiben als Bedrohungen im Wesentlichen der operationelle Signierprozess selbst, der Datentransfer über das Wechselmedium sowie die Software-Lieferkette der eingesetzten Komponenten. Diese werden in der Sicherheitsbetrachtung
+(siehe \ref{sec:sicherheitsbetrachtung}) einzeln bewertet.
+Um den operationellen Prozess sicher zu gestalten, wurde sich für einen 2-aus-3-Multi-Signatur-Prozess entschieden, wobei über einen \ac{USB}-Stick \acp{PSBT} transferiert werden können \cite{riskpublishing_hotcold,bip174,Sparrow_Wallets_Best_Practices,knowingbitcoin_hotcold,psbt_dcentral,airgap_psbt_guide}.
+Dieser Multi-Signatur-Prozess wird besonders für hohe Geldsummen und professionelle Architekturen empfohlen und findet dementsprechend Verwendung \cite{Sparrow_Wallets_Best_Practices}. Ein Hinzufügen weiterer benötigter Signaturen durch einfaches Ergänzen zusätzlicher Cold-\acp{VM} und das Erhöhen des Reglers bleibt im Ermessen des Mandanten.
+
+\subsubsection{Architektur}
+
+\paragraph{Hardware und Betriebssystem} \mbox{}\\
+Die Aufteilung auf zwei getrennte \acp{VM} (Key~B und Key~C) ergibt sich unmittelbar aus dem 2-aus-3-Multi-Signatur-Modell. Zusammen mit dem im Hot-System gehaltenen Key~A bilden sie drei unabhängige Cosigner, von denen zwei zur Freigabe einer Cold-Transaktion genügen. 
+Die physische Trennung auf zwei Maschinen verhindert, dass die Kompromittierung eines einzelnen Cold-Systems bereits zwei Schlüssel preisgibt. Key~C dient zusätzlich als Recovery-Schlüssel (siehe~\ref{sec:backup}), sodass, wenn eine Maschine ausfällt, die Spend-Fähigkeit über die verbleibenden zwei Schlüssel erhalten bleibt und die gesamten Assets auf ein neues Wallet transportiert werden können. Der Mandant kann die beiden \acp{VM} an getrennten, physisch gesicherten Orten betreiben oder das Verfahren durch weitere Cold-Signer auf ein 3-aus-4-Schema verschärfen.
+
+Als air-gap-fähiger Multi-Signatur-Koordinator und Schlüsselhalter der Cold-\acp{VM} wurde Sparrow Wallet gewählt. Ausschlaggebend waren die vollständige Offline-Fähigkeit, die transparente Darstellung der Zieladressen, \ac{TX}- und \ac{UTXO}-Details für die manuelle Verifikation (siehe \ref{sec:sparrow_signierung}) sowie die native Unterstützung von Deskriptoren und dem \ac{PSBT}-Prozess. Die konkrete Abwägung gegen die Alternativen folgt im Anschluss (siehe \ref{sec:alt_sparrow}).
+
+Das Multi-Signatur-Wallet selbst enthält auf jeder \ac{VM} je einen geheimen kryptographischen Schlüssel und je zwei öffentliche Schlüssel (siehe \ref{sec:cold_setup}). Jeder einzelne Schlüssel bleibt isoliert, und eine manuelle Verifikation durch den Mandanten bleibt als Voraussetzung für den Broadcast bestehen.
+
+Für die sicherheitskritische Komponente des kryptographischen Schlüsselmaterials wird NixOS als Betriebssystem verwendet. Dies ermöglicht reproduzierbare, deklarative und minimalistische Konfigurationen. Eine besondere Härtung der Hardware- und Netzwerk-Schicht sichert gegen unbeabsichtigtes Mounten von \ac{USB}-Medien und Zugriff über offene Ports ab \cite{nixos_funktionsweise}.
+
+Auf diesem System wird NixOS bewusst so konfiguriert, dass bestimmte nutzerfreundliche Funktionen bereitgestellt werden, die nicht Teil einer Standard-NixOS-Installation sind. Ziel ist es, sicherheitskritische Skripte kontrolliert und dennoch einfach nutzbar zu machen.
+Darunter fallen ein deklarativer Desktop-Mount sowie automatisierte Skripte. Zudem führt der \ac{XFCE}-Dateimanager (Thunar) Shell-Skripte nicht standardmäßig per Doppelklick aus. Diese Einschränkung wird explizit aufgehoben, um dem Nutzer für bestimmte Skripte eine einfachere Nutzung zu ermöglichen.
+
+\paragraph{Sparrow Wallet} \mbox{}\\
+Sparrow Wallet ist eine quelloffene Desktop-Bitcoin-Wallet mit Fokus auf Self-Custody, Sicherheit und Transparenz, womit sie die inhaltlichen Anforderungen des Mandanten unterstützt. Sie unterstützt Single- und Multi-Signatur, Output-Deskriptoren und
+den vollständigen \ac{PSBT}-Prozess nach \cite{bip174}. 
+Außerdem wird eine Anbindung an einen eigenen Bitcoin Core Node ermöglicht, welche wir nicht nutzen, jedoch als Alternative anerkennen (siehe \ref{sec:alt_Sparrow_broadcast}). 
+Es unterstützt zudem die Besonderheit der Cold-Wallet \acp{VM}, sodass es offline Signierung sowohl über Dateien, \ac{USB} als auch animierte \ac{QR}-Codes ermöglicht. Daneben zeichnet es sich ebenfalls durch eine breite Hardware-Wallet-Integration und eine Vielzahl an Konnektoren und Wallet Formaten aus, welche als weitere Alternativen beschrieben wurden und dem Mandanten offenstehen (Siehe \ref{sec:alt_alg}).
+Ein besonderes Merkmal ist die transparente Darstellung aller Transaktions- und \ac{UTXO}-Details, die die manuelle Verifikation im Cold-Prozess erst sicher und praktikabel macht und dementsprechend fest eingeplant ist (siehe \ref{sec:sparrow_signierung}) \cite{sparrow_docs,Sparrow_Wallets_Features}.
+
+In unserer Integration fungiert Sparrow Wallet als Multi-Signatur-Koordinator, \ac{PSBT}-Handler und Key Holder. Eine Instanz darf diese Rollen, wie oben bereits erwähnt, gleichzeitig halten \cite{sparrow_docs,sparrow_multisig}.
+Zudem verwaltet die Applikation keine vollständige Blockchain, da sie keine Netzwerkverbindung besitzt. Private Schlüssel verbleiben ausschließlich auf den jeweiligen Cold-Key-Systemen, während allein der interne und externe Multi-Signatur-Deskriptor des Cold-Wallets auf Bitcoin Core registriert wird \cite{sparrow_multisig, airgap_psbt_guide}.
+
+Sparrow übernimmt im Cold-Bereich folgende Aufgaben:
+\begin{itemize}
+  \item Import und Anzeige freigegebener \acp{PSBT},
+  \item Koordination der Multi-Signatur-Signaturen,
+  \item Überprüfung der Skript- und Adressstruktur,
+  \item Zusammenführung und Finalisierung der Signaturen.
+\end{itemize}
+
+Anzuführen ist ebenfalls, dass sich Sparrow während der Entwicklung durch einen Fehler im stable-Release auszeichnete. Nach dem Download aus dem Nix-Store und dem Ausführen des Programms ergaben sich Probleme mit der JavaFX-Bibliothek, und verschiedene Fenster mit dem Fehler \textbf{Panes omitted} konnten nicht angezeigt werden.
+Aufgrund dessen wurde sich während der Entwicklung für die unstable-Version entschieden, die Java~25 nativ unterstützt und diese Probleme behob. Während der Entwicklung wurde zudem NixOS 26.05 veröffentlicht, welche Java~25 direkt umfasst, weshalb der unstable-channel während der Entwicklungsperiode wieder aufgehoben werden konnte.
+Die Channels \texttt{nixos-stable} und \texttt{nixos-unstable} sind beide offizielle, von den NixOS-Maintainern betreute Zweige desselben Repositories. \texttt{unstable} ist dabei nicht schlechter gepflegt, sondern lediglich der schneller aktualisierte Rolling-Zweig mit neueren Paketversionen (hier Java~25), der kürzer stabilisiert wurde. Die zwischenzeitliche Nutzung von \texttt{unstable} war daher eine bewusste, temporäre Wahl zur Behebung des JavaFX-Fehlers.
+
+Zusätzlich wird die Wallet-Anwendung deklarativ in NixOS integriert: Installation über den Nix Store, definierte Startparameter (Netzwerkmodus \texttt{-{}-regtest}) und Bereitstellung einer Desktop-Datei, welche den Start per Doppelklick auf das Desktop-Icon ermöglicht.
+
+\label{sec:dyn_adress}
+Eine Besonderheit von Bitcoin, die extra beachtet werden musste, stellt die Adressierung von Wallets dar.
+Während für jede \ac{TX} dieselbe statische Empfangsadresse verwendet werden kann, stellt dies nicht den Standard dar.
+Zur Verringerung der Nachvollziehbarkeit von \ac{TX}-Abläufen und damit Erhöhung des Datenschutzes werden oft Zieladressen dynamisch aus dem öffentlichen externen Deskriptor nach der \ac{BIP}32-Hierarchie gebildet.
+Dies ist ebenfalls für den internen Deskriptor und die Quell-Adresse der Fall, wobei diese bereits im Signierprozess als von dieser Wallet stammend verifiziert wird und kein größeres Problem darstellt.
+
+Dieser Sachverhalt stellt ein Problem für die manuelle Verifikation von \ac{PSBT}-Details wie im Signierungsprozess (siehe \ref{sec:cold_sign}) beschrieben dar, da die Zieladresse als zugehörig zur Hot-Wallet von Key~A verifiziert werden soll.
+Dafür sollte der externe Deskriptor von Key~A als Watch-Only-Wallet integriert werden, sodass Sparrow die dynamische Adresse zu dem hinterlegten Wallet vollautomatisch auflösen kann. Der Mandant kann so direkt verifizieren, dass die Cold-Wallet-\ac{PSBT} Geld nur an das Hot-Wallet sendet. 
+
+Die Wahl des Koordinators ist eine architektonische Grundsatzentscheidung und wird der Implementierung bewusst vorangestellt: Erst wenn feststeht, welche Software die Rollen Koordinator, \ac{PSBT}-Handler und Schlüsselhalter air-gapped vereinen kann, ergibt der konkrete Setup- und Signierprozess Sinn.
+\textbf{Alternativen zu Sparrow Wallet} \label{sec:alt_sparrow} \\
+Als air-gap-fähige Koordinatoren kämen ebenfalls \texttt{Electrum}, \texttt{Specter Desktop}, \texttt{Nunchuk}, \texttt{Caravan} sowie \texttt{Bitcoin Core} selbst in Frage. Diese decken jedoch jeweils nur Teile der benötigten Funktionalität netzunabhängig ab und fanden aufgrund dessen keine Verwendung.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{} l c c >{\RaggedRight}X @{}}
+\toprule
+\textbf{Kandidat} & \textbf{Offline-} & \textbf{Air-gapped} & \textbf{Ausschlussgrund} \\
+                  & \textbf{fähig}    & \textbf{Key-Halter} & \\
+\midrule
+\texttt{Electrum} & teilw. & nein
+  & Online-Variante benötigt öffentlichen Electrum-Server (Metadaten-Leak),
+    offline keine Wallet-übergreifende Adressauflösung, nicht Deskriptor-native
+    Konventionen erschweren \path{wsh}-Interoperabilität. \\
+\addlinespace
+\texttt{Bitcoin Core} & ja & ja (nur Keys)
+  & Kein für die manuelle Verifikation optimiertes \ac{GUI}
+    (Zieladresse, Betrag, \ac{UTXO}-Flüsse). \\
+\addlinespace
+\texttt{Specter Desktop} & ja & nein
+  & Reiner Koordinator ohne eigenes Schlüsselmaterial, nur gekoppelt mit
+    Bitcoin Core nutzbar, dann größere Codebasis/Angriffsfläche und geringere
+    \ac{PSBT}-Detailtiefe. \\
+\addlinespace
+\texttt{Nunchuk} & ja & nein
+  & Auf externe Signer (Hardware/Tapsigner) ausgelegt, eigene Software-Keys
+    vom Hersteller als testweise/unsicher deklariert. \\
+\addlinespace
+\texttt{Caravan} & ja & nein
+  & Zustandslose Web-App, nur Watch-Only-Koordinator, keine Persistenz der
+    Wallet-Konfiguration, rudimentäre \ac{TX}-Darstellung. \\
+\midrule
+\textbf{Sparrow (gewählt)} & \textbf{ja} & \textbf{ja}
+  & Vereint Koordinator, \ac{PSBT}-Handler und Key-Halter offline, transparente
+    \ac{TX}-/\ac{UTXO}-Anzeige für die manuelle Verifikation, native
+    Deskriptor- und \ac{PSBT}-Unterstützung. \\
+\bottomrule
+\end{tabularx}
+\caption{Bewertung air-gap-fähiger Multi-Signatur-Koordinatoren gegenüber Sparrow Wallet}
+\label{tab:sparrow_alternativen}
+\end{table}
+
+
+\subsubsection{Sicherheitsmodell}
+
+\paragraph{Backup und Wiederherstellung} \label{sec:backup} \mbox{}\\
+Für die Wiederherstellbarkeit des Systems sind drei Artefakte relevant, die
+getrennt und redundant zu sichern sind:
+\begin{itemize}
+    \item \textbf{Seeds:} Die 24-Wort-Phrasen aller drei Schlüssel (Key~A bis Key~C) werden ausschließlich analog verwahrt (siehe \ref{sec:seed_notieren}), idealerweise an räumlich getrennten, physisch gesicherten Orten.
+    \item \textbf{Wallet-Deskriptor:} Der \path{wsh(sortedmulti(...))}-Deskriptor samt der \ac{xpub}-Fingerprints ist für die Wiederherstellung des Multi-Signatur-Wallets funktional zwingend erforderlich: Zwei Seeds allein genügen nicht, um die Wallet-Struktur und die Ableitungspfade zu rekonstruieren. Da der Deskriptor kein Geheimnis darstellt, kann er mehrfach kopiert und gemeinsam mit jedem Seed-Backup abgelegt werden.
+    \item \textbf{Systemkonfiguration:} Die deklarativen NixOS-Konfigurationen samt gepinntem Flake erlauben den identischen Neuaufbau jeder \ac{VM}.
+\end{itemize}
+Auf dieser Grundlage sind alle relevanten Ausfallszenarien abgedeckt:
+\begin{itemize}
+    \item \textbf{Ausfall einer Cold-\ac{VM} (Key~B oder Key~C):} Durch das 2-aus-3-Modell bleibt die Spend-Fähigkeit über die verbleibenden zwei Schlüssel erhalten. Die ausgefallene Maschine wird aus der Konfiguration neu aufgebaut und der Schlüssel aus dem Seed-Backup wiederhergestellt. Alternativ werden die Bestände auf ein neu aufgesetztes Wallet transferiert.
+    \item \textbf{Ausfall der Key~A \ac{VM} (inklusive \ac{TPM}-Defekt):} Das \ac{TPM} versiegelt lediglich die lokal vorgehaltene Entropie. Die maßgebliche Sicherung ist die analog notierte Seed-Phrase. Auf einer neu aufgebauten \ac{VM} wird der Seed eingespielt und erneut im \ac{TPM} der neuen Maschine versiegelt.
+    \item \textbf{Verlust oder Defekt des Wechselmediums:} Da sich pro Zeitpunkt höchstens eine \ac{PSBT} auf dem Medium befindet und deren Zustand in der \ac{PSBT}-\ac{DB} geführt wird, geht kein Schlüsselmaterial verloren. Der betroffene Vorgang wird verworfen und neu angestoßen.
+    \item \textbf{Gleichzeitiger Verlust zweier Schlüssel:} Dieser Fall ist durch die räumlich getrennte Seed-Verwahrung abzufangen und markiert die Grenze des Modells. Er ist organisatorisch, nicht technisch zu verhindern.
+\end{itemize}
+
+
+
+\paragraph{Broadcast} \mbox{}\\
+Eine zusätzliche Integritätssicherung der finalisierten \ac{TX} auf dem Rückweg zum Basis-System ist nicht erforderlich. Jede nachträgliche Veränderung an Inputs, Outputs oder Beträgen invalidiert die bereits geleisteten Signaturen, sodass eine derart veränderte \ac{TX} bei der Validierung durch das Bitcoin-Netzwerk zwangsläufig abgewiesen wird. 
+Auch ein vollständiger Austausch der Datei gegen eine andere, in sich gültige
+\ac{TX} gefährdet die Bestände nicht: Eine fremde Transaktion trägt keine Signaturen des Cold-Wallets und kann dessen \acp{UTXO} daher nicht bewegen.
+Eine Kompromittierung dieses letzten Schrittes beträfe somit ausschließlich das Schutzziel der Verfügbarkeit und der Broadcast unterbliebe oder müsste
+wiederholt werden. Es zöge keinen Verlust von Assets nach sich. Gleichwohl gilt es, diesen Zustand über das Monitoring zu erkennen und zu vermeiden.
+
+Die operativen Abläufe des Cold-Wallets, welche das einmalige Setup sowie den manuelle Signierungs-Prozess beinhalten, umfassen Komponenten beider Systeme und werden daher nach der Vorstellung der Hot-Wallet-Services gesammelt in Abschnitt~\ref{sec:prozesse} beschrieben.
+
+
+
+
 
 \subsection{Prozesse} \label{sec:prozesse}
 
