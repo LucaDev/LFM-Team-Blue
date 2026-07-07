@@ -5,14 +5,14 @@ flowchart TB
     direction TB
     ENT["Entropie erzeugen"]
     MN["24-Wort-Mnemonik<br/>physisch notieren (> 128 Byte, nicht TPM-versiegelbar)"]
-    SE["Entropie an PCR 4, 8, 9, 11 binden<br/>und im TPM versiegeln"]
+    SE["Entropie an PCR binden<br/>und im TPM versiegeln"]
     ENT --> MN
     ENT --> SE
   end
 
   subgraph UNSEAL["Entsiegelung — bei jedem Signiervorgang"]
     direction TB
-    BOOT["Boot: aktuellen Zustand in<br/>PCR 4 / 8 / 9 / 11 messen"]
+    BOOT["Boot: aktuellen Zustand in<br/>PCR messen"]
     POL["Policy-Session lädt aktuelle PCR"]
     CMP("PCR == versiegelter Zustand?")
     OK["Entropie entsiegeln →<br/>Key A nur im RAM ableiten →<br/>signieren → Geheimnisse löschen"]

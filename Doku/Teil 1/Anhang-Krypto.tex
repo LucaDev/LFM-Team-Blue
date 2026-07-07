@@ -1,4 +1,13 @@
-\section{Anhang Krypto}
+\section{Krypto Hilfsskripte}
+
+\begin{figure}[htbp] \label{fig:PCR_belegung}
+    \centering
+    \includegraphics[width=0.8\textwidth]{Doku/Abbildungen/PCR_check.png}
+    \caption{Log aus der \ac{PCR}-Abfrage. Quelle: Eigene Bildschirmaufnahme in NixOS.}
+    \label{fig9:tpm_pcr}
+\end{figure}
+
+
 \begin{table}[htbp]
 \centering
 \footnotesize
@@ -8,7 +17,7 @@
 \toprule
 \textbf{\normalfont Skript} & \textbf{System} & \textbf{Zweck / Auslöser} \\
 \midrule
-\multicolumn{}{@{}l}{}\\
+\multicolumn{3}{@{}l}{\textit{Basis-System (Hot-Wallet, \path{scripts/ops/})}}\\
 \addlinespace
 refill/psbt\_export.sh    & Basis & Wartende Cold-\ac{PSBT} auf das Wechselmedium exportieren (Zustand COLD\_STARTED). \\
 refill/psbt\_broadcast.sh & Basis & Signierte Cold-\ac{PSBT} vom Medium importieren, finalisieren und über Bitcoin Core broadcasten. \\
