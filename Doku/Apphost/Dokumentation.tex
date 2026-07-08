@@ -21,9 +21,9 @@ die Infrastruktur selbst prüfen und betreiben können.
 \subsubsection*{Verworfen: Kubernetes mit Talos Linux}
 
 Unser erster Entwurf basierte auf Kubernetes als Orchestrierung und Talos
-Linux als minimalem, API-gesteuertem Betriebssystem für die Nodes. Auf dem
+Linux als minimalem, \ac{API}-gesteuertem Betriebssystem für die Nodes. Auf dem
 Papier ist das eine sehr saubere Sache: Talos hat keine Shell und keinen
-SSH-Zugang, die gesamte Konfiguration läuft über eine deklarative API, und
+\ac{SSH}-Zugang, die gesamte Konfiguration läuft über eine deklarative \ac{API}, und
 Kubernetes bringt von Haus aus Konzepte wie Network Policies und Secrets mit.
 
 Wir sind mit diesem Ansatz auch ziemlich weit gekommen. Im Lauf der Arbeit
@@ -31,7 +31,7 @@ ist uns aber immer deutlicher aufgefallen, dass die Komplexität von Kubernetes
 in keinem guten Verhältnis zum eigentlichen Ziel der Aufgabe steht. Für einen
 einzelnen Mandanten, der eine überschaubare Menge an Diensten privat betreibt,
 bedeutet ein Kubernetes-Cluster einen erheblichen dauerhaften Wartungsaufwand:
-Ingress-Controller, CNI-Plugin, Storage-Provisioner, Zertifikatsverwaltung und
+Ingress-Controller, \ac{CNI}-Plugin, Storage-Provisioner, Zertifikatsverwaltung und
 Cluster-Updates müssen alle verstanden und gepflegt werden. Der Kern der
 Aufgabe ist jedoch die \emph{sorgfältige Absicherung} der Dienste, nicht der
 Betrieb eines Cluster-Stacks. Wir haben uns deshalb bewusst gegen Kubernetes
@@ -47,10 +47,10 @@ unseren Anwendungsfall schlicht überdimensioniert waren:
 
 \begin{itemize}
   \item \textbf{Envoy Gateway zu Traefik.} Envoy Gateway ist eng an die
-    Kubernetes Gateway API gekoppelt. Ohne Kubernetes fällt diese
+    Kubernetes Gateway \ac{API} gekoppelt. Ohne Kubernetes fällt diese
     Integration weg. Traefik passt deutlich besser, weil es Container-Labels
-    direkt aus Docker liest und von Haus aus die ACME-Zertifikatsverwaltung
-    (Let's Encrypt) inklusive der DNS-01-Challenge mitbringt. Damit bekommen
+    direkt aus Docker liest und von Haus aus die \ac{ACME}-Zertifikatsverwaltung
+    (Let's Encrypt) inklusive der \ac{DNS}-01-Challenge mitbringt. Damit bekommen
     wir gültige Zertifikate, ohne dass der Server aus dem Internet erreichbar
     sein muss.
   \item \textbf{Keycloak zu Authelia.} Keycloak ist ein vollwertiger
@@ -58,7 +58,7 @@ unseren Anwendungsfall schlicht überdimensioniert waren:
     Authelia lässt sich vollständig deklarativ über Konfigurationsdateien
     einrichten, passt damit besser zu unserem Infrastructure-as-Code-Ansatz und
     ist für einen einzelnen Nutzer mit einer Handvoll Diensten deutlich
-    angemessener. Authelia deckt sowohl klassisches Forward-Auth als auch OIDC
+    angemessener. Authelia deckt sowohl klassisches Forward-Auth als auch \ac{OIDC}
     ab, was uns alle benötigten Fälle abdeckt.
   \item \textbf{Dragonfly zu Valkey.} Als In-Memory-Cache hatten wir zuerst
     Dragonfly vorgesehen. Wir sind auf Valkey gewechselt, weil es unter dem
@@ -85,7 +85,7 @@ eigene VM zu legen. Dafür gab es mehrere Gründe:
     seinen internen Netzwerken, und wir können die Segmentierung sauber und an
     einer Stelle definieren (siehe Abschnitt~\ref{sec:apphost-netze}).
   \item \textbf{Kein Vendor-Lock-in auf Proxmox.} Wir haben bewusst auf die
-    SDN- und Netzwerk-Features von Proxmox verzichtet. Man sieht an Beispielen
+    \ac{SDN}- und Netzwerk-Features von Proxmox verzichtet. Man sieht an Beispielen
     wie VMware, wohin eine starke Abhängigkeit von einem einzelnen Hersteller
     führen kann. Indem die gesamte Netzwerksegmentierung innerhalb des Apphosts
     in Docker stattfindet, bleibt der Apphost portabel. Er ließe sich theoretisch
@@ -102,7 +102,7 @@ Kompromiss aus Sicherheit und Wartbarkeit.
 
 Damit wir realistisch entwickeln und testen konnten, haben wir die Umgebung des
 Mandanten so gut wie möglich nachgebaut. Konkret haben wir einen dedizierten
-Server (um genau zu sein einen AX41 bei Hetzner) gemietet und darauf Proxmox VE installiert. Innerhalb von Proxmox haben wir ein klassisches Heimnetzwerk aufgebaut, wie man es bei
+Server (um genau zu sein einen AX41 bei Hetzner) gemietet und darauf Proxmox Virtual Environment installiert. Innerhalb von Proxmox haben wir ein klassisches Heimnetzwerk aufgebaut, wie man es bei
 einer Privatperson realistischerweise vorfinden würde.
 
 \subsubsection*{OPNsense als Router}
@@ -112,8 +112,8 @@ eigenen VM betrieben. OPNsense ist eine quelloffene Firewall, die
 auch in einem realen Einsatz beim Mandanten eine sinnvolle Wahl wäre. Nur die
 OPNsense-VM hatte direkten Zugriff auf das Internet und hat den ausgehenden
 Verkehr für das interne Netz per NAT maskiert. Dahinter lief alles so, wie man
-es aus einem normalen Heimnetz kennt: DHCP für die internen Geräte, ein
-lokaler DNS-Cache und ein flaches internes Netzwerk.
+es aus einem normalen Heimnetz kennt: \ac{DHCP} für die internen Geräte, ein
+lokaler \ac{DNS}-Cache und ein flaches internes Netzwerk.
 
 \subsubsection*{Zugang über WireGuard im Split-Tunnel}
 
@@ -125,15 +125,15 @@ normale Internetverkehr unserer Geräte bleibt unberührt. So konnten wir die
 internen Dienste genauso erreichen, wie es ein Gerät im Heimnetz könnte, ohne
 dafür potentiell unsichere Ports nach außen öffnen zu müssen.
 
-\subsubsection*{Absicherung des Proxmox-Hosts}
+\subsubsection*{Absicherung des Proxmox-Hosts} \label{sec:SSH}
 
 Den Proxmox-Host selbst haben wir vor der eigentlichen Arbeit abgesichert. Dazu
 gehören Zwei-Faktor-Authentifizierung für die Weboberfläche, komplexe
-Passwörter, ausschließlich schlüsselbasierter SSH-Zugang und das Deaktivieren
+Passwörter, ausschließlich schlüsselbasierter \ac{SSH}-Zugang und das Deaktivieren
 nicht benötigter Dienste. Für die Härtung haben wir das Skript
 \texttt{scripts/proxmox-harden.sh} geschrieben, das unter anderem die
-Passwort-Authentifizierung für SSH deaktiviert, moderne Cipher-Suites erzwingt,
-USB-Eingaben sperrt und den Secure-Boot-Status prüft. Die Details dazu stehen
+Passwort-Authentifizierung für \ac{SSH} deaktiviert, moderne Cipher-Suites erzwingt,
+\ac{USB}-Eingaben sperrt und den Secure-Boot-Status prüft. Die Details dazu stehen
 in der Installationsanleitung.
 
 \subsubsection*{Annahme zum Heimnetzwerk}
@@ -144,9 +144,9 @@ bewusst nicht weiter verkompliziert. Der Schwerpunkt unserer Absicherung liegt
 auf dem Apphost und seinen Diensten, also genau dort, wo die sensiblen Daten
 des Mandanten liegen.
 
-\subsubsection*{Getrennte Umgebung für KI-Experimente}
+\subsubsection*{Getrennte Umgebung für \ac{KI}-Experimente}
 
-Im Rahmen des zweiten Aufgabenteils (KI-Evaluation) sollten Agenten teilweise
+Im Rahmen des zweiten Aufgabenteils (\ac{KI}-Evaluation) sollten Agenten teilweise
 autonom in Proxmox arbeiten können. Damit diese Experimente unsere manuelle
 Arbeit nicht gefährden konnten, haben wir ihnen eigene Proxmox-Benutzer und
 vollständig getrennte Resource Pools gegeben. Bis auf einen gemeinsam genutzten
@@ -194,7 +194,7 @@ Subvolumes für \texttt{/}, \texttt{/nix}, \texttt{/var}, \texttt{/opt} und
 Swap wird bei jedem Start mit einem zufälligen Schlüssel verschlüsselt, damit
 keine sensiblen Daten ungeschützt im Swap landen.
 
-Optional lässt sich die Root-Partition mit LUKS2 verschlüsseln.
+Optional lässt sich die Root-Partition mit LUKS2 verschlüsseln. \label{sec:LUKS2_apphost}
 Standardmäßig ist das jedoch deaktiviert, weil die Annahme getroffen wird,
 dass der gesamte Proxmox Host durch den Nutzer mit Festplattenverschlüsselung installiert wurde.
 Wer die zusätzliche Schutzschicht dennoch möchte, kann sie bei der Installation aktivieren.
@@ -230,7 +230,7 @@ auf alle anderen Dienste zugreifen.
   traefik-public        & alle veröffentlichten Dienste & ja, nur über Traefik \\
   socket-proxy          & Traefik, Homepage              & nein \\
   media-network         & Jellyfin, Immich, Postgres, Valkey & nein \\
-  documents-network     & Paperless, Bento-PDF, Valkey   & nein \\
+  documents-network     & Paperless, Bento-\ac{PDF}, Valkey   & nein \\
   cloud-network         & OpenCloud, Collabora           & nein \\
   storage-network       & Garage (S3)                    & nein \\
   home-network          & Home Assistant, Mosquitto      & nein \\
@@ -250,14 +250,14 @@ die sie wirklich brauchen.
 
 \subsubsection{Reverse Proxy mit Traefik}
 
-Traefik ist der einzige Einstiegspunkt für Web-Verkehr. Er terminiert TLS und
+Traefik ist der einzige Einstiegspunkt für Web-Verkehr. Er terminiert \ac{TLS} und
 verteilt die Anfragen anhand der Subdomain an den jeweiligen Dienst. Die
 Zuordnung passiert über Container-Labels, die Traefik direkt aus Docker liest.
 Damit Traefik nicht den vollen Zugriff auf den Docker-Socket braucht, lesen wir
-die Docker-API ausschließlich über einen eingeschränkten Socket-Proxy aus,
+die Docker-\ac{API} ausschließlich über einen eingeschränkten Socket-Proxy aus,
 der nur lesende Anfragen zulässt, um selbst bei kompromitierung von Traefik keinen vollzugriff auf das System zu ermöglichen.
 
-Für den internen Zugriff über das Heimnetz nutzen wir eine eigene Domain (z.B in unseren Tests: lbaecker.de), dessen DNS-A Eintrag direkt auf die private IP-Adresse des Servers im Heimnetzwerk zeigt. Von außen ist dieser Eintrag zwar öffentlich auflösbar, jedoch nicht erreichbar. Die private IP ist außerhalb des Heimnetzes nicht routbar, wodurch kein Risiko (bis auf die Möglichkeit für Angreifer, die IP Adresse des Apphosts von außen zu ermitteln) entsteht. Diese sehr unkritische Information-Exposure stellt einen Tradeoff dar. Es wäre auch möglich, einen statischen DNS Eintrag im lokalen DNS-Resolver des Routers zu hinterlegen. Ein so sicherheitsbewusster Nutzer wie unser Mandant wird jedoch sicherlich einige Geräte besitzen, die standardmäßig auf sicheres DNS setzen und den via DHCP/Router Advertisement verteilten DNS-Server ignorieren. Durch diesen Ansatz lässt sich die IP-Adresse problemlos mit jedem DNS-Server auflösen. Ein interner Eintrag im Router kann auch zusätzlich erfolgen.
+Für den internen Zugriff über das Heimnetz nutzen wir eine eigene Domain (z.B in unseren Tests: lbaecker.de), dessen \ac{DNS}-A Eintrag direkt auf die private IP-Adresse des Servers im Heimnetzwerk zeigt. Von außen ist dieser Eintrag zwar öffentlich auflösbar, jedoch nicht erreichbar. Die private IP ist außerhalb des Heimnetzes nicht routbar, wodurch kein Risiko (bis auf die Möglichkeit für Angreifer, die IP Adresse des Apphosts von außen zu ermitteln) entsteht. Diese sehr unkritische Information-Exposure stellt einen Tradeoff dar. Es wäre auch möglich, einen statischen \ac{DNS} Eintrag im lokalen \ac{DNS}-Resolver des Routers zu hinterlegen. Ein so sicherheitsbewusster Nutzer wie unser Mandant wird jedoch sicherlich einige Geräte besitzen, die standardmäßig auf sicheres \ac{DNS} setzen und den via \ac{DHCP}/Router Advertisement verteilten \ac{DNS}-Server ignorieren. Durch diesen Ansatz lässt sich die IP-Adresse problemlos mit jedem \ac{DNS}-Server auflösen. Ein interner Eintrag im Router kann auch zusätzlich erfolgen.
 
 Der Charme der Lösung mit einer echten Domain liegt darin, dass wir ein echtes, öffentlich vertrauenswürdiges Zertifikat von Let's Encrypt bekommen, statt auf selbstsignierte Zertifikate zurückgreifen zu müssen. Das hat mehrere praktische Vorteile. Erstens kommt es
 zu keinen Zertifikatswarnungen im Browser. Das ist nicht nur bequemer, sondern
@@ -265,14 +265,14 @@ auch sicherheitsrelevant. Denn wer sich angewöhnt, Zertifikatswarnungen einfach
 wegzuklicken, übersieht irgendwann auch eine echte Man-in-the-Middle-Warnung.
 Ein gültiges Zertifikat hält diese Warnung also als verlässliches Signal intakt.
 Zweitens funktioniert die volle Vertrauenskette ohne manuelles Verteilen einer
-eigenen CA auf jedes Gerät des Mandanten, was gerade bei Handys und bei Apps, die selbstsignierte Zertifikate strikt ablehnen, oft
+eigenen \ac{CA} auf jedes Gerät des Mandanten, was gerade bei Handys und bei Apps, die selbstsignierte Zertifikate strikt ablehnen, oft
 Probleme macht. Drittens ist die Verwaltung vollständig automatisiert: Traefik
 erneuert die Zertifikate rechtzeitig selbst, es gibt keine abgelaufenen
 Zertifikate, um die sich jemand kümmern müsste.
 
-Die Zertifikate holt Traefik über Let's Encrypt mit der DNS-01-Challenge. Der
+Die Zertifikate holt Traefik über Let's Encrypt mit der \ac{DNS}-01-Challenge. Der
 große Vorteil dieser Methode ist, dass der Server dafür nicht aus dem Internet
-erreichbar sein muss. Es wird lediglich über die DNS-API des Anbieters
+erreichbar sein muss. Es wird lediglich über die \ac{DNS}-\ac{API} des Anbieters
 (in unserem Fall Cloudflare) kurzzeitig ein TXT-Eintrag gesetzt. Die Ports 80
 und 443 können vollständig hinter dem Router bleiben. An Cloudflare fließen
 dabei keinerlei Inhalte, sondern nur der Nachweis, dass wir die Domain
@@ -292,7 +292,7 @@ die keine ausreichend starke eigene Anmeldung mitbringen. Wir nutzen zwei
 Mechanismen, je nachdem, was der jeweilige Dienst unterstützt:
 
 \begin{itemize}
-  \item \textbf{OIDC (OpenID Connect)} für Dienste, die das nativ können, zum
+  \item \textbf{\ac{OIDC}} für Dienste, die das nativ können, zum
     Beispiel Grafana, Immich, Paperless und Forgejo. Diese Dienste leiten zur
     Anmeldung an Authelia weiter und vertrauen anschließend dem ausgestellten
     Token. Der Vorteil ist, dass die Benutzeridentität sauber in den Dienst
@@ -317,9 +317,9 @@ Traefik-Einstiegspunkt weiterreicht. So kann der Mandant auch aus stark
 überwachten oder zensierten Netzen auf seine Dienste zugreifen, ohne dass dabei
 Metadaten an den lokalen Provider abfließen und ohne dass überhaupt ein Port
 nach außen geöffnet werden muss. Der Tor-Container ist als reiner Client
-konfiguriert (kein Relay, kein Exit, deaktivierter Control- und SOCKS-Port).
+konfiguriert (kein Relay, kein Exit, deaktivierter Control- und \ac{SOCKS}-Port).
 
-Praktisch bedeutet das einen dualen URL-Raum: Im Heimnetz erreicht man die
+Praktisch bedeutet das einen dualen \ac{URL}-Raum: Im Heimnetz erreicht man die
 Dienste unter \texttt{*.domain.tld} mit gültigem Zertifikat, über Tor unter
 \texttt{*.<onion-service>.onion} (hier wird wie oben beschrieben ein zentrales selbstsigniertes Wildcard-Zertifikat genutzt).
 
@@ -333,28 +333,28 @@ sollen und welche bewusst nur im Heimnetz bleiben. Wir nutzen das zum Beispiel
 für Collabora, das aus Sicherheitsgründen standardmäßig nicht über Tor
 freigegeben ist.
 
-\paragraph{Kompatibilität der Anwendungen und OIDC.}
-Nicht jede Anwendung kommt mit zwei verschiedenen URLs gleich gut zurecht. Manche
+\paragraph{Kompatibilität der Anwendungen und \ac{OIDC}.}
+Nicht jede Anwendung kommt mit zwei verschiedenen \ac{URL}s gleich gut zurecht. Manche
 verhalten sich völlig transparent: Home Assistant zum Beispiel orientiert sich am
 jeweils anfragenden Host und stellt sich automatisch auf die gerade verwendete
-URL ein, sodass der Wechsel zwischen internem Pfad und Tor dort unbemerkt
+\ac{URL} ein, sodass der Wechsel zwischen internem Pfad und Tor dort unbemerkt
 funktioniert. Eine echte Einschränkung betrifft dagegen die Dienste, die sich
-über OIDC an Authelia anmelden. OIDC bindet die ausgestellten Tokens, die Redirect-URIs
-und vor allem die sogenannte Issuer-URL fest an eine einzige Basis-Adresse.
+über \ac{OIDC} an Authelia anmelden. \ac{OIDC} bindet die ausgestellten Tokens, die Redirect-URIs
+und vor allem die sogenannte Issuer-\ac{URL} fest an eine einzige Basis-Adresse.
 Betreiben wir Authelia intern unter \texttt{auth.domain}, dann sind alle Tokens
 auf genau diese Adresse ausgestellt. Versucht sich derselbe Nutzer anschließend
 über die Tor-Adresse anzumelden, schlägt die Validierung fehl, weil die
-Issuer-URL in der Antwort nicht mehr zu der Adresse passt, über die er gerade
+Issuer-\ac{URL} in der Antwort nicht mehr zu der Adresse passt, über die er gerade
 zugreift. Ein nahtloser Wechsel zwischen internem Pfad und Tor-Pfad ist bei
-OIDC-geschützten Diensten daher nicht möglich. Für reine Forward-Auth-Dienste
+\ac{OIDC}-geschützten Diensten daher nicht möglich. Für reine Forward-Auth-Dienste
 (zum Beispiel Prometheus oder die Homepage) tritt das Problem nicht auf, weil
-dort kein Token an eine feste Issuer-URL gebunden wird. Das ist eine reine
+dort kein Token an eine feste Issuer-\ac{URL} gebunden wird. Das ist eine reine
 Komforteinschränkung und kein Sicherheitsproblem. Wie wir damit umgehen und
 warum wir dem Mandanten dafür ergänzend einen WireGuard-Zugang empfehlen, steht
 im Abschnitt zu den eingegangenen Kompromissen.
 
 \subparagraph{Hintergrund}
-Der Zusammenhang mit dem HTTP Host-Header ist dabei ganz direkt. Authelia bestimmt zwar die Issuer URL aus einer statisch konfigurierten Basis-Adresse, prüft aber bei jeder Abfrage, ob der Host bzw X-Forwarded-Host Header zu dieser passt. Greift ein Client über eine andere Adresse zu (z.B. die Tor Adresse), schlägt dieser Abgleich fehl. Selbst wenn dieser Abgleich umgangen werden könnte, bliebe das Problem bestehen, da der ausgestellte \texttt{ID-Token} die falsche Issuer-URL trägt und die Anwendung sie gegen die hinterlegte validiert (oder: validieren sollte). Eine Lösung über den Browser (etwa durch Header-Manipulation) ist daher (meines erachtens nach) nicht sinnvoll möglich. Würden die OIDC-Clienten Host-Header nicht strikt validieren, wären sie für Injection-Angriffe anfällig. Die feste Bindung ist daher kein Mangel, sondern eine bewusste Sicherheitsfunktion von OIDC, welche wir nicht umgehen können, ohne die Sicherheit des gesamten Systems signifikant herabzusetzen.
+Der Zusammenhang mit dem \ac{HTTP} Host-Header ist dabei ganz direkt. Authelia bestimmt zwar die Issuer \ac{URL} aus einer statisch konfigurierten Basis-Adresse, prüft aber bei jeder Abfrage, ob der Host bzw X-Forwarded-Host Header zu dieser passt. Greift ein Client über eine andere Adresse zu (z.B. die Tor Adresse), schlägt dieser Abgleich fehl. Selbst wenn dieser Abgleich umgangen werden könnte, bliebe das Problem bestehen, da der ausgestellte \texttt{\ac{ID}-Token} die falsche Issuer-\ac{URL} trägt und die Anwendung sie gegen die hinterlegte validiert (oder: validieren sollte). Eine Lösung über den Browser (etwa durch Header-Manipulation) ist daher (meines erachtens nach) nicht sinnvoll möglich. Würden die \ac{OIDC}-Clienten Host-Header nicht strikt validieren, wären sie für Injection-Angriffe anfällig. Die feste Bindung ist daher kein Mangel, sondern eine bewusste Sicherheitsfunktion von \ac{OIDC}, welche wir nicht umgehen können, ohne die Sicherheit des gesamten Systems signifikant herabzusetzen.
 
 \subsubsection{Monitoring und Alerting} \label{sec:apphost-monitoring}
 
@@ -396,7 +396,7 @@ selbst gehostete \texttt{ntfy}. Der Alertmanager schickt seine Alarme per
 Webhook an ntfy, und der Mandant kann diese sowohl am Desktop als auch auf
 seinem GrapheneOS-Smartphone empfangen. Da ntfy selbst gehostet ist, verlassen
 die Benachrichtigungen die eigene Infrastruktur nicht. Beispiele für
-definierte Alarme sind hohe CPU-Last, knapper Speicherplatz, ausgefallene
+definierte Alarme sind hohe \ac{CPU}-Last, knapper Speicherplatz, ausgefallene
 Container und ein nicht erreichbares Backend hinter Traefik.
 
 \subsubsection{Absicherung der Container}
@@ -419,8 +419,8 @@ Compose-Dateien und sind damit für den Mandanten nachvollziehbar:
     Tor, Garage, Node-Exporter, Homepage, ntfy und Mosquitto), wird das
     Wurzeldateisystem des Containers schreibgeschützt eingebunden. Für die
     wenigen Stellen, die echten Schreibzugriff brauchen, dient ein kleines,
-    nicht ausführbares tmpfs im RAM.
-  \item \textbf{Ressourcenlimits.} Jeder Container hat CPU- und
+    nicht ausführbares tmpfs im \ac{RAM}.
+  \item \textbf{Ressourcenlimits.} Jeder Container hat \ac{CPU}- und
     Speicherobergrenzen. Das verhindert, dass ein einzelner (möglicherweise
     kompromittierter) Dienst den ganzen Host lahmlegt.
   \item \textbf{Seccomp und AppArmor.} Es gilt das Standard-Seccomp-Profil von
@@ -446,25 +446,25 @@ schon als Pull Request bereit.
 
 \subsubsection{Härtung von Webanfragen mit Traefik}
 Weil Traefik der einzige Einstiegspunkt für Web-Verkehr ist, bündeln wir dort
-auch die Härtungsmaßnahmen, die für den HTTPS-Verkehr aller Dienste gelten.
-Statt Security-Header, TLS-Einstellungen und Zugriffsschutz in mehr als zwanzig
+auch die Härtungsmaßnahmen, die für den \ac{HTTPS}-Verkehr aller Dienste gelten.
+Statt Security-Header, \ac{TLS}-Einstellungen und Zugriffsschutz in mehr als zwanzig
 einzelnen Diensten separat zu pflegen, definieren wir sie zentral als
 Traefik Middleware und binden sie über sog. Chains an die
 jeweiligen Router. Ein neuer Dienst erbt damit automatisch den vollen Schutz,
 sobald er die passende Kette an Middlewares referenziert.
 
 \begin{itemize}
-  \item \textbf{TLS-Konfiguration nach BSI TR-02102-2:} Traefik bevorzugt
-    TLS~1.3 und erlaubt als Fallback TLS~1.2 nur mit den vom BSI empfohlenen
-    AEAD-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven X25519,
+  \item \textbf{\ac{TLS}-Konfiguration nach \ac{BSI} \ac{TR}-02102-2:} Traefik bevorzugt
+    \ac{TLS}~1.3 und erlaubt als Fallback \ac{TLS}~1.2 nur mit den vom \ac{BSI} empfohlenen
+    \ac{AEAD}-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven X25519,
     P-256 und P-384. \texttt{sniStrict} sorgt dafür, dass Anfragen ohne
     passenden Hostnamen abgewiesen werden, statt auf ein Default-Zertifikat
     auszuweichen.
-  \item \textbf{Erzwungenes HTTPS und HSTS:} Der HTTP-Entrypoint leitet jede
-    Anfrage permanent auf HTTPS um. Zusätzlich setzt Traefik einen
-    HSTS-Header (HTTP Strict Transport Security) mit zwei Jahren Gültigkeit, Preload-Flag für alle
+  \item \textbf{Erzwungenes \ac{HTTPS} und \ac{HSTS}:} Der \ac{HTTP}-Entrypoint leitet jede
+    Anfrage permanent auf \ac{HTTPS} um. Zusätzlich setzt Traefik einen
+    \ac{HSTS}-Header mit zwei Jahren Gültigkeit, Preload-Flag für alle
     Subdomains, damit Browser gar nicht erst versuchen, sich unverschlüsselt zu verbinden.
-    Browser haben zwar in den letzten Jahren aufgrund der hohen Verbreitung von HTTPS auf ein HTTPS by default Modell gewechselt, HSTS erzwingt HTTPS jedoch permanent im Browser.
+    Browser haben zwar in den letzten Jahren aufgrund der hohen Verbreitung von \ac{HTTPS} auf ein \ac{HTTPS} by default Modell gewechselt, \ac{HSTS} erzwingt \ac{HTTPS} jedoch permanent im Browser.
     Das Eintragen in die Preload-Listen der Browser erfordert jedoch einen öffentlich erreichbaren Webserver nach außen und das Beantragen auf \texttt{hstspreload.org}. Das Preload-Flag hat daher momentan keine Wirkung und stellt lediglich eine Vorbereitung dar.
   \item \textbf{Security-Header für alle Dienste:} Über die Middleware\\
     \texttt{security-headers} setzt Traefik sicherheitsrelevante Header wie
@@ -485,7 +485,7 @@ sobald er die passende Kette an Middlewares referenziert.
     Anfrage den Dienst erreicht, sodass sich niemand durch einen gefälschten
     Header als anderer Benutzer ausgeben kann.
   \item \textbf{Auswertbare Logs.} Das Access-Log läuft im
-    JSON-Format und wird an Loki weitergereicht. Sensible Header wie
+    \ac{JSON}-Format und wird an Loki weitergereicht. Sensible Header wie
     \texttt{Authorization} und \texttt{Cookie} werden dabei grundsätzlich
     verworfen, während \\
     \texttt{User-Agent} und \texttt{X-Forwarded-For} für
@@ -493,7 +493,7 @@ sobald er die passende Kette an Middlewares referenziert.
 \end{itemize}
 
 Diese Maßnahmen ergänzen die oben beschriebene Container-Härtung von Traefik selbst (u.a. \texttt{cap\_drop:
-ALL}, read-only Dateisystem und Zugriff auf die Docker-API ausschließlich über den Socket-Proxy).
+ALL}, read-only Dateisystem und Zugriff auf die Docker-\ac{API} ausschließlich über den Socket-Proxy).
 
 
 \subsubsection{Umgang mit Geheimnissen}
@@ -536,7 +536,7 @@ nach neuen Versionen suchen muss.
 \subsubsection{Übersicht der Dienste}
 
 Insgesamt stellt der Apphost deutlich mehr als die geforderten 15 Dienste
-bereit, von Medien (Jellyfin, Immich) über Dokumente (Paperless, Bento-PDF),
+bereit, von Medien (Jellyfin, Immich) über Dokumente (Paperless, Bento-\ac{PDF}),
 Cloud und Office (OpenCloud, Collabora), Hausautomation (Home Assistant,
 Mosquitto), Kommunikation (Ntfy, Bichon) und Entwicklung (Forgejo) bis zu
 Werkzeugen wie dem Passwortmanager Vaultwarden und einer Startseite (Homepage).
@@ -555,15 +555,15 @@ Supply-Chain-Angriffe auf Abhängigkeiten.
 
 \begin{itemize}
   \item \textbf{Keine offenen Ports.} Da Web-Zugriff nur über das Heimnetz
-    und über Tor erfolgt und die Zertifikate per DNS-01 geholt
+    und über Tor erfolgt und die Zertifikate per \ac{DNS}-01 geholt
     werden, muss kein einziger Port ins Internet geöffnet werden. Das nimmt
-    klassischen Remote-Angriffen von vornherein die Angriffsfläche. Auch intern wird zusätzlich lediglich SSH für die Wartung benötigt.
+    klassischen Remote-Angriffen von vornherein die Angriffsfläche. Auch intern wird zusätzlich lediglich \ac{SSH} für die Wartung benötigt.
   \item \textbf{Starke, zentrale Authentifizierung.} Authelia mit Argon2id und
     Mehr-Faktor-Authentifizierung schützt die Dienste. Fail2ban sperrt nach
-    wenigen Fehlversuchen sowohl bei SSH als auch bei fehlgeschlagenen
-    Web-Logins (HTTP 401) und verlängert die Sperrzeit progressiv.
+    wenigen Fehlversuchen sowohl bei \ac{SSH} als auch bei fehlgeschlagenen
+    Web-Logins (\ac{HTTP} 401) und verlängert die Sperrzeit progressiv.
   \item \textbf{Default-Deny-Firewall.} Die nftables-Firewall verwirft
-    eingehenden Verkehr standardmäßig und erlaubt nur das Nötigste. SSH ist
+    eingehenden Verkehr standardmäßig und erlaubt nur das Nötigste. \ac{SSH} ist
     zusätzlich Rate-Limited.
   \item \textbf{Supply-Chain.} RenovateBot, der wöchentliche Trivy-Scan und die
     täglichen NixOS-Updates sorgen dafür, dass bekannte Schwachstellen schnell
@@ -577,23 +577,23 @@ Supply-Chain-Angriffe auf Abhängigkeiten.
     Angreifer von einem Dienst aus frei weiterbewegen kann.
 \end{itemize}
 
-\subsubsection{Lokale Angriffe (BadUSB, Einklinken ins Netz)}
+\subsubsection{Lokale Angriffe (Bad\ac{USB}, Einklinken ins Netz)}
 
 Die Aufgabe stellt explizit klar, dass das Aufschrauben des Servers
-out-of-scope ist, das Anstecken bösartiger USB-Geräte und das unautorisierte
+out-of-scope ist, das Anstecken bösartiger \ac{USB}-Geräte und das unautorisierte
 Einklinken ins Netzwerk aber sehr wohl abgewehrt werden müssen.
 
 \begin{itemize}
-  \item \textbf{USB-Angriffe.} Die Kernel-Module für USB-Speicher
-    (\texttt{usb-storage}, \texttt{uas}) und weitere unnötige Hardware-Module
-    sind per Blacklist deaktiviert. Auch auf dem Proxmox-Host werden USB-Eingaben
-    gesperrt. Ein einfach angestecktes BadUSB-Gerät findet so keinen direkten
+  \item \textbf{\ac{USB}-Angriffe.} Die Kernel-Module für \ac{USB}-Speicher
+    (\texttt{\ac{USB}-storage}, \texttt{uas}) und weitere unnötige Hardware-Module
+    sind per Blacklist deaktiviert. Auch auf dem Proxmox-Host werden \ac{USB}-Eingaben
+    gesperrt. Ein einfach angestecktes Bad\ac{USB}-Gerät findet so keinen direkten
     Angriffsweg.
   \item \textbf{Verifizierter Boot.} Secure Boot über lanzaboote sorgt dafür,
     dass nur signierte Boot-Komponenten starten. Zusammen mit erzwungener
     Kernel-Modul-Signatur (\texttt{module.sig\_enforce}) und dem Kernel-Lockdown
     wird verhindert, dass ein lokaler Angreifer manipulierten Code einschleust.
-  \item \textbf{DMA-Schutz.} Die IOMMU wird erzwungen und früher PCI-DMA-Zugriff
+  \item \textbf{\ac{DMA}-Schutz.} Die \ac{IOMMU} wird erzwungen und früher \ac{PCI}-\ac{DMA}-Zugriff
     blockiert, was Angriffe über direkten Speicherzugriff erschwert.
   \item \textbf{Netzwerk.} Wer sich unautorisiert ins Netz einklinkt, trifft auf
     eine Default-Deny-Firewall und auf Dienste, die hinter Authelia liegen. Ein
@@ -608,11 +608,10 @@ setzen wir an mehreren Stellen an:
 \begin{itemize}
   \item \textbf{Tor.} Der Zugriff über Onion Services verbirgt sowohl die
     Identität des Servers als auch die des Nutzers vor dem lokalen Provider.
-  \item \textbf{Verschlüsseltes DNS.} Der Host nutzt DNS-over-TLS mit
-    DNSSEC-Validierung gegen Resolver ohne Logging-Policy (Cloudflare und Quad9),
-    sodass DNS-Anfragen nicht im Klartext beim Provider landen.
-  \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über NTS
-    (Network Time Security), also authentifiziert über TLS.
+  \item \textbf{Verschlüsseltes \ac{DNS}.} Der Host nutzt \ac{DNS}-over-\ac{TLS} mit
+    \ac{DNS}SEC-Validierung gegen Resolver ohne Logging-Policy (Cloudflare und Quad9),
+    sodass \ac{DNS}-Anfragen nicht im Klartext beim Provider landen.
+  \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über \ac{NTS}, also authentifiziert über \ac{TLS}.
   \item \textbf{Keine fremde Cloud für Benachrichtigungen.} Wie beschrieben laufen
     Push-Benachrichtigungen ausschließlich über das selbst gehostete ntfy.
 \end{itemize}
@@ -629,21 +628,21 @@ offen zu benennen:
     Docker-Netzwerke, User-Namespaces und die sehr umfangreiche Host-Härtung
     erfolgt und der Gewinn an Wartbarkeit für den Mandanten den Unterschied
     überwiegt.
-  \item \textbf{OIDC und der duale URL-Raum.} Dienste mit OIDC funktionieren nicht
-    nahtlos gleichzeitig über die interne Domain und über Tor, weil OIDC die
-    Tokens fest an eine Basis-URL bindet (die Mechanik dahinter haben wir im
+  \item \textbf{\ac{OIDC}und der duale \ac{URL}-Raum.} Dienste mit \ac{OIDC} funktionieren nicht
+    nahtlos gleichzeitig über die interne Domain und über Tor, weil \ac{OIDC} die
+    Tokens fest an eine Basis-\ac{URL} bindet (die Mechanik dahinter haben wir im
     Tor-Abschnitt erläutert). Das ist eine reine Komforteinschränkung und kein
     Sicherheitsproblem. Als Komfortverbesserung empfehlen wir dem Mandanten
     ergänzend einen WireGuard-Zugang: Damit sind die internen Adressen von
-    überall über denselben Pfad erreichbar, der URL-Wechsel entfällt und die
-    OIDC-Anmeldung funktioniert ortsunabhängig. Tor bleibt als zusätzlicher
+    überall über denselben Pfad erreichbar, der \ac{URL}-Wechsel entfällt und die
+    \ac{OIDC}-Anmeldung funktioniert ortsunabhängig. Tor bleibt als zusätzlicher
     anonymer Zugangsweg davon unberührt.
   \item \textbf{Collabora.} Der Office-Dienst Collabora benötigt für das
     Rendern von Dokumenten erweiterte Rechte (unter anderem die Capability
     \texttt{SYS\_ADMIN}). Das ist der am wenigsten eingeschränkte Container im
     Stack. Wir akzeptieren das, weil die Funktion sonst nicht läuft, und
     begrenzen das Risiko über die Netzwerksegmentierung und die Anmeldung an OpenCloud. Aus diesem Grund ist Collabora jedoch standardmäßig nicht über Tor erreichbar.
-    In dem letzten Monaten hat sich EU-Office als (EU-)Fork von Onlyoffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. EU-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von EU-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
+    In dem letzten Monaten hat sich \ac{EU}-Office als (\ac{EU}-)Fork von Onlyoffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. \ac{EU}-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von \ac{EU}-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
   \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen Sandbox-Runtimes
     sind vorbereitet, aber standardmäßig nicht aktiv (siehe nächster
     Abschnitt).
@@ -658,7 +657,7 @@ Entscheidung ist vor allem die Einfachheit für den Mandanten: Da der gesamte
 Apphost in einer einzigen VM lebt, sichert ein VM-Backup automatisch den
 konsistenten Gesamtzustand aller Dienste auf einmal. Es gibt also keine Situation,
 in der nach einer Wiederherstellung die Datenbank eines Dienstes nicht mehr zu
-dessen Dateien passt. Gerade für einen Anwender ohne tiefes IT-Wissen ist es
+dessen Dateien passt. Gerade für einen Anwender ohne tiefes \ac{IT}-Wissen ist es
 ein großer Vorteil, mit einem Klick wieder einen funktionierenden Stand zu
 haben.
 
@@ -670,12 +669,12 @@ ein Backup-Medium gestohlen wird. Für die Wiederherstellung nach einem
 Hardwaredefekt genügt es, Proxmox neu aufzusetzen und die VM aus dem letzten
 Backup zurückzuspielen.
 
-\subsubsection{Dateisystemintegrität mit AIDE}
-AIDE (Advanced Intrusion Detection Environment) prüft die Integrität des Dateisystems, indem es Prüfsummen und Metadaten (Rechte, Eigentümer, Timestamps) von im Vorfeld konfiguierten Dateien und Verzeichnissen in einer Datenbank ablegt und bei jedem weiteren Lauf mit ihr vergleicht. 
+\subsubsection{Dateisystemintegrität mit \ac{AIDE}}
+\ac{AIDE} (Advanced Intrusion Detection Environment) prüft die Integrität des Dateisystems, indem es Prüfsummen und Metadaten (Rechte, Eigentümer, Timestamps) von im Vorfeld konfiguierten Dateien und Verzeichnissen in einer Datenbank ablegt und bei jedem weiteren Lauf mit ihr vergleicht. 
 
-Der Sinn dahinter ist, unautorisierte Veränderungen schnell sichtbar zu machen, wie etwa eine eingeschleuste Backdoor in einer Binary, einer manipulierten Konfigurationsdatei oder üblicherweise schnell zu übersehenden Veränderungen wie veränderten SUID-Bits. Es wird davon ausgegangen, dass ein Angreifer einige der Schutzmechanismen bereits überwunden hat und Spuren seiner Kompromittierung auf dem Dateisystem hinterlassen hat, die sich über AIDE auffinden lassen.
+Der Sinn dahinter ist, unautorisierte Veränderungen schnell sichtbar zu machen, wie etwa eine eingeschleuste Backdoor in einer Binary, einer manipulierten Konfigurationsdatei oder üblicherweise schnell zu übersehenden Veränderungen wie veränderten SUID-Bits. Es wird davon ausgegangen, dass ein Angreifer einige der Schutzmechanismen bereits überwunden hat und Spuren seiner Kompromittierung auf dem Dateisystem hinterlassen hat, die sich über \ac{AIDE} auffinden lassen.
 
-AIDE läuft automatisiert über einen systemd-Timer (das moderne Equivalent zu einem Cronjob), die Ergebnisse müssen jedoch manuell geprüft werden.
+\ac{AIDE} läuft automatisiert über einen systemd-Timer (das moderne Equivalent zu einem Cronjob), die Ergebnisse müssen jedoch manuell geprüft werden.
 
 \subsection{Sicherheitshärtung im Überblick}
 
@@ -685,25 +684,25 @@ geordneten Überblick, die vollständige Liste mit konkreten Werten befindet sic
 
 \begin{itemize}
   \item \textbf{Boot und Firmware:} Secure Boot per lanzaboote, eingebundener
-    TPM, deaktivierter Bootloader-Editor, erzwungene Kernel-Modul-Signatur und
+    \ac{TPM}, deaktivierter Bootloader-Editor, erzwungene Kernel-Modul-Signatur und
     Kernel-Lockdown.
-  \item \textbf{Kernel:} Aktivierte CPU-Mitigationen (Spectre, Meltdown, MDS und
-    weitere), vollständiges ASLR, init-on-alloc und init-on-free, erzwungene
-    IOMMU, eingeschränkter Zugriff auf Kernel-Informationen sowie eine an den
+  \item \textbf{Kernel:} Aktivierte \ac{CPU}-Mitigationen (Spectre, Meltdown, MDS und
+    weitere), vollständiges \ac{ASLR}, init-on-alloc und init-on-free, erzwungene
+    \ac{IOMMU}, eingeschränkter Zugriff auf Kernel-Informationen sowie eine an den
     CIS-Benchmark angelehnte Modul-Blacklist.
-  \item \textbf{Netzwerk:} nftables mit Default-Deny, rate-limited SSH und
-    ICMP, gehärtete Sysctl-Einstellungen, DNS-over-TLS mit DNSSEC und
+  \item \textbf{Netzwerk:} nftables mit Default-Deny, rate-limited \ac{SSH} und
+    \ac{ICMP}, gehärtete Sysctl-Einstellungen, \ac{DNS}-over-\ac{TLS} mit \ac{DNS}SEC und
     authentifizierte Zeit über NTS.
-  \item \textbf{Zugriff:} ausschließlich schlüsselbasiertes SSH mit modernen
+  \item \textbf{Zugriff:} ausschließlich schlüsselbasiertes \ac{SSH} mit modernen
     und post-quanten-fähigen Verfahren, gehärtetes sudo mit I/O-Logging, eine
     unveränderliche Benutzerdatenbank, ein gesperrtes Root-Konto und AppArmor
     als Mandatory Access Control.
   \item \textbf{Audit und Intrusion Detection:} der Linux Audit Daemon für
-    sicherheitsrelevante Ereignisse, Fail2ban mit progressivem Banning und AIDE
+    sicherheitsrelevante Ereignisse, Fail2ban mit progressivem Banning und \ac{AIDE}
     für die tägliche Prüfung der Dateisystemintegrität.
-  \item \textbf{Container:} User-Namespace-Remapping, Zugriff auf die Docker-API
+  \item \textbf{Container:} User-Namespace-Remapping, Zugriff auf die Docker-\ac{API}
     nur über einen eingeschränkten Socket-Proxy, entfernte Capabilities,
-    read-only Dateisysteme wo möglich und ein wöchentlicher CVE-Scan.
+    read-only Dateisysteme wo möglich und ein wöchentlicher \ac{CVE}-Scan.
   \item \textbf{Updates:} tägliche NixOS-Aktualisierung, RenovateBot für die
     Container und regelmäßiges Aufräumen des Nix-Stores.
 \end{itemize}
