@@ -1,0 +1,59 @@
+define mgmt_if = "vmbr0"
+define infra_if = "vmbr1"
+define service_if = "vmbr2"
+
+define mgmt_host_v4 = 10.0.2.2
+define admin_relay_v4 = 10.10.10.10
+
+table inet filter {
+  set host_admin_tcp {
+    type inet_service;
+    elements = { 22, 8006 }
+  }
+
+  set service_web_tcp {
+    type inet_service;
+    elements = { 80, 443 }
+  }
+
+  set base_egress_tcp {
+    type inet_service;
+    elements = { 53, 80, 443 }
+  }
+
+  set base_egress_udp {
+    type inet_service;
+    elements = { 53, 123 }
+  }
+
+  chain input {
+    type filter hook input priority filter;
+    policy drop;
+
+    iifname "lo" accept
+    ct state invalid drop
+    ct state established,related accept
+
+    ip protocol icmp accept
+    ip6 nexthdr ipv6-icmp accept
+
+    iifname $mgmt_if ip saddr $mgmt_host_v4 tcp dport @host_admin_tcp accept
+    iifname $infra_if ip saddr $admin_relay_v4 tcp dport 22 accept
+  }
+
+  chain forward {
+    type filter hook forward priority filter;
+    policy drop;
+
+    ct state invalid drop
+    ct state established,related accept
+
+    iifname $infra_if oifname $service_if tcp dport @service_web_tcp accept
+
+    iifname $infra_if oifname $mgmt_if udp dport @base_egress_udp accept
+    iifname $infra_if oifname $mgmt_if tcp dport @base_egress_tcp accept
+
+    iifname $service_if oifname $mgmt_if udp dport @base_egress_udp accept
+    iifname $service_if oifname $mgmt_if tcp dport @base_egress_tcp accept
+  }
+}

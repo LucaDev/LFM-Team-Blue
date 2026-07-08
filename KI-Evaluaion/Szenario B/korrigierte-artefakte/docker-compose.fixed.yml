@@ -1,0 +1,70 @@
+services:
+  vaultwarden:
+    image: ${VAULTWARDEN_IMAGE:?set explicit image reference including tag or digest}
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      DOMAIN: ${VAULTWARDEN_DOMAIN:?set the public https or onion URL}
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "false"
+      ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN:?inject outside the compose file}
+    volumes:
+      - ./data/vaultwarden:/data
+    networks:
+      - internal
+
+  grafana:
+    image: ${GRAFANA_IMAGE:?set explicit image reference including tag or digest}
+    init: true
+    restart: unless-stopped
+    user: "472:472"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?inject outside the compose file}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - internal
+
+  blackbox-exporter:
+    image: ${BLACKBOX_EXPORTER_IMAGE:?set explicit image reference including tag or digest}
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    ports:
+      - "127.0.0.1:9115:9115"
+    command:
+      - "--config.file=/etc/blackbox_exporter/config.yml"
+    volumes:
+      - ./config/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
