@@ -1,0 +1,57 @@
+services:
+  vaultwarden:
+    image: "${VAULTWARDEN_IMAGE:?set tested Vaultwarden image tag}"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      DOMAIN: "${VAULTWARDEN_DOMAIN:?set https or onion URL}"
+      SIGNUPS_ALLOWED: "false"
+      INVITATIONS_ALLOWED: "false"
+      ADMIN_TOKEN: "${VAULTWARDEN_ADMIN_TOKEN:?set strong admin token}"
+    volumes:
+      - vaultwarden-data:/data
+    networks:
+      - internal
+
+  grafana:
+    image: "${GRAFANA_IMAGE:?set tested Grafana image tag}"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?set strong admin password}"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - internal
+
+  blackbox-exporter:
+    image: "${BLACKBOX_IMAGE:?set tested Blackbox Exporter image tag}"
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:9115:9115"
+    command:
+      - "--config.file=/etc/blackbox_exporter/config.yml"
+    volumes:
+      - ./config/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  vaultwarden-data: {}
+  grafana-data: {}

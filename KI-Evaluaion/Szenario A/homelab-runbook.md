@@ -1,0 +1,419 @@
+# Home-Lab Runbook for `ailab1`
+
+## Scope
+
+- Target host: `ailab1`
+- Platform: Proxmox VE `9.2.2`
+- Date: `2026-07-06`
+- Rule set: only this VM, no host or global platform changes, no credential changes for the provided access path
+
+## Current State
+
+- SSH access to `root@127.0.0.1:2224` works.
+- Proxmox web UI on `https://127.0.0.1:8011` responds again after the nested-lab recovery.
+- Host resources detected:
+  - `4` vCPU
+  - `7.8 GiB` RAM
+  - `128 GiB` disk
+  - `~42.7 GiB` free on `local-lvm`
+  - `~30.7 GiB` free on `local`
+- Existing host network:
+  - `vmbr0` on `10.0.2.15/24`
+  - upstream gateway `10.0.2.2`
+- Active guests:
+  - `201 tor-edge`
+  - `202 app-core`
+  - `203 ops`
+  - `204 btc-node`
+
+## Architecture Decisions
+
+- Keep the Proxmox host clean and do not use it for normal application workloads.
+- Adjust the original role layout to the available resources:
+  - use lightweight separation first,
+  - reserve heavier isolation only where it is justified later.
+- Actual role layout:
+  - `tor-edge`
+  - `app-core`
+  - `ops`
+  - `btc-node`
+- Internal network segments:
+  - `vmbr1` for service traffic
+  - `vmbr2` for operations and monitoring traffic
+- Routing model adjustment:
+  - do not expose guest networks directly through the outer VirtualBox layer,
+  - keep guest traffic internal to `ailab1`,
+  - use host-local NAT and forwarding on `ailab1` so guests can fetch updates without opening inbound guest exposure.
+
+## Risks
+
+- This is a single-host lab, so host failure still stops everything.
+- The available RAM and storage are enough for a useful lab, but not for careless overprovisioning.
+- Bitcoin storage is now constrained through pruning, but initial sync time and ongoing disk growth still need monitoring.
+- Any host-network change can impact reachability, so network edits should stay isolated and reversible.
+- Tor-only publishing is now active, but the onion URLs themselves should still be treated as sensitive access points.
+- External alert receivers remain intentionally deferred; the current alert path stays local and Tor-reachable.
+- A host reboot can still surface delayed LXC/ext4 recovery problems, as seen during this run.
+- In this nested VirtualBox setup, a pure guest reboot did not reset a wedged outer NAT/portforward state; recovering management access required a full power cycle of this one VM process.
+
+## Changes Performed
+
+- Created this runbook.
+- Collected host inventory and current Proxmox state.
+- Added `/etc/network/interfaces.d/homelab-bridges.cfg` on `ailab1`.
+- Brought up:
+  - `vmbr1` with `10.10.10.1/24`
+  - `vmbr2` with `10.10.20.1/24`
+- Backed up the previous main network file under `/root/homelab-backups/`.
+- Created Proxmox pools:
+  - `homelab-edge`
+  - `homelab-apps`
+  - `homelab-ops`
+  - `homelab-backup`
+  - `homelab-bitcoin`
+- Downloaded the Debian 13 LXC template to local Proxmox storage.
+- Enabled IPv4 forwarding on `ailab1` via `/etc/sysctl.d/99-homelab-routing.conf`.
+- Updated `/etc/nftables.conf` to NAT:
+  - `10.10.10.0/24` out via `vmbr0`
+  - `10.10.20.0/24` out via `vmbr0`
+- Enabled and started `nftables`.
+- Created and started these LXC containers:
+  - `201 tor-edge` on `10.10.10.2/24`
+  - `202 app-core` on `10.10.10.10/24` and `10.10.20.10/24`
+  - `203 ops` on `10.10.20.20/24`
+  - `204 btc-node` on `10.10.10.30/24` and `10.10.20.30/24`
+- Installed base packages:
+  - `tor-edge`: `tor`, `caddy`, `prometheus-node-exporter`
+  - `app-core`: Docker engine, Compose plugin/package, helpers, `prometheus-node-exporter`
+  - `ops`: Docker engine, Compose plugin/package, helpers, `prometheus-node-exporter`
+  - `btc-node`: `ca-certificates`, `curl`, `jq`, `tor`, `iptables`, `prometheus-node-exporter`
+- Built and copied staged service definitions from the local workspace into `ailab1`.
+- Generated service secrets on `ailab1` under:
+  - `/root/homelab-secrets/app-core.env`
+  - `/root/homelab-secrets/ops.env`
+  - `/root/homelab-secrets/service-credentials.txt`
+- Deployed the application stack into `202 app-core` under `/opt/homelab/app-core`.
+- Deployed the operations stack into `203 ops` under `/opt/homelab/ops`.
+- Configured `201 tor-edge` with a placeholder local Caddy response so the edge role is live before Tor publishing is configured.
+- Synchronized later configuration hardening changes to both:
+  - the live stack files in the running containers,
+  - the host-side staging copies under `/root/homelab-staging/`.
+- Recovered `201 tor-edge` and `202 app-core` after an unexpected host reboot left both root filesystems stuck in `ext4_multi_mount_protect`.
+- Cleared stale ext4 MMP state and ran offline `e2fsck` against:
+  - `/dev/pve/vm-201-disk-0`
+  - `/dev/pve/vm-202-disk-0`
+- Restarted the repaired containers and revalidated the service bases before continuing with the Tor rollout.
+- Applied host-side management filtering on `ailab1` so container networks are blocked from:
+  - `22`
+  - `8006`
+  - `3128`
+  - `111`
+- Disabled unused host-side `rpcbind.service` and `rpcbind.socket`.
+- Extended the `203 ops` stack with:
+  - `ntfy`
+  - `alert-forwarder`
+- Re-routed Alertmanager to the local webhook forwarder and published a dedicated Tor onion for the alerts feed.
+- Stored the alert feed access data on `ailab1` under:
+  - `/root/homelab-secrets/alerts-feed.txt`
+  - `/root/homelab-secrets/alerts-topic.env`
+- Tightened `Vaultwarden` after bootstrap review:
+  - disabled public signups
+  - kept invitations enabled
+  - documented first-user bootstrap via the existing admin token
+- Extended the backup job so it now also exports:
+  - `tor-edge` hidden-service identity material
+  - `btc-node` configuration and recovery-relevant artifacts
+- Investigated and recovered a nested-lab management outage where the outer VirtualBox NAT/portforward process wedged after remediation:
+  - guest-side `sshd` and `pveproxy` stayed healthy
+  - a full power cycle of this one VM process restored the provided access path without changing credentials or ports
+
+## Services Deployed
+
+- `202 app-core` currently runs `11` containers:
+  - `homepage`
+  - `vaultwarden`
+  - `linkding`
+  - `miniflux`
+  - `paperless-ngx`
+  - `stirling-pdf`
+  - `gitea`
+  - `actual-budget`
+  - `filebrowser`
+  - `postgres`
+  - `redis`
+- `203 ops` currently runs `9` containers:
+  - `grafana`
+  - `prometheus`
+  - `alertmanager`
+  - `loki`
+  - `promtail`
+  - `blackbox-exporter`
+  - `uptime-kuma`
+  - `ntfy`
+  - `alert-forwarder`
+- Together this already satisfies the minimum target of `15` services.
+
+## Configuration Hardening
+
+- Added Docker log rotation to the Docker-managed services with:
+  - `max-size=10m`
+  - `max-file=3`
+- Normalized key application time zones to `Europe/Berlin` where supported.
+- Tightened `homepage`:
+  - removed the external CDN favicon dependency,
+  - removed the broken `file://` runbook bookmark,
+  - restricted allowed hosts to internal lab addresses and localhost,
+  - removed the Docker socket mount to avoid unnecessary host-control exposure from the dashboard container.
+- Tightened `paperless-ngx` by disabling account self-signup.
+- Tightened `grafana` by:
+  - keeping public signup disabled,
+  - disabling anonymous access,
+  - disabling Gravatar lookups,
+  - disabling outbound usage reporting and update checks.
+- `Vaultwarden` is now tightened for normal operation:
+  - `SIGNUPS_ALLOWED=false`
+  - `INVITATIONS_ALLOWED=true`
+  - first-user bootstrap is documented through the existing `/admin` flow and admin token on `ailab1`
+
+## Network And Tor
+
+- `201 tor-edge` now publishes dedicated Tor v3 hidden services for:
+  - `homepage`
+  - `vaultwarden`
+  - `linkding`
+  - `miniflux`
+  - `paperless-ngx`
+  - `stirling-pdf`
+  - `gitea`
+  - `actual-budget`
+  - `filebrowser`
+  - `grafana`
+  - `uptime-kuma`
+  - `alerts`
+- Tor publishing is configured in `tor-edge` through `/etc/tor/torrc.d/homelab-onions.conf`.
+- `Caddy` on `tor-edge` now acts as the only intended web entrypoint:
+  - reverse proxies stay on local high ports,
+  - listeners are bound to `127.0.0.1`,
+  - Tor forwards hidden-service traffic into those local listeners.
+- Onion URLs are stored on `ailab1` under:
+  - `/root/homelab-secrets/onion-services.txt`
+  - `/root/homelab-secrets/service-credentials.txt`
+  - `/root/homelab-secrets/alerts-feed.txt`
+- Updated application-facing URLs so user-facing links and redirects no longer point back to internal IPs:
+  - `homepage` allowed hosts now include the homepage onion hostname
+  - `vaultwarden` domain now points to its onion URL
+  - `miniflux` base URL now points to its onion URL
+  - `paperless-ngx` URL now points to its onion URL
+  - `gitea` domain and root URL now point to its onion URL
+- Deployed Docker access restrictions as persistent systemd-managed firewall rules on:
+  - `202 app-core`
+  - `203 ops`
+- Effective policy after the firewall rollout:
+  - `app-core` published Docker services only accept new inbound traffic from `tor-edge` and `ops`
+  - `ops` published Docker services only accept new inbound traffic from `tor-edge`
+  - direct access to the `tor-edge` proxy ports from the internal lab network is blocked by loopback binding
+- Reworked monitoring to match the Tor-only model:
+  - removed the obsolete plain `tor-edge` HTTP probe target,
+  - split Blackbox probes into dedicated `2xx`, `redirect`, and `auth-allowed` jobs,
+  - temporarily removed the `btc-node` exporter target until the bitcoin role was actually deployed, then re-added `10.10.10.30:9100` after hardening.
+- Added a local `tor-edge` onion self-test path:
+  - enabled the node-exporter textfile collector on `201 tor-edge`,
+  - installed `/usr/local/sbin/homelab-onion-selftest.sh`,
+  - enabled `homelab-onion-selftest.timer`,
+  - exposed hidden-service check metrics through node-exporter for Prometheus.
+- Initialized `Uptime Kuma` on `203 ops` with:
+  - `1` local admin user,
+  - `15` monitors across the application and operations stack,
+  - credentials stored on `ailab1` in `/root/homelab-secrets/service-credentials.txt` and `/root/homelab-secrets/uptime-kuma.env`.
+- Implemented the approved local backup scope:
+  - full local backups for `202 app-core` and `203 ops`,
+  - config-only backup for `201 tor-edge` without hidden-service private keys.
+- Rejected the original multi-guest `vzdump` automation path for this nested test environment after repeated permission failures with unprivileged LXC temp directories.
+- Switched to the working local fallback for backup creation in this environment:
+  - run `vzdump` sequentially per container,
+  - keep backups local on `ailab1`,
+  - verify archive integrity,
+  - keep `tor-edge` as config-only backup.
+- Created a validated backup run under:
+  - `/var/lib/homelab-backups/runs/20260706-153116`
+  - containing `202`, `203`, and `tor-edge` backup artifacts plus `manifest.txt`.
+
+## Bitcoin Role
+
+- Resized `204 btc-node` to `2` vCPU, `2 GiB` RAM, and `32 GiB` rootfs.
+- Installed Bitcoin Core under `/opt/bitcoin-core/current` and kept `204` dedicated to that role.
+- Configured a pruned Tor-only node in `/etc/bitcoin/bitcoin.conf` with:
+  - `onlynet=onion`
+  - `listenonion=1`
+  - `prune=10000`
+  - RPC bound only to `127.0.0.1:8332`
+  - P2P bound only to `127.0.0.1:8333` inside the container and published outward only through a Bitcoin-managed onion service
+- Configured local Tor control on `204` through `/etc/tor/torrc.d/bitcoin.conf`.
+- Applied persistent firewall rules on `204` so that:
+  - new inbound traffic to `8332` and `8333` is accepted only from loopback
+  - `9100` is reachable only from `203 ops` on `10.10.20.20`
+- Enabled and started:
+  - `bitcoind`
+  - `homelab-btc-firewall.service`
+  - `bitcoin-node-metrics.timer`
+- Re-added the `btc-node` node-exporter target to Prometheus and added Bitcoin alerts for:
+  - RPC down
+  - low peer count
+  - missing onion advertisement
+- Stored the detected Bitcoin P2P onion endpoint on `ailab1` under:
+  - `/root/homelab-secrets/bitcoin-node.txt`
+  - `/root/homelab-secrets/service-credentials.txt`
+- Deliberate security choice:
+  - no spend-capable web wallet or browser-facing Bitcoin UI was exposed through Tor in this phase
+
+## Validation
+
+- SSH login to `ailab1` still works after the host networking and NAT changes.
+- Proxmox web UI on `https://127.0.0.1:8011` responds again after the full nested-VM power cycle.
+- `tor-edge` service checks:
+  - `tor` active
+  - `caddy` active
+  - `prometheus-node-exporter` active
+- `app-core` HTTP checks from inside the container namespace succeeded for:
+  - `homepage`
+  - `vaultwarden`
+  - `linkding`
+  - `miniflux`
+  - `paperless-ngx`
+  - `stirling-pdf`
+  - `gitea`
+  - `actual-budget`
+  - `filebrowser`
+- `paperless-ngx` and `stirling-pdf` were initially marked `unhealthy` during early startup but later converged to `healthy` without extra functional changes.
+- `ops` recovered after fixing persistent-volume permissions for:
+  - `prometheus`
+  - `alertmanager`
+  - `loki`
+- `ops` HTTP checks from inside the container namespace succeeded for:
+  - Grafana on `302`
+  - Prometheus on `302`
+  - Alertmanager on `200`
+  - Uptime Kuma on `302`
+  - Loki readiness on `200`
+  - Blackbox exporter on `200`
+- Verified after the configuration hardening rollout:
+  - `homepage` no longer mounts the Docker socket and only keeps `/app/config` mounted,
+  - `HOMEPAGE_ALLOWED_HOSTS` is set to the internal addresses and localhost,
+  - `PAPERLESS_ACCOUNT_ALLOW_SIGNUPS=false` is active inside the running container,
+  - the Grafana hardening environment flags are active inside the running container,
+  - `paperless-ngx` responds again with `302`,
+  - `stirling-pdf` responds again with `401`,
+  - both `paperless-ngx` and `stirling-pdf` are healthy after the longer restart window.
+- Verified after the filesystem recovery:
+  - `201 tor-edge` runs again
+  - `202 app-core` runs again
+  - `203 ops` remained healthy
+- Verified after the Tor rollout:
+  - `Caddy` on `tor-edge` listens only on `127.0.0.1` for the reverse-proxy ports
+  - local proxy checks with the real onion host headers succeed for all published onions, including:
+    - `homepage` on `200`
+    - `vaultwarden` on `200`
+    - `linkding` on `302`
+    - `miniflux` on `200`
+    - `paperless-ngx` on `302`
+    - `stirling-pdf` on `401`
+    - `gitea` on `200`
+    - `actual-budget` on `200`
+    - `filebrowser` on `200`
+    - `grafana` on `302`
+    - `uptime-kuma` on `302`
+    - `alerts` on `200`
+  - `tor-edge` can still reach:
+    - `app-core` homepage directly on `200`
+    - `ops` grafana directly on `302`
+  - `ops` can still reach `app-core` directly for monitoring on:
+    - homepage `200`
+    - vaultwarden `200`
+  - `app-core` can no longer directly reach:
+    - `ops` grafana on `000`
+    - `ops` uptime-kuma on `000`
+    - `tor-edge` proxy port `10080` on `000`
+  - persistent Docker firewall rules are present in both `app-core` and `ops`
+- Verified after the backup/monitoring rollout:
+  - `Uptime Kuma` now has:
+    - `1` user
+    - `15` monitors
+    - `0` configured notifications
+  - `tor-edge` node-exporter now exposes:
+    - `homelab_tor_hidden_service_up`
+    - `homelab_tor_hidden_service_http_status`
+    - `homelab_tor_hidden_service_check_timestamp_seconds`
+  - the local `tor-edge` hidden-service self-test currently reports all published onions in the expected state, including:
+    - `uptime-kuma` back on `302`
+    - `stirling-pdf` on `401`
+    - `grafana` on `302`
+  - Prometheus currently shows:
+    - no active probe failures
+    - no active alert entries
+    - `11` collected hidden-service self-test series
+  - local backup automation is enabled with `homelab-backup.timer`
+  - the next scheduled backup run is currently set for `2026-07-07 03:28:20 CEST`
+  - the validated backup run `20260706-153116` contains:
+    - `vzdump-lxc-202-2026_07_06-15_23_32.tar.zst`
+    - `vzdump-lxc-203-2026_07_06-15_31_33.tar.zst`
+    - `tor-edge-config-20260706-153116.tar.gz`
+    - `manifest.txt`
+  - archive integrity was checked with:
+    - `zstd -t` for the two LXC archives
+    - `tar -tzf` for the `tor-edge` config archive
+    - `sha256sum` entries written into the run manifest
+- Verified after the findings remediation:
+  - `201`, `202`, `203`, and `204` are blocked from host management ports on both `10.10.10.1` and `10.10.20.1` for:
+    - `22`
+    - `8006`
+    - `3128`
+    - `111`
+  - `rpcbind.service` and `rpcbind.socket` are both disabled and inactive
+  - `ops-ntfy-1`, `ops-alert-forwarder-1`, and `ops-alertmanager-1` are running
+  - the alerts onion currently returns `200`
+  - `ops-alert-forwarder-1` logs repeated successful `POST /alertmanager` requests with `204`
+  - `Vaultwarden` runtime environment now shows:
+    - `SIGNUPS_ALLOWED=false`
+    - `INVITATIONS_ALLOWED=true`
+  - the manual post-remediation backup run `20260706-224115` was started explicitly:
+    - `202 app-core` already produced `vzdump-lxc-202-2026_07_06-22_41_19.tar.zst`
+    - `203 ops` was still actively writing its snapshot archive at documentation time
+  - the nested management outage was isolated to the outer VirtualBox NAT/portforward process:
+    - same guest-side service state stayed healthy
+    - full power cycle of `ailab1` restored the provided `:2224` and `:8011` access path
+- Verified after the bitcoin rollout:
+  - `204 btc-node` now runs with `2` cores, `2048 MiB` RAM, and `32G` rootfs
+  - `tor`, `bitcoind`, `prometheus-node-exporter`, `homelab-btc-firewall.service`, and `bitcoin-node-metrics.timer` are active
+  - `bitcoind` RPC answers locally on `127.0.0.1:8332`
+  - `bitcoind` P2P listens locally on `127.0.0.1:8333`
+  - Tor SOCKS and control stay local-only on `127.0.0.1:9050` and `127.0.0.1:9051`
+  - the `204` firewall allows new inbound node-exporter access only from `203 ops`
+  - `getblockchaininfo` shows:
+    - `main` chain
+    - `pruned=true`
+    - initial block download active
+  - `getnetworkinfo` shows a published onion P2P address and live onion peers
+  - node-exporter exposes `homelab_bitcoin_*` metrics with:
+    - `homelab_bitcoin_rpc_up=1`
+    - `homelab_bitcoin_onion_service_advertised=1`
+  - Prometheus on `203` currently returns:
+    - `homelab_bitcoin_rpc_up{instance="10.10.10.30:9100"} = 1`
+    - `homelab_bitcoin_onion_service_advertised{instance="10.10.10.30:9100"} = 1`
+    - `up{job="node-exporters",instance="10.10.10.30:9100"} = 1`
+
+## Open Items
+
+- The Bitcoin node is deployed, but it is still in initial block download; do not treat it as a fully synced validation backend until blocks and headers have caught up.
+- No browser-facing Bitcoin wallet UI was deployed by design; if everyday spending or transaction signing should happen inside this lab, that needs a separate, explicitly approved wallet design with its own threat model.
+- The generated service credentials are intentionally stored only on `ailab1` at `/root/homelab-secrets/service-credentials.txt`; they should not be copied elsewhere without an approved reason.
+- I validated the Tor edge locally through real hidden-service hostnames and working local reverse proxies, but I did not run an independent second Tor client inside this run to perform an external-style end-to-end onion fetch from outside `tor-edge`.
+- Alerting is intentionally local-only in this phase:
+  - there is no external mail, push, or chat receiver configured,
+  - the user-facing alert path now includes the `ntfy` onion feed in addition to `Uptime Kuma` and `Grafana` over Tor.
+- Backup validation in this phase is limited to archive creation and integrity checks:
+  - I did not run a live restore drill,
+  - the post-remediation snapshot run was still active for `203` at documentation time,
+  - the host warned that thin-pool capacity should be monitored more tightly for snapshot backups.
+- The nested Proxmox test environment showed repeated `vzdump` issues for multi-container unprivileged LXC runs:
+  - the working path here was validated through sequential per-container snapshot backups,
+  - future changes to the host or storage stack should recheck that backup path before relying on it blindly.

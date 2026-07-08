@@ -1,0 +1,27 @@
+table inet filter {
+  chain input {
+    type filter hook input priority filter;
+    policy drop;
+
+    iifname "lo" accept
+    ct state invalid drop
+    ct state { established, related } accept
+
+    ip protocol icmp accept
+    ip6 nexthdr ipv6-icmp accept
+
+    # Management access only via the external bridge.
+    iifname "vmbr0" tcp dport { 22, 8006 } accept
+  }
+
+  chain forward {
+    type filter hook forward priority filter;
+    policy drop;
+
+    ct state invalid drop
+    ct state { established, related } accept
+
+    # Allow internal segments to reach the uplink, but do not permit east-west by default.
+    iifname { "vmbr1", "vmbr2" } oifname "vmbr0" accept
+  }
+}
