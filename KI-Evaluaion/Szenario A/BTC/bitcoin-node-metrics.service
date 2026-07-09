@@ -1,0 +1,8 @@
+[Unit]
+Description=Collect Bitcoin node metrics for node_exporter
+After=bitcoind.service prometheus-node-exporter.service
+Wants=bitcoind.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/bitcoin-node-metrics.sh

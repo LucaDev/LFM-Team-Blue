@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule Bitcoin node metric collection
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+RandomizedDelaySec=15s
+Unit=bitcoin-node-metrics.service
+
+[Install]
+WantedBy=timers.target
