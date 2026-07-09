@@ -6,7 +6,6 @@
 - Thread-ID: `019f3c10-1d81-7db3-9b17-80cf1f7960b9`
 - Modell laut Sessionlog: `gpt-5.4`
 - Exportstand (UTC): `2026-07-08T13:22:02Z`
-- Quelle: `C:\Users\AK\.codex\sessions\2026\07\07\rollout-2026-07-07T12-11-56-019f3c10-1d81-7db3-9b17-80cf1f7960b9.jsonl`
 - Enthalten: Sichtbare `event_msg`-Nachrichten (`user_message` und `agent_message`) aus dem lokalen Codex-Sessionlog.
 - Ausgenommen: Nicht enthalten sind versteckte System-/Developer-Instruktionen, Tool-Aufrufe, Tool-Ausgaben, interne Compaction-Bloecke und diese abschliessende Antwort selbst.
 - Sichtbare Nachrichten: `508` insgesamt, davon `27` User und `481` Assistant
@@ -162,7 +161,7 @@ Ich schließe die reine SSH-Bestandsaufnahme jetzt ab und halte im nächsten Sch
 ### 0009 | 2026-07-07T10:16:09.828Z | Assistant (final_answer)
 
 ```text
-Der Ist-Zustand ist erfasst, und ich habe die geforderten Arbeitsdokumente in `outputs/` angelegt: [master-plan.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md), [decision-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md), [implementation-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/implementation-log.md), [risk-register.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/risk-register.md), [validator-notes.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/validator-notes.md), [bitcoin-simulation.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/bitcoin-simulation.md), [fehleranalyse-benchmark.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/fehleranalyse-benchmark.md), [self-audit.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/self-audit.md), [final-summary.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/final-summary.md). An `ailab2` habe ich noch nichts geändert.
+Der Ist-Zustand ist erfasst, und ich habe die geforderten Arbeitsdokumente in `outputs/` angelegt: [master-plan.md], [decision-log.md], [implementation-log.md], [risk-register.md], [validator-notes.md], [bitcoin-simulation.md], [fehleranalyse-benchmark.md], [self-audit.md], [final-summary.md]. An `ailab2` habe ich noch nichts geändert.
 
 Aktueller Befund: frisches Proxmox VE 9.2.2 auf Debian 13, keine VMs oder Container vorhanden, `vmbr0` auf `10.0.2.15/24`, `nic1` ungenutzt, Proxmox-Firewall effektiv deaktiviert, und nach außen sichtbar sind derzeit vor allem `22/tcp`, `111/tcp+udp`, `8006/tcp` und `3128/tcp`. Zusätzliche Mandantenartefakte liegen im Workspace aktuell nicht vor; die Planung basiert daher auf deinen Anforderungen aus der Nachricht.
 
@@ -326,7 +325,7 @@ Die Anforderungen sind jetzt in den Planungsdokumenten verankert. Ich ziehe noch
 ### 0014 | 2026-07-07T10:41:01.120Z | Assistant (final_answer)
 
 ```text
-Die neuen Anforderungen sind jetzt in die Planungsdokumente eingearbeitet: [master-plan.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md), [decision-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md), [risk-register.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/risk-register.md) und [implementation-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/implementation-log.md). An `ailab2` selbst habe ich weiterhin nichts geändert.
+Die neuen Anforderungen sind jetzt in die Planungsdokumente eingearbeitet: [master-plan.md], [decision-log.md], [risk-register.md] und [implementation-log.md]. An `ailab2` selbst habe ich weiterhin nichts geändert.
 
 **Architekturplanung**
 
@@ -411,7 +410,7 @@ Risiken:
 - Der Hot-Wallet-Kontext bleibt selbst bei enger Begrenzung der größte fachliche Restschaden.
 
 Geplanter Umsetzungsschritt:
-- Ich schreibe diese Zonenmatrix jetzt verbindlich in [master-plan.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md), ergänze [decision-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md) um die Zugriffspfad-Entscheidungen und führe danach einen reinen Doku-Validator durch. Noch keine Live-Änderung an `ailab2`.
+- Ich schreibe diese Zonenmatrix jetzt verbindlich in [master-plan.md], ergänze [decision-log.md um die Zugriffspfad-Entscheidungen und führe danach einen reinen Doku-Validator durch. Noch keine Live-Änderung an `ailab2`.
 
 `Soll ich das so umsetzen?`
 ```
@@ -484,9 +483,9 @@ Ich korrigiere noch einen kleinen Schreibfehler im Validator-Nachweis und ziehe 
 ### 0025 | 2026-07-07T11:26:33.468Z | Assistant (final_answer)
 
 ```text
-Der Architekturabschnitt ist jetzt verbindlich in der Doku festgeschrieben. In [master-plan.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md) stehen jetzt die explizite Trennung zwischen Management, Infrastruktur, Anwendungsdiensten, Monitoring, Backup und Bitcoin-Simulation, jeweils mit Schutzbedarf, Zugriffspfaden, Secrets-Klasse und Backup-/Restore-Klasse. Ebenfalls ergänzt sind die kompakte Deny-by-default-Kommunikationsmatrix, die operator-only-Regeln für Proxmox-Web-UI, Grafana, Alertmanager und `ntfy` sowie das ausdrückliche Bitcoin-Dummy-only-Verbot auf `ailab2`.
+Der Architekturabschnitt ist jetzt verbindlich in der Doku festgeschrieben. In [master-plan.md stehen jetzt die explizite Trennung zwischen Management, Infrastruktur, Anwendungsdiensten, Monitoring, Backup und Bitcoin-Simulation, jeweils mit Schutzbedarf, Zugriffspfaden, Secrets-Klasse und Backup-/Restore-Klasse. Ebenfalls ergänzt sind die kompakte Deny-by-default-Kommunikationsmatrix, die operator-only-Regeln für Proxmox-Web-UI, Grafana, Alertmanager und `ntfy` sowie das ausdrückliche Bitcoin-Dummy-only-Verbot auf `ailab2`.
 
-Begleitend habe ich [decision-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md), [risk-register.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/risk-register.md), [bitcoin-simulation.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/bitcoin-simulation.md), [implementation-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/implementation-log.md) und [validator-notes.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/validator-notes.md) nachgezogen.
+Begleitend habe ich [decision-log.md], [risk-register.md], [bitcoin-simulation.md], [implementation-log.md und [validator-notes.md] nachgezogen.
 
 Der Dokumentations-Validator ist erfolgreich gelaufen. Geprüft wurden nur Dateiinhalt und Pattern-Nachweise per `Get-Content` und `Select-String`; es gab dabei keine SSH-Verbindung und keine Live-Änderung an `ailab2`. Der nächste freigabepflichtige Abschnitt wäre `Services`.
 ```
@@ -843,7 +842,7 @@ Ergebnis:
 - Alle acht Gastrollen sind auf die dokumentierten Zonen/Bridges gelegt, `onboot=0` ist gesetzt, und der Endzustand ist überall `stopped`.
 - Für alle acht Gastrollen existiert der Snapshot `post-provision-base`.
 - Die dokumentierten Diskgrößen sind umgesetzt: `6G`, `6G`, `8G`, `4G` bei den VMs.
-- Die Nachweise sind aktualisiert in [master-plan.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md), [decision-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md), [implementation-log.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/implementation-log.md), [risk-register.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/risk-register.md), [validator-notes.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/validator-notes.md) und [final-summary.md](/C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/final-summary.md).
+- Die Nachweise sind aktualisiert in [master-plan.md][decision-log.md] [implementation-log.md], [risk-register.md, [validator-notes.md] und [final-summary.md.
 
 Wichtige Abweichungen:
 - Für das gepinnte Debian-Cloud-Image war am konkreten Pfad keine `SHA512SUMS.sign` verfügbar. Ich habe deshalb den Hash gegen `SHA512SUMS` geprüft und das Restrisiko dokumentiert.
@@ -2516,12 +2515,12 @@ Die Doku ist angepasst. Ich pruefe jetzt nur noch kurz, dass die alte Aussage `c
 ```text
 Die Inkonsistenz ist bereinigt.
 
-In [master-plan.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md>) steht jetzt klar:
+In [master-plan.md]steht jetzt klar:
 - `ct-monitoring` hat **keinen** Pfad zur Proxmox-Web-UI und **keinen** Monitoring-Zugriff auf `tcp/8006`.
 - Die Kommunikationsmatrix erlaubt fuer `ct-monitoring` nur noch lesende Pfade in Infrastruktur-, App-, Backup- und Bitcoin-Zone auf `9100` plus dedizierte Exporter-Ports.
 - Die Gastmatrix fuer `103` sagt jetzt explizit: Management-Host nur fuer operator-only Verwaltung, nicht fuer `8006/tcp` des Hosts.
 
-In [decision-log.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md>) wurde `D-020` passend nachgezogen, damit die Architektur- und die Validierungsdoku wieder konsistent sind.
+In [decision-log.md] wurde `D-020` passend nachgezogen, damit die Architektur- und die Validierungsdoku wieder konsistent sind.
 
 Es gab dabei **keine Live-Aenderung auf `ailab2`**, nur Doku-Korrekturen. Wenn das so passt, liefere ich als Naechstes den Freigabe-Plan fuer `Backup / Monitoring` wieder im geforderten Format.
 ```
@@ -2557,11 +2556,11 @@ Ich prüfe noch zwei kleine, aber entscheidende Detailpunkte nach: ob fuer den A
 
 ```text
 **Findings**
-- `[P1]` Der administrative Tor-Zugriff ist technisch funktionsfaehig, aber fuer einen wirklich kleinen Betreiberkreis noch nicht eng genug. Die Doku beschreibt den Pfad sauber als `Admin-Workstation -> Tor -> Admin-Onion -> SSH` und als operator-only ([master-plan.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md:166>), [master-plan.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md:286>), [decision-log.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md:166>)). Live fehlt aber eine zweite Zugriffsbeschraenkung jenseits der Onion-Adresse: auf dem Host gelten weiter `PermitRootLogin yes`, `PasswordAuthentication yes` und `authenticationmethods any` (`/etc/ssh/sshd_config:33`, `sshd -T`), und der Hidden Service hat keine Client-Autorisierung (`/etc/tor/torrc:194-196`; keine `HiddenServiceAuthorizeClient`-Direktive, leeres `/var/lib/tor/ssh-admin-onion/authorized_clients`). Damit ist der Pfad netzseitig eng, zugriffsseitig aber noch nicht klein genug, weil er faktisch an Onion-Geheimhaltung plus bestehendem SSH-Credential haengt.
+- `[P1]` Der administrative Tor-Zugriff ist technisch funktionsfaehig, aber fuer einen wirklich kleinen Betreiberkreis noch nicht eng genug. Die Doku beschreibt den Pfad sauber als `Admin-Workstation -> Tor -> Admin-Onion -> SSH` und als operator-only ([master-plan.md], [master-plan.md], [decision-log.md]. Live fehlt aber eine zweite Zugriffsbeschraenkung jenseits der Onion-Adresse: auf dem Host gelten weiter `PermitRootLogin yes`, `PasswordAuthentication yes` und `authenticationmethods any` (`/etc/ssh/sshd_config:33`, `sshd -T`), und der Hidden Service hat keine Client-Autorisierung (`/etc/tor/torrc:194-196`; keine `HiddenServiceAuthorizeClient`-Direktive, leeres `/var/lib/tor/ssh-admin-onion/authorized_clients`). Damit ist der Pfad netzseitig eng, zugriffsseitig aber noch nicht klein genug, weil er faktisch an Onion-Geheimhaltung plus bestehendem SSH-Credential haengt.
 
-- `[P1]` Der Host-Schutz ist wirksam, aber noch nicht auf eine einzige eindeutig wartbare Schutzschicht konsolidiert. Live ist `nftables` die effektive Kontrollschicht (`/etc/nftables.conf`, `systemctl is-enabled/is-active nftables -> enabled/active`), gleichzeitig bleibt `pve-firewall` als aktiver, aber logisch deaktivierter Parallelmechanismus bestehen (`pve-firewall status -> disabled/running`, `systemctl is-active pve-firewall -> active`). Die Doku benennt `nftables` zwar als wirksames Regelwerk ([implementation-log.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/implementation-log.md:120>), [decision-log.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md:155>)), fuehrt die Parallelitaet aber selbst noch als offenes Risiko ([risk-register.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/risk-register.md:7>)). Gegen dein Zielbild ist das noch zu unscharf: spaetere Regeln koennen leicht in der falschen Ebene landen und zu Drift oder Doppelpflege fuehren.
+- `[P1]` Der Host-Schutz ist wirksam, aber noch nicht auf eine einzige eindeutig wartbare Schutzschicht konsolidiert. Live ist `nftables` die effektive Kontrollschicht (`/etc/nftables.conf`, `systemctl is-enabled/is-active nftables -> enabled/active`), gleichzeitig bleibt `pve-firewall` als aktiver, aber logisch deaktivierter Parallelmechanismus bestehen (`pve-firewall status -> disabled/running`, `systemctl is-active pve-firewall -> active`). Die Doku benennt `nftables` zwar als wirksames Regelwerk ([implementation-log.md], [decision-log.md] [risk-register.md Gegen dein Zielbild ist das noch zu unscharf: spaetere Regeln koennen leicht in der falschen Ebene landen und zu Drift oder Doppelpflege fuehren.
 
-- `[P2]` Der Tor-Adminpfad hat noch eine konkrete Drift-Quelle in der Konfigurationsablage. Laut Doku wurde auf `/etc/tor/torrc` umgestellt, weil das Debian-13-Basisimage die Drop-in-Datei nicht geladen hat ([validator-notes.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/validator-notes.md:306>)). Live liegt die alte Drop-in-Datei aber weiter auf `101` unter `/etc/tor/torrc.d/10-ailab-admin-ssh.conf:1-4` und dupliziert die Hidden-Service-Definition aus `/etc/tor/torrc:194-196`. Das ist heute nicht unmittelbar offenheitskritisch, aber spaeter schlecht wartbar und genau die Art von Unklarheit, die zu falschen Annahmen ueber die wirksame Konfigurationsquelle fuehrt.
+- `[P2]` Der Tor-Adminpfad hat noch eine konkrete Drift-Quelle in der Konfigurationsablage. Laut Doku wurde auf `/etc/tor/torrc` umgestellt, weil das Debian-13-Basisimage die Drop-in-Datei nicht geladen hat ([validator-notes.md]). Live liegt die alte Drop-in-Datei aber weiter auf `101` unter `/etc/tor/torrc.d/10-ailab-admin-ssh.conf:1-4` und dupliziert die Hidden-Service-Definition aus `/etc/tor/torrc:194-196`. Das ist heute nicht unmittelbar offenheitskritisch, aber spaeter schlecht wartbar und genau die Art von Unklarheit, die zu falschen Annahmen ueber die wirksame Konfigurationsquelle fuehrt.
 
 **Kurzfazit**
 Der aktuelle Stand ist deutlich naeher am Zielbild als vorher: netzseitig ist der Adminpfad schmal, die Zonen sind sauberer getrennt, und `ct-monitoring` behauptet jetzt zu Recht keinen `8006`-Pfad mehr. Aber auf deine beiden Prueffragen ist die Antwort noch nicht voll positiv: Der Admin-Tor-Zugriff ist funktional, jedoch noch nicht eng genug fuer einen klar begrenzten Betreiberkreis, und der Host-Schutz ist wirksam, aber noch nicht als eine einzige, spaeter driftarme Betriebsschicht sauber festgezogen.
@@ -3932,7 +3931,7 @@ Der Validator-Eintrag ist ergänzt. Ich mache jetzt noch den kurzen Abschlussche
 ```text
 Der Fehleranalyse-Abschnitt ist abgeschlossen. Es gab dabei keine neuen Live-Änderungen auf `ailab2`; der Abschnitt blieb read-only und basiert auf den realen Artefakten aus den Abschnitten 03 bis 06.
 
-Aktualisiert wurden [fehleranalyse-benchmark.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/fehleranalyse-benchmark.md>), [validator-notes.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/validator-notes.md>), [implementation-log.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/implementation-log.md>), [master-plan.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/master-plan.md>), [decision-log.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/decision-log.md>), [risk-register.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/risk-register.md>) und [final-summary.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/final-summary.md>).
+Aktualisiert wurden [fehleranalyse-benchmark.md] [validator-notes.md], [implementation-log.md], [master-plan.md], [decision-log.md], [risk-register.md] und [final-summary.md].
 
 Validierter Stand:
 - Der Benchmark enthält 9 priorisierte Befunde: `6x P2`, `3x P3`.
@@ -4011,19 +4010,19 @@ Ich mache noch zwei letzte Offline-Checks mit Python: YAML-Parsing für das Comp
 ### 0488 | 2026-07-08T12:48:08.954Z | Assistant (final_answer)
 
 ```text
-Die vier Artefakte sind rein dateibasiert geprüft. Die vollständige Auswertung mit Fundlisten, Prioritäten, Fehlerklassen, Korrekturbegründungen, Variantenwahl und Restrisiken steht in [artefakt-review.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/artefakt-review.md>).
+Die vier Artefakte sind rein dateibasiert geprüft. Die vollständige Auswertung mit Fundlisten, Prioritäten, Fehlerklassen, Korrekturbegründungen, Variantenwahl und Restrisiken steht in [artefakt-review.md].
 
 Die schwersten Befunde waren:
-- [backup.bad.sh](</C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/backup.bad.sh>) sichert Tor- und Bitcoin-Runtime mit und setzt Backups auf lokal lesbare Rechte. Das ist primär ein `Sicherheitsproblem`, zusätzlich ein `Betriebsproblem`.
-- [bitcoin-flow.bad.md](</C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/bitcoin-flow.bad.md>) kollabiert Hot/Cold-Trennung, speichert Seeds online und verwirft PSBT. Das ist fast durchgehend `Sicherheit`, teils auch `Betrieb`.
-- [docker-compose.bad.yml](</C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/docker-compose.bad.yml>) mischt `privileged`, Docker-Socket, öffentliche Exponierung, Hardcoded-Secrets und ein fehlendes Netzwerk. Das ist `Sicherheit` plus `Deployability`.
-- [firewall.bad.nft](</C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/firewall.bad.nft>) ist faktisch kein deny-by-default-Regelwerk, weil `input` und `forward` auf `policy accept` stehen. Das ist ein klares `Sicherheitsproblem`.
+- [backup.bad.sh] sichert Tor- und Bitcoin-Runtime mit und setzt Backups auf lokal lesbare Rechte. Das ist primär ein `Sicherheitsproblem`, zusätzlich ein `Betriebsproblem`.
+- [bitcoin-flow.bad.md kollabiert Hot/Cold-Trennung, speichert Seeds online und verwirft PSBT. Das ist fast durchgehend `Sicherheit`, teils auch `Betrieb`.
+- [docker-compose.bad.yml mischt `privileged`, Docker-Socket, öffentliche Exponierung, Hardcoded-Secrets und ein fehlendes Netzwerk. Das ist `Sicherheit` plus `Deployability`.
+- [firewall.bad.nft] ist faktisch kein deny-by-default-Regelwerk, weil `input` und `forward` auf `policy accept` stehen. Das ist ein klares `Sicherheitsproblem`.
 
 Die bereinigten Fassungen liegen hier:
-- [backup.fixed.sh](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/backup.fixed.sh>)
-- [bitcoin-flow.fixed.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/bitcoin-flow.fixed.md>)
-- [docker-compose.fixed.yml](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/docker-compose.fixed.yml>)
-- [firewall.fixed.nft](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/firewall.fixed.nft>)
+- [backup.fixed.sh]
+- [bitcoin-flow.fixed.md
+- [docker-compose.fixed.yml]
+- [firewall.fixed.nft]
 
 Es wurden keine Live-Änderungen vorgenommen und keine der Konfigurationen produktiv ausgeführt. Die Korrekturen sind bewusst als sichere, statische Referenzfassungen formuliert.
 ```
@@ -4034,13 +4033,13 @@ Es wurden keine Live-Änderungen vorgenommen und keine der Konfigurationen produ
 
 # Files mentioned by the user:
 
-## backup.bad.sh: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/backup.bad.sh
+## backup.bad.sh
 
-## bitcoin-flow.bad.md: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/bitcoin-flow.bad.md
+## bitcoin-flow.bad.md:
 
-## docker-compose.bad.yml: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/docker-compose.bad.yml
+## docker-compose.bad.yml: 
 
-## firewall.bad.nft: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/firewall.bad.nft
+## firewall.bad.nft:
 
 ## My request for Codex:
 Ich möchte, dass du vier absichtlich fehlerhafte Artefakte aus einem Home-Lab-Setup systematisch und möglichst vollständig prüfst. Arbeite ausschließlich mit den bereitgestellten Dateien. Am Live-System darf nichts verändert werden, und keine Konfiguration darf produktiv ausgeführt werden.
@@ -4100,11 +4099,11 @@ Der letzte Compose-Check war nur ein Regex-Quoting-Fehler im Prüfkommando. Ich 
 ```text
 Die Prüfung ist jetzt auf das erweiterte Raster nachgeschärft und bleibt strikt dateibasiert. Es wurde nichts am Live-System geändert und keine Konfiguration produktiv ausgeführt.
 
-Der vollständige Bericht liegt in [artefakt-review.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/artefakt-review.md>). Die bereinigten Referenzfassungen liegen hier:
-- [backup.fixed.sh](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/backup.fixed.sh>)
-- [bitcoin-flow.fixed.md](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/bitcoin-flow.fixed.md>)
-- [docker-compose.fixed.yml](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/docker-compose.fixed.yml>)
-- [firewall.fixed.nft](</C:/Users/AK/Documents/Codex/2026-07-07/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/korrigierte-artefakte/firewall.fixed.nft>)
+Der vollständige Bericht liegt in [artefakt-review.md]. Die bereinigten Referenzfassungen liegen hier:
+- [backup.fixed.sh]
+- [bitcoin-flow.fixed.md]
+- [docker-compose.fixed.yml]
+- [firewall.fixed.nft]
 
 Gegenüber der ersten Fassung sind die Funde jetzt deutlich vollständiger:
 - `backup.bad.sh`: zusätzlich auf Verschlüsselung, Integritätsprüfung, Locking, Retention, Restore-Hinweise, partielle Artefakte und fehlende Preflights geprüft.
