@@ -177,18 +177,6 @@ Diese Beobachtung passt zur aktuellen Forschung. IaC-Eval zeigt, dass generierte
 Zusammenfassend entstand damit eine funktional breit aufgestellte Infrastruktur, deren Sicherheitsniveau jedoch erst durch nachträgliche Analyse und zusätzliche Härtungsmaßnahmen verbessert wurde. Die wesentlichen Stärken und Schwächen werden in der vergleichenden Evaluation gemeinsam mit Szenario B betrachtet.
 
 
-
-
-
-XXXXXXXXXXXXXXXXXXXXXENTFERNEN
-\subsubsection{Fazit zu Szenario A}
-
-In der Bewertungsmatrix erreichte Szenario A 14 von 21 Punkten. Die Stärken des Szenarios lagen in der Autonomie der KI, der Geschwindigkeit und der funktionalen Breite. Die Schwäche lag in der späten sicherheitstechnischen Nachschärfung. Segmentierung, Backup-Härtung, Monitoring und das Bitcoin-Transaktionssystem waren zwar angelegt, aber nicht vollständig abgeschlossen.
-
-Für den Mandanten bedeutet das: Ein \ac{LLM} kann unter naiven Prompts durchaus eine brauchbare Infrastruktur aufbauen. Ohne manuelle Härtung und Überprüfung wäre das resultierende System aber mit hoher Wahrscheinlichkeit zu offen, zu uneinheitlich und zu schwach abgesichert.
-
-
-
 \subsection{Szenario B}
 
 \subsubsection{Erreichter Stand}
@@ -222,16 +210,6 @@ Die Analyse der Bitcoin-Komponente zeigt, dass mehrere sicherheitskritische Proz
 Für eine belastbare Bewertung sicherheitskritischer Transaktionssysteme reicht die Existenz von Prozessartefakten allein nicht aus. Erforderlich ist zusätzlich die nachvollziehbare Ausführung und Prüfung der zugrunde liegenden Kernfunktionen.
 Zudem wäre ein Nutzer durch eine Simulation von einem Bitcoin-Setup nicht geholfen und seine eigentlcihe Anforderung bleibe unerfüllt.
 
-
-
-
-XXXXXXXXXXXXXXXXXXXXXENTFERNENXXXXXXXXXXXXXXXXX
-\subsubsection{Fazit zu Szenario B}
-
-Szenario B erreichte in der Bewertungsmatrix 20 von 21 Punkten. Das Ergebnis war damit deutlich stärker als Szenario A, aber nicht vollständig abgeschlossen. Besonders überzeugend waren Architektur, Segmentierung, Zugriffsbeschränkung, Backup- und Restore-Nachweis sowie die bewusste Vermeidung produktiver Geheimnisse. Der einzige Punktabzug betrifft den Bitcoin-Bereich. Dort hielt Codex die Sicherheitsvorgabe korrekt ein, ausschließlich Simulationsdaten zu verwenden. Für die volle Punktzahl hätte innerhalb dieses Simulationsrahmens jedoch ein belastbarerer praktischer Nachweis entstehen müssen, etwa durch Bitcoin-Core-Regtest, Test-Wallets, Dummy-PSBTs oder einen nachvollziehbaren simulierten Spend- und Recovery-Ablauf.
-
-
-Gegenüber Szenario A war Szenario B vorsichtiger und funktional weniger weit ausgebaut. Dafür war das Ergebnis deutlich besser nachvollziehbar und verlässlicher. Für den Mandanten bedeutet das: Ein \ac{LLM} kann unter enger Steuerung sehr brauchbare und auch sicherheitlich überzeugende Ergebnisse liefern. Ganz ersetzen kann es den menschlichen Sicherheitsberater aber nicht. Die wichtigen Entscheidungen darüber, was priorisiert wird, wo Grenzen gezogen werden und welche Restrisiken akzeptabel sind, müssen weiterhin von einem Menschen getroffen werden.
 
 \section{Vergleichende Bewertung}
 

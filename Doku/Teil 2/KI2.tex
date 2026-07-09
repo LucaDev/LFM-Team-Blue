@@ -1,27 +1,69 @@
-\chapter{\acs{KI}-Evaluation - Finaler Durchgang fehlt, Kapitel unvollständig}
-\section{Einleitung}
+\chapter{\acs{KI}-Evaluation}
 
-Der Mandant wünscht eine kritische Evaluation der Frage, ob \ac{KI}-Modelle menschliche Sicherheitsberater bei der Konzeption, Absicherung und schrittweisen Umsetzung digitaler Infrastrukturen künftig ersetzen können. Zu diesem Zweck wurden die Anforderungen an ein sicheres Home-Lab in zwei Szenarien getestet. In Szenario A stellte ein Nutzer ohne vertiefte IT-Sicherheitskenntnisse eher allgemeinere Prompts. In Szenario B steuerte ein IT-affiner Nutzer die \acs{KI} mit Threat Model, Sicherheitszielen, Negativvorgaben und iterativem Feedback.
+\section{Bewertungsmethodik}
 
-Zur wissenschaftlichen Einordnung wurde die Untersuchung an Arbeiten orientiert, die \acs{LLM}-generierte Infrastruktur- und Konfigurationsartefakte nicht nur nach sprachlicher Plausibilität, sondern nach Umsetzbarkeit, Sicherheitskonformität und Validierbarkeit bewerten. Pan et al. zeigen für \ac{IaC}, dass zwischen syntaktischer Korrektheit und tatsächlicher Deployability unterschieden werden muss.\cite{pan2025deployabilitycentriciac} Hase et al. ergänzen, dass auch sicherheitspolitische Compliance ein eigenständiges Bewertungskriterium ist.\cite{hase2026securitypolicyiac} Chen et al. zeigen mit \emph{Ciri}, dass \acs{LLM}s zudem als Validatoren von Konfigurationen betrachtet werden können, wenn sie Fehlkonfigurationen benennen und fachlich begründen können.\cite{chen2023ciri}
+Der Mandant wünscht eine kritische Evaluation der Frage, ob \ac{KI}-Modelle menschliche Sicherheitsberater bei der Konzeption, Absicherung und schrittweisen Umsetzung digitaler Infrastrukturen künftig ersetzen können. Zu diesem Zweck wurden die Anforderungen an ein sicheres Home-Lab in zwei Szenarien getestet. 
+In Szenario A stellte ein Nutzer ohne vertiefte IT-Sicherheitskenntnisse eher allgemeinere Prompts. 
+In Szenario B steuerte ein IT-affiner Nutzer die \acs{KI} mit Threat Model, Sicherheitszielen, Negativvorgaben und iterativem Feedback.
 
-Aus diesen Arbeiten lässt sich eine eigene fundierte Evaluationsmethode ableiten. Bewertet werden folgende Bereiche:
+\subsection{Wissenschaftliche Herleitung}
 
+Zur wissenschaftlichen Einordnung wurde die eigene Untersuchung an Arbeiten orientiert, die \acs{LLM}-generierte Infrastruktur- und Konfigurationsartefakte intensiv nach Umsetzbarkeit, Sicherheitskonformität und Validierbarkeit bewerten. 
+Für die eigene Methodik ist dabei nicht nur das Ergebnis dieser Arbeiten relevant, sondern vor allem die jeweils angewandte Evaluationsmethodik.
+
+Zhang et al. bewerten \ac{IaC}-Generierung nicht über eine reine Syntaxprüfung, sondern anhand ihres Benchmarks DPIaC-Eval. Verwendet werden dafür mehrere getrennter Dimensionen wie syntaktische Korrektheit, tatsächliche Deployability, User-Intent-Matching und Security. 
+Ihre Ergebnisse zeigen, dass formal gültiger Code in der Zielumgebung dennoch nicht ausrollbar sein kann. Für die eigene Evaluation folgt daraus, dass Plausibilität, syntaktische Korrektheit und Deployability als getrennte Kriterien geprüft werden müssen.\cite{zhang2025deployabilitycentriciac}
+
+Hase et al. prüfen \acs{LLM}-generierte \acs{IaC}-Skripte zweistufig.
+Zuerst wird eine syntaktischen Prüfung durchgeführt und ungültige Skripte werden verworfen. 
+Danach werden die Verbliebenen zusätzlich auf Verletzungen von Security-Policies analysiert. Ihre Arbeit zeigt, dass syntaktisch korrekte Skripte trotzdem sicherheitskritische Fehlkonfigurationen enthalten können. 
+Für die eigene Methodik folgt daraus, dass Deployability und Security-Compliance getrennt bewertet werden müssen.\cite{KISecurityPolicies}
+
+Lian et al. betrachten mit ihrem Framework \emph{Ciri} \acs{LLM}s primär als Validatoren von Konfigurationen. 
+Ciri nutzt Beispiele, Codekontext, strukturierte Ausgaben und Mehrfachabfragen mit Voting, um Fehlkonfigurationen auf Datei- und Parameterebene zu erkennen. 
+Entscheidend für die eigene Evaluation ist, dass ein \acs{LLM} nicht nur erkennen soll, dass eine Konfiguration fehlerhaft ist, sondern den konkreten Parameter benennen und fachlich begründen muss.\cite{KIConfigValidators}
+
+Mukhopadhyay et al. vergleichen verschiedene Nutzungsformen wie Zero-Shot, Few-Shot und Fine-Tuning und bewerten die Ergebnisse mehrdimensional. Dafür kommen unter anderem Correctness, Security, Compliance und Readability als Faktoren zum Einsatz. Zusätzlich kombinieren sie eine automatische Bewertung durch ein \acs{LLM}-as-a-Judge und ein manuelles menschlichen Review durch Fachexperten. Für die eigene Methodik ergibt sich daraus ein mehrstufiger Bewertungsprozess mit menschlicher Kontrollinstanz.\cite{KIIaC}
+
+\subsection{Bewertungsschema}
+
+Die Bewertung erfolgt je Bereich auf einer Skala von 0 bis 3 Punkten und wird gegen eine zuvor festgelegte Soll-Anforderung geprüft. 
+0 Punkte bedeuten, dass eine Anforderung fehlt oder kritisch falsch umgesetzt wurde, 
+1 Punkt eine oberflächliche oder unsichere Lösung, 
+2 Punkte eine überwiegend korrekte Lösung mit relevanten Lücken und 
+3 Punkte eine korrekt, eng und sicher umgesetzte Anforderung. 
+
+Damit die Vergabe nachvollziehbar bleibt, wurde je Bereich vorab festgelegt, welche konkreten Anforderungen für die volle Punktzahl erfüllt sein müssen:
 \begin{itemize}
-\item Architekturplanung
-\item Services
-\item Konfiguration
-\item Netzwerk / Tor
-\item Backup / Monitoring
-\item Bitcoin-Konzept
-\item Fehleranalyse
+\item \textbf{Architekturplanung:} klare Trennung sensibler, alltäglicher und administrativer Zonen sowie ein nachvollziehbares Gesamtkonzept statt einer allgemeinen Beschreibung.
+\item \textbf{Services:} mindestens 15 Self-Hosted-Dienste mit Docker-Compose-Konfigurationen nach dem Least-Privilege-Prinzip.
+\item \textbf{Konfiguration:} keine Default-Zugangsdaten, restriktive Rechte und keine unnötig exponierten Ports.
+\item \textbf{Netzwerk / Tor:} durchgängiges Default-Deny, Zugriff ausschließlich über Onion-Service und eine tatsächliche Netzsegmentierung.
+\item \textbf{Backup / Monitoring:} verschlüsselte Backups mit belegtem Restore-Pfad sowie ein funktionierendes Monitoring.
+\item \textbf{Bitcoin-Konzept:} Trennung von Hot- und Cold-Wallet, Multisig und \acs{PSBT}-Prozesse sowie kein Schlüsselmaterial auf einem Online-System.
+\item \textbf{Fehleranalyse:} der eingebaute Fehler wird lokalisiert, der konkrete Parameter benannt und fachlich korrekt begründet.
 \end{itemize}
 
-Die Bewertung erfolgt auf einer Skala von 0 bis 3 Punkten. 0 Punkte bedeuten, dass eine Anforderung fehlt oder kritisch falsch umgesetzt wurde. 1 Punkt steht für eine oberflächliche oder unsichere Lösung. 2 Punkte werden vergeben, wenn die Lösung überwiegend korrekt ist, jedoch relevante Lücken enthält. 3 Punkte bedeuten, dass eine Anforderung korrekt, eng und sicher umgesetzt wurde. Als kritische Ausschlussfehler gelten öffentlich erreichbare Admin-Dienste, fehlende Backup-Verschlüsselung, unsegmentierte Netze, unsichere Passwortverwaltung oder eine Verletzung des Air-Gapped-Prinzips.
+Unabhängig von der sonstigen Qualität wird ein Bereich mit 0 Punkten bewertet, sobald ein kritischer Ausschlussfehler vorliegt. Als solche gelten öffentlich erreichbare Admin-Dienste, fehlende Backup-Verschlüsselung, unsegmentierte Netze, unsichere Passwortverwaltung oder eine Verletzung des Air-Gapped-Prinzips. 
+Ein Szenario, das einen solchen Fehler enthält, kann in dem betroffenen Bereich die volle Punktzahl nicht erreichen.
+
+Die Punktvergabe wurde von zwei Personen unabhängig anhand dieser Checkliste vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. Dies wurde von Ausarbeitern der Basis-System und Krypto-Teile als Experten vorgenommen.
+
+Die Aussagekraft der Evaluation ist bewusst begrenzt. 
+Untersucht wurde eine einzelne Home-Lab-Architektur in je einem Durchlauf pro Szenario. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich aus einem einzelnen Durchlauf keine Aussagen über die Streuung der Ergebnisse ableiten. Zudem wurde ausgerechnet der Bereich mit dem höchsten Schadenspotenzial, das Bitcoin-Setup, bewusst nur als Simulation umgesetzt und so nicht vollständig produktiv getestet. Die Ergebnisse sind somit als fundierte Einordnung für die konkrete Fragestellung des Mandanten zu verstehen, nicht als allgemeingültiger Beleg für oder gegen die Ersetzbarkeit von Sicherheitsberatern.
+
+\subsection{Testmethodik}
+
+Für die Vergleichbarkeit der beiden Szenarien ist wichtig, welche Faktoren bewusst variiert und welche konstant gehalten wurden. 
+Der eigentliche Untersuchungsgegenstand ist der Einfluss der Prompt-Qualität. Darunter fallen der Unterschied zwischen naiven Eingaben (Szenario A) und fachlich gesteuerten Eingaben (Szenario B). 
+Zusätzlich wurde je Szenario zwischen einer rein textuell planenden Variante (normales ChatGPT) und einer praktisch ausführenden Variante (Codex-Agent) unterschieden. 
+Diese zweite Dimension bewertet nicht die Prompt-Qualität, sondern den Unterschied zwischen Konzeption und tatsächlicher Umsetzung und wird daher getrennt betrachtet. 
+Da beide Dimensionen gleichzeitig wirken, wird der Punktunterschied zwischen A und B nicht als isolierter kausaler Effekt der Prompt-Qualität interpretiert, sondern als Gesamtbeobachtung unter realistischen Nutzungsbedingungen.
+
 
 \section{Vergleich der beiden Versionen in Szenario A}
 
-Die im normalen ChatGPT erstellte Version von Szenario A lieferte zunächst einen brauchbaren, aber relativ breit gefassten Entwurf. Positiv war, dass derTor-only-Zugriff, Monitoring, verschlüsselte Backups und eine getrennte Bitcoin-Architektur grundsätzlich berücksichtigt wurden. Ebenfalls positiv war, dass die \acs{KI} einen Katalog alltagstauglicher Dienste, erste Docker-Compose-Beispiele sowie Konzepte für Backup, Monitoring und Onion-Konfigurationen erzeugte. Inhaltlich blieb der Entwurf jedoch stark auf textuelle Plausibilität ausgerichtet: Mehrere Sicherheitsentscheidungen waren zwar vernünftig begründet, aber nicht in einer reale Zielumgebung errprobt. Gerade in Szenario A zeigte sich damit das aus der Literatur bekannte Muster, dass brauchbar klingende Artefakte noch nicht automatisch mit hoher Qualität oder Security-Compliance gleichzusetzen sind.\cite{pan2025deployabilitycentriciac,hase2026securitypolicyiac}
+Die im normalen ChatGPT erstellte Version von Szenario A lieferte zunächst einen brauchbaren, aber relativ breit gefassten Entwurf. Positiv war, dass derTor-only-Zugriff, Monitoring, verschlüsselte Backups und eine getrennte Bitcoin-Architektur grundsätzlich berücksichtigt wurden. Ebenfalls positiv war, dass die \acs{KI} einen Katalog alltagstauglicher Dienste, erste Docker-Compose-Beispiele sowie Konzepte für Backup, Monitoring und Onion-Konfigurationen erzeugte. Inhaltlich blieb der Entwurf jedoch stark auf textuelle Plausibilität ausgerichtet: Mehrere Sicherheitsentscheidungen waren zwar vernünftig begründet, aber nicht in einer reale Zielumgebung erprobt. Gerade in Szenario A zeigte sich damit das aus der Literatur bekannte Muster, dass brauchbar klingende Artefakte noch nicht automatisch mit hoher Qualität oder Security-Compliance gleichzusetzen sind.\cite{pan2025deployabilitycentriciac,hase2026securitypolicyiac}
 
 Die mit Codex praktisch ausgeführte Variante von Szenario A war demgegenüber deutlich operativer. Codex erzeugte nicht nur weitere Planungsartefakte, sondern richtete ein Home-Lab mit Tor-Zugriff, 15 Diensten, vorgeschaltetem Edge-Container, Monitoring, Backup-Pfaden und begleitender Dokumentation tatsächlich ein. Besonders relevant war, dass die \acs{KI} auf technische Störungen nicht bloß mit neuen Textvorschlägen reagierte, sondern iterativ arbeitete: Sie prüfte Zustände, korrigierte Konfigurationsfehler, validierte Snapshots, schloss Anmeldungen ab und aktualisierte die Readme.md fortlaufend. Damit erweiterte  Codex in Szenario A die Rolle eines textgenerierenden Beraters hin zu einem eigenständigen IT-Administrator.
 
@@ -31,7 +73,7 @@ Die mit Codex praktisch ausgeführte Variante von Szenario A war demgegenüber d
 
 Die im normalen ChatGPT entwickelte Version von Szenario B war konzeptionell die stärkste Planungsleistung. Das Threat Model war klar formuliert, sensible Zonen wurden von Alltags- und Managementdiensten getrennt, ein  Default-Deny-Netz wurde durchgängig mitgedacht, und für Secrets, Backup, Bitcoin und administrative Zugänge wurden strenge Sicherheitsregeln formuliert. Hinzu kamen konkrete Artefakte wie Compose-Beispiele nach Least-Privilege-Prinzip, Netz- und Firewall-Konzepte, Onion-Service-Konfigurationen und eine explizite Fehleranalyse einer bewusst unsicheren Beispielkonfiguration. Inhaltlich kam diese Version der Arbeitsweise eines menschlichen Sicherheitsberaters bereits relativ nahe, weil Anforderungen, Risiken, Schutzmaßnahmen und manuelle Prüfpunkte systematisch miteinander verknüpft wurden.
 
-Die mit Codex ausgeführte Variante von Szenario B zeigte dagegen eine andere Stärke. Codex setzte eine segmentierte Basisinfrastruktur real um, darunter Gateway, DNS, Monitoring, Passwortrotation, eine verschlüsselts Credential-Datei und dokumentierte Placeholder für weitere Dienste. Gleichzeitig legte die \acs{KI} die Grenze der eigenen Umsetzung transparent offen: Reverse Proxy, produktive App-Schicht, echte Backup-Ziele, produktive TLS-Versorgung und insbesondere das Bitcoin-Schlüsselmaterial wurden nicht einfach blind erzeugt, sondern als noch nicht real betriebene oder nur simulierte Teile dokumentiert.
+Die mit Codex ausgeführte Variante von Szenario B zeigte dagegen eine andere Stärke. Codex setzte eine segmentierte Basisinfrastruktur real um, darunter Gateway, DNS, Monitoring, Passwortrotation, eine verschlüsselte Credential-Datei und dokumentierte Placeholder für weitere Dienste. Gleichzeitig legte die \acs{KI} die Grenze der eigenen Umsetzung transparent offen: Reverse Proxy, produktive App-Schicht, echte Backup-Ziele, produktive TLS-Versorgung und insbesondere das Bitcoin-Schlüsselmaterial wurden nicht einfach blind erzeugt, sondern als noch nicht real betriebene oder nur simulierte Teile dokumentiert.
 
 Genau dieser Punkt ist für die Bewertung entscheidend. Dass Codex in Szenario B weitere Schritte nicht umgesetzt hat, darf nicht als Scheitern interpretiert werden. In mehreren Passagen benannte die \acs{KI} korrekt, dass echte Seeds, Private Keys, Offline-Signaturmaterial oder produktive Geheimnisse nicht auf einem Online-System erzeugt oder in ein Runbook überführt werden sollten. Später wurden entsprechende Simulationsdaten ausdrücklich als ungültige Artefakte markiert. Diese Selbstbegrenzung ist ein Qualitätsmerkmal: Die \acs{KI} unterschied zwischen dem, was automatisierbar, was nur vorbereitbar und was aus Sicherheitsgründen bewusst manuell oder offline bleiben muss. Das entspricht auch dem in der Forschung beschriebenen Wert menschlich angeleiteter Human-AI-Kollaboration, bei der die \acs{KI} nicht einfach alles ausführt, sondern die Entscheidungsqualität im Zusammenspiel mit dem Menschen erhöht.\cite{tariq2025bridgingexpertise}
 
@@ -62,7 +104,7 @@ Gesamt & 12 / 21 & 18 / 21 \\
 \label{tab:ki-sicherheitsberater-bewertung}
 \end{table}
 
-Szenario B erreicht damit deutlich mehr Punkte als Szenario A. Diese Beobachtung passt sowohl zu Arbeiten über Prompt Engineering als auch zu Studien über \Human-AI-Kollaboration in der Cybersecurity. Je strukturierter die Vorgaben und je klarer der fachliche Kontext sind, desto belastbarer werden die Ergebnisse.\cite{chen2023promptreview,tariq2025bridgingexpertise}
+Szenario B erreicht damit deutlich mehr Punkte als Szenario A. Diese Beobachtung passt sowohl zu Arbeiten über Prompt Engineering als auch zu Studien über Human-AI-Kollaboration in der Cybersecurity. Je strukturierter die Vorgaben und je klarer der fachliche Kontext sind, desto belastbarer werden die Ergebnisse.\cite{chen2023promptreview,tariq2025bridgingexpertise}
 
 
 \section{Codex-Security und Sicherheitsimplikationen agentischer Systeme}
