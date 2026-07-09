@@ -15,12 +15,6 @@ Marie übernahm die KI-Evaluation und große Teile der Dokumentationskoordinatio
 
 Wichtig war für uns dabei, dass die Zuständigkeiten zwar klar, aber nicht starr waren. Wenn aus einer Infrastrukturentscheidung Folgen für die Bitcoin-Komponente entstanden oder Dokumentation und Implementierung auseinanderliefen, haben wir das gemeinsam besprochen. 
 
-\section{Anmerkung zur Gewichtung der Teilbereiche}
-
-Aus unserer Sicht wäre eine zu starke Gewichtung einzelner Teilbereiche innerhalb des Projekts nur bedingt sinnvoll. Wir würden die drei Hauptbereiche grundsätzlich gleich gewichten, da alle Teile für das Gesamtsystem notwendig waren und stark voneinander abhingen. Infrastruktur, Bitcoin-Komponente und KI-Evaluation erfüllen jeweils unterschiedliche Funktionen und lassen sich daher nur schwer direkt miteinander vergleichen.
-
-Wenn überhaupt, müsste aus unserer Sicht der Bitcoin-Teil eher höher gewichtet werden als die übrigen Bereiche. Dort war der Anteil an eigener Konzeption, Erklärung und sicherheitskritischer Abwägung besonders hoch. Anders als bei vielen Infrastrukturthemen existieren für den konkreten Aufbau einer solchen mandantenbezogenen Bitcoin- und Transaktionsarchitektur nur begrenzt direkt übertragbare Referenzen. Viele Entscheidungen mussten deshalb selbst hergeleitet, begründet und auf ihre praktischen sowie sicherheitstechnischen Folgen geprüft werden. Gerade dieser Teil erforderte daher besonders viel eigenständige Arbeit, auch wenn sich das nicht immer unmittelbar in sichtbaren Konfigurationsdateien oder Seitenumfang widerspiegelt.
-
 
 \section{Herausforderungen}
 \subsection{Self-Hosted-Setup}
@@ -36,9 +30,16 @@ Aufwendig war auch der Versuch, dem Mandanten möglichst wenig manuelle Arbeit z
 Besonders deutlich wurde für uns der operative Teil von Sicherheit beim Zugriff auf das TPM aus einem unprivilegierten Container. Hier ging es nicht nur darum, dass etwas grundsätzlich funktioniert, sondern dass minimale Rechte, reproduzierbare Konfiguration und realer Hardwarezugriff gleichzeitig zusammenpassen. Gerade an solchen Stellen wurde sichtbar, dass Sicherheit nicht nur aus Kryptographie besteht, sondern auch aus sauberen Betriebsabläufen.
 
 \subsection{KI-Evaluation}
-Im Bereich KI war eine der ersten Herausforderungen das sehr große Angebot an verfügbaren Modellen. Gerade zu Beginn war es nicht einfach, aus der Vielzahl an Optionen die Modelle auszuwählen, die für unsere Aufgaben wirklich geeignet sind. Am Ende fiel deshalb bewusst die Entscheidung, zunächst auf die KI-Modelle zurückzugreifen, die im Alltag bereits genutzt werden und mit deren Verhalten bereits praktische Erfahrung vorhanden war. Das war für uns der pragmatischste Weg, um nicht zu viel Zeit allein in die Modellauswahl zu investieren.
+Im Bereich \acs{KI} war eine der ersten Herausforderungen die große Auswahl an verfügbaren Modellen und Werkzeugen. Gerade am Anfang war es nicht leicht einzuschätzen, welches Modell für welche Aufgabe am besten geeignet ist. Deshalb wurde pragmatisch entschieden, zunächst mit den Modellen zu arbeiten, die im Alltag ohnehin schon genutzt wurden und deren Verhalten bereits etwas bekannt war.
 
-Eine weitere Schwierigkeit war, dass die Idee, die Codex-Agenten gezielt in die Evaluation einzubeziehen, erst relativ spät entstand. Dadurch mussten zusätzliche Testläufe aufgesetzt werden. Das hat den Evaluationsaufwand erhöht, weil bestehende Testansätze erweitert und teilweise neu gedacht werden mussten. Der vollständig ausgearbeitete und umfassende Testlauf ist zum Zeitpunkt der Zwischenevaluation noch offen.
+Eine weitere Herausforderung war, dass die Idee, Codex gezielt in die Evaluation einzubeziehen, erst relativ spät entstand. Dadurch mussten zusätzliche Testläufe geplant und eingerichtet werden. Das war deutlich aufwendiger als eine reine Chat-Auswertung, weil Codex nicht nur Antworten schreiben, sondern tatsächlich in einer lokalen Testumgebung arbeiten sollte und diverse Dateien erstellt hat, die ebenfalls analysiert werden mussten. Die Läufe dauerten entsprechend lange und konnten nicht einfach nebenbei durchgeführt werden.
+
+Schwierig war außerdem die Umsetzung von Szenario B. Dort sollte ein fachkundiger Nutzer simuliert werden. Dafür wurde Wissen aus den beiden anderen Projektteilen benötigt. Das ließ sich nur eingeschränkt vollständig nachbilden, weil die Person, die den \acs{KI}-Teil bearbeitet hat, nicht in gleicher Tiefe an beiden anderen Teilen beteiligt war. Gleichzeitig ließ sich die Arbeit auch nicht einfach aufteilen, weil Codex auf einer lokalen \acs{VM} gearbeitet hat und viele Entscheidungen direkt während des laufenden Tests getroffen werden mussten.
+
+Auch die spätere Auswertung war dadurch nicht ganz trivial und musste durch die beiden anderen Gruppenmitglieder stark unterstützt werden. Für den Bitcoin-Teil brauchte man Detailwissen zu Wallets, PSBT, Watch-only-Konzepten, Regtest und Schlüsseltrennung. Für die Infrastruktur waren dagegen Kenntnisse in den Bereichen Netzwerktrennung, Tor-Zugriffen, Backups, Monitoring und Härtung wichtig. Entweder hätten sich die anderen Gruppenmitglieder zusätzlich in den \acs{KI}-Teil einarbeiten müssen, oder die Person im \acs{KI}-Teil hätte sich sehr tief in beide Fachbereiche einarbeiten müssen. Beides wäre wegen des Umfangs und des Zeitaufwands nur schwer realistisch gewesen.
+
+Das erklärt auch, warum Szenario B nicht in allen Bereichen ideal vorbereitet war. Der Anspruch war zwar, einen Expertennutzer nachzuahmen, aber dieses Expertenwissen musste aus mehreren Projektteilen zusammengeführt werden. Gerade im Bitcoin-Bereich hätten einige Anforderungen von Anfang an noch genauer formuliert werden können.
+
 
 \section{Learnings}
 Ein wichtiges Learning für uns war, dass nicht jede technisch mögliche Erweiterung am Ende einen echten Mehrwert bringt. Mehrere Ansätze waren auf dem Papier interessant, hätten das System in der Praxis aber unnötig komplexer und angreifbarer gemacht.
@@ -48,3 +49,20 @@ Für den Infrastrukturteil haben wir vor allem gelernt, wie wichtig frühe und k
 Im Bitcoin-Bereich war die wichtigste Erkenntnis für uns, dass der Eigenbau einer vollständigen Custody-Lösung erheblich komplexer ist, als es am Anfang wirkt. Bewährte Komponenten wie Bitcoin Core, Sparrow und Hardware-Wallets reduzieren nicht nur den Implementierungsaufwand, sondern können die Sicherheit auch erhöhen, weil sie etablierte und nachvollziehbare Funktionen mitbringen. Für uns war das ein klarer Hinweis darauf, dass Sicherheit nicht automatisch durch möglichst viel Eigenentwicklung entsteht.
 
 Auch organisatorisch haben wir mitgenommen, dass klare Zuständigkeiten und gemeinsame Werkzeuge gut zusammenpassen. Gerade weil technische Umsetzung und Dokumentation parallel liefen, hat uns diese Kombination geholfen, als Team konsistent zu arbeiten.
+
+
+\section{Feedback und Anmerkung zur Gewichtung}
+
+Aus unserer Sicht war der Gesamtumfang der Aufgabenstellung deutlich zu hoch. Besonders in Kombination mit Aufgabenteil 1, der für sich genommen bereits auf mehrere Wochen ausgelegt war, entstand insgesamt eine sehr große Arbeitsbelastung. Gegen Ende des Moduls war bei allen drei Gruppenmitgliedern spürbar die Luft raus. Die Menge an Aufgaben, die technische Tiefe und der Zeitdruck führten dazu, dass wir teilweise überfordert waren und das Modul insgesamt stark belastend wurde.
+
+Beide Aufgabenteile waren inhaltlich sehr interessant. Gerade deshalb wäre es aus unserer Sicht sinnvoll, den Umfang im nächsten Semester stärker zu fokussieren. Unser Vorschlag wäre, Aufgabenteil 1 zu streichen und stattdessen das gesamte Semester für den zweiten, praktischen Teil zu nutzen. Dadurch bliebe mehr Zeit, sich gründlich in die Themen einzuarbeiten, Dinge praktisch auszuprobieren und die Ergebnisse sauberer zu dokumentieren.
+
+Zusätzlich wäre es aus unserer Sicht hilfreich, den zweiten Aufgabenteil selbst etwas zu reduzieren. Statt drei großer Teilbereiche könnte ein Bereich gestrichen oder der erwartete Umfang deutlich begrenzt werden. Dann hätten alle Gruppenmitglieder mehr Zeit gehabt, sich nicht nur mit dem eigenen Abschnitt, sondern auch mit den anderen Themen zu beschäftigen. So hätte jede Person aus mehreren Bereichen etwas lernen und praktische Erfahrungen sammeln können.
+
+Durch den hohen Zeitdruck mussten wir die Arbeit am Ende stark aufteilen: Jede Person hat vor allem ihren eigenen Bereich fertiggestellt, während die anderen dort kaum praktisch mitarbeiten konnten. Das war schade, weil alle Bereiche fachlich spannend waren. Mit weniger Umfang wäre aus unserer Sicht nicht nur die Belastung geringer gewesen, sondern auch der Lerneffekt für alle Gruppenmitglieder deutlich größer.
+
+Vor diesem Hintergrund halten wir eine zu starke Gewichtung einzelner Teilbereiche innerhalb des Projekts nur für bedingt sinnvoll. Grundsätzlich würden wir die drei Hauptbereiche gleich gewichten, da alle Teile für das Gesamtsystem notwendig waren und stark voneinander abhingen. Infrastruktur, Bitcoin-Komponente und \acs{KI}-Evaluation erfüllten jeweils unterschiedliche Funktionen und lassen sich deshalb nur schwer direkt miteinander vergleichen.
+
+Wenn überhaupt eine unterschiedliche Gewichtung vorgenommen wird, müsste aus unserer Sicht eher der Bitcoin-Teil höher gewichtet werden. Dort war der Anteil an eigener Konzeption, Erklärung und sicherheitskritischer Abwägung besonders hoch. Anders als bei vielen Infrastrukturthemen existieren für den konkreten Aufbau einer solchen mandantenbezogenen Bitcoin- und Transaktionsarchitektur nur begrenzt direkt übertragbare Referenzen. Viele Entscheidungen mussten daher selbst hergeleitet, begründet und auf ihre praktischen sowie sicherheitstechnischen Folgen geprüft werden.
+
+Gerade dieser Teil erforderte besonders viel eigenständige Arbeit, auch wenn sich das nicht immer unmittelbar in sichtbaren Konfigurationsdateien oder im Seitenumfang widerspiegelt. Deshalb sollte bei der Bewertung nicht nur betrachtet werden, wie viel technisch umgesetzt oder dokumentiert wurde, sondern auch, wie viel konzeptionelle und sicherheitskritische Eigenleistung in den jeweiligen Teilbereichen steckt.
