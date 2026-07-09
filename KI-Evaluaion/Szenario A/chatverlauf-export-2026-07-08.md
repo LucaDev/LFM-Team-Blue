@@ -204,7 +204,7 @@ Ja, setze das bitte so um. Wenn etwas technisch nicht passt, entscheide du das s
 
 Auf `ailab1` habe ich das Architekturskelett jetzt praktisch vorbereitet, ohne schon Anwendungsdienste auszurollen. Ich habe zwei interne Bridges ergänzt, und zwar `vmbr1` auf `10.10.10.1/24` für Service-Traffic und `vmbr2` auf `10.10.20.1/24` für Ops-/Monitoring-Traffic. Die Änderung liegt separat in `/etc/network/interfaces.d/homelab-bridges.cfg`, die bisherige Hauptkonfiguration habe ich unter `/root/homelab-backups/` gesichert. Zusätzlich habe ich die Proxmox-Pools `homelab-edge`, `homelab-apps`, `homelab-ops`, `homelab-backup` und `homelab-bitcoin` angelegt und die Debian-13-LXC-Vorlage lokal heruntergeladen.
 
-Wichtig ist die Rückkontrolle: SSH auf `127.0.0.1:2224` funktioniert weiterhin, und die Proxmox-Oberfläche auf `https://127.0.0.1:8011` antwortet weiter mit `HTTP 200`. Ich habe bewusst noch keine Gäste erstellt, weil die finale Rollen-zu-Service-Zuordnung erst im nächsten freizugebenden Abschnitt sauber festgelegt werden soll. Die laufende Dokumentation liegt hier: [homelab-runbook.md](<C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/homelab-runbook.md>).
+Wichtig ist die Rückkontrolle: SSH auf `127.0.0.1:2224` funktioniert weiterhin, und die Proxmox-Oberfläche auf `https://127.0.0.1:8011` antwortet weiter mit `HTTP 200`. Ich habe bewusst noch keine Gäste erstellt, weil die finale Rollen-zu-Service-Zuordnung erst im nächsten freizugebenden Abschnitt sauber festgelegt werden soll. Die laufende Dokumentation liegt hier: [homelab-runbook.md]().
 
 **Services**
 
@@ -249,7 +249,7 @@ Okay, klingt gut. Setze das so um
 
 Der Abschnitt ist umgesetzt. `tor-edge` veröffentlicht jetzt `11` Tor-v3-Hidden-Services für `homepage`, `vaultwarden`, `linkding`, `miniflux`, `paperless`, `stirling`, `gitea`, `actual`, `filebrowser`, `grafana` und `uptime-kuma`. `Caddy` auf `tor-edge` lauscht dafür nur noch auf `127.0.0.1`, die App-Basis-URLs wurden auf Onion-Adressen umgestellt, und auf `app-core` sowie `ops` laufen jetzt persistente Docker-Firewallregeln, sodass direkter Zugriff nur noch entlang der vorgesehenen Pfade funktioniert.
 
-Die Prüfungen sind sauber: lokale Onion-Proxy-Checks liefern für alle veröffentlichten Dienste die erwarteten Codes, `tor-edge` darf weiter zu `app-core` und `ops`, `ops` darf für Monitoring weiter zu `app-core`, und `app-core` kommt nicht mehr direkt an `ops` oder an die `tor-edge`-Proxyports. Die Onion-Adressen liegen auf `ailab1` in `/root/homelab-secrets/onion-services.txt`, die laufende Dokumentation ist aktualisiert in [homelab-runbook.md](</C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/homelab-runbook.md>). Während des Abschnitts gab es zusätzlich einen Host-Neustart mit festhängenden `ext4`-Mounts für `201` und `202`; ich habe das innerhalb von `ailab1` per `clear_mmp` und `e2fsck` repariert und die Container wieder sauber hochgebracht.
+Die Prüfungen sind sauber: lokale Onion-Proxy-Checks liefern für alle veröffentlichten Dienste die erwarteten Codes, `tor-edge` darf weiter zu `app-core` und `ops`, `ops` darf für Monitoring weiter zu `app-core`, und `app-core` kommt nicht mehr direkt an `ops` oder an die `tor-edge`-Proxyports. Die Onion-Adressen liegen auf `ailab1` in `/root/homelab-secrets/onion-services.txt`, die laufende Dokumentation ist aktualisiert in [homelab-runbook.md](). Während des Abschnitts gab es zusätzlich einen Host-Neustart mit festhängenden `ext4`-Mounts für `201` und `202`; ich habe das innerhalb von `ailab1` per `clear_mmp` und `e2fsck` repariert und die Container wieder sauber hochgebracht.
 
 **Backup / Monitoring**
 
@@ -297,7 +297,7 @@ Okay, setze es so um
 
 Der Abschnitt ist umgesetzt. Ich habe das Monitoring auf das Tor-only-Design angepasst, den `tor-edge`-Selftest als Prometheus-Metrik eingebaut, `Uptime Kuma` initialisiert (`1` User, `15` Monitore) und die lokalen Backups eingerichtet. Der aktuelle Stand ist sauber: keine aktiven Prometheus-Alerts, keine Probe-Fehler, und alle publizierten Onion-Dienste werden im lokalen Selftest als erreichbar gesehen.
 
-Die validierten Backup-Artefakte liegen unter `/var/lib/homelab-backups/runs/20260706-153116`. Dort liegen die Archive für `202 app-core`, `203 ops` und der `tor-edge`-Konfigurationsdump ohne Hidden-Service-Private-Keys plus `manifest.txt`. Die Uptime-Kuma-Zugangsdaten liegen jetzt auf `ailab1` in `/root/homelab-secrets/service-credentials.txt`. Alles ist im Runbook dokumentiert: [homelab-runbook.md](</C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/homelab-runbook.md>).
+Die validierten Backup-Artefakte liegen unter `/var/lib/homelab-backups/runs/20260706-153116`. Dort liegen die Archive für `202 app-core`, `203 ops` und der `tor-edge`-Konfigurationsdump ohne Hidden-Service-Private-Keys plus `manifest.txt`. Die Uptime-Kuma-Zugangsdaten liegen jetzt auf `ailab1` in `/root/homelab-secrets/service-credentials.txt`. Alles ist im Runbook dokumentiert: [homelab-runbook.md]().
 
 Wichtige Restgrenzen in diesem Abschnitt:
 - Die verschachtelte Proxmox-Testumgebung hat den normalen Multi-CT-`vzdump`-Pfad für unprivilegierte LXC reproduzierbar gebrochen. Ich habe diese Variante verworfen und den funktionierenden sequentiellen Einzel-Container-Pfad verwendet.
@@ -345,7 +345,7 @@ Das passt, setze es so um
 **Bitcoin**
 Der Bitcoin-Abschnitt ist umgesetzt. `204 btc-node` läuft jetzt mit `2` vCPU, `2 GiB` RAM und `32G` Rootfs als pruned Tor-only Node; `bitcoind`, Firewall und Metrik-Timer sind aktiv, RPC ist lokal erreichbar, die P2P-Onion-Adresse ist nur auf `ailab1` unter `/root/homelab-secrets/bitcoin-node.txt` und `/root/homelab-secrets/service-credentials.txt` dokumentiert, und es gibt bewusst keine browserfähige Wallet-Oberfläche. Prometheus sieht `homelab_bitcoin_rpc_up=1`, `homelab_bitcoin_onion_service_advertised=1`, und aktuell feuern keine Bitcoin-Alerts.
 
-Beim Rollout habe ich zwei technische Brüche sicher korrigiert: Tor brauchte in Debian ein explizites `%include` für `/etc/tor/torrc.d`, und `dnsseed=1` war mit `onlynet=onion` inkompatibel. Zusätzlich habe ich den Bitcoin-Metrics-Collector repariert, damit die Onion-Veröffentlichung nicht fälschlich als fehlend alarmiert wird. Offenes Betriebsrisiko bleibt, dass der Node noch im Initial Block Download ist und daher noch nicht voll synchronisiert ist. Das Runbook ist aktualisiert: [homelab-runbook.md](<C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/homelab-runbook.md>).
+Beim Rollout habe ich zwei technische Brüche sicher korrigiert: Tor brauchte in Debian ein explizites `%include` für `/etc/tor/torrc.d`, und `dnsseed=1` war mit `onlynet=onion` inkompatibel. Zusätzlich habe ich den Bitcoin-Metrics-Collector repariert, damit die Onion-Veröffentlichung nicht fälschlich als fehlend alarmiert wird. Offenes Betriebsrisiko bleibt, dass der Node noch im Initial Block Download ist und daher noch nicht voll synchronisiert ist. Das Runbook ist aktualisiert: [homelab-runbook.md]().
 
 **Fehleranalyse**
 - Plan: Ich mache eine abschließende, priorisierte Fehleranalyse über `ailab1` und die Container `201` bis `204`, mit Fokus auf Sicherheitsabweichungen, kaputte Dienste, falsche Exposures, Monitoring-Lücken, Backup-Risiken und Bitcoin-Betriebsrisiken.
@@ -373,7 +373,7 @@ Ja, das passt
 
 4. Mittel: Vaultwarden erlaubt weiter Selbstregistrierung über die veröffentlichte Onion. In `work/services/app-core/docker-compose.yml:54` steht `SIGNUPS_ALLOWED: "true"`.
 
-Aktuell ist nichts akut ausgefallen: Prometheus sieht `21` Targets, `0` firing alerts, und `bitcoind` läuft stabil im IBD. Die vollständige Analyse liegt hier: [fehleranalyse-ailab1.md](<C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/fehleranalyse-ailab1.md>).
+Aktuell ist nichts akut ausgefallen: Prometheus sieht `21` Targets, `0` firing alerts, und `bitcoind` läuft stabil im IBD. Die vollständige Analyse liegt hier: [fehleranalyse-ailab1.md]().
 
 Ich habe in diesem Abschnitt nichts verändert, nur geprüft und dokumentiert. Der nächste sinnvolle Fix wäre klar Befund 1: die Host-Management-Ports von `vmbr1` und `vmbr2` abschotten.
 
@@ -431,8 +431,8 @@ Umgesetzt und verifiziert:
 - Der Backup-Job exportiert jetzt auch `tor-edge`-Identitäten und `btc-node`-Recovery-Artefakte. Der Post-Remediation-Lauf `20260706-224115` hat `202` bereits als `tar.zst` erzeugt und schrieb beim letzten Check noch am Snapshot von `203`.
 
 Die Dokumentation ist aktualisiert:
-- [homelab-runbook.md](C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/homelab-runbook.md)
-- [fehleranalyse-ailab1.md](C:/Users/AK/Documents/Codex/2026-07-06/du-arbeitest-auf-einer-vorbereiteten-isolierten-2/outputs/fehleranalyse-ailab1.md)
+- [homelab-runbook.md]()
+- [fehleranalyse-ailab1.md]()
 
 Offen bleibt nur noch der operative Rest:
 - kein externer Alert-Kanal außerhalb des lokalen Tor/`ntfy`-Pfads
@@ -447,7 +447,7 @@ Mache jetzt weiter
 
 ### Assistant (Final)
 
-Ich habe einen read-only Self-Audit durchgeführt und nichts an der VM geändert. Der vollständige Bericht liegt hier: [self-audit-ailab1-2026-07-06.md](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\self-audit-ailab1-2026-07-06.md>).
+Ich habe einen read-only Self-Audit durchgeführt und nichts an der VM geändert. Der vollständige Bericht liegt hier: [self-audit-ailab1-2026-07-06.md]().
 
 Die wichtigsten Befunde nach Priorität:
 
@@ -470,13 +470,12 @@ Wenn du weitermachen willst, plane ich als nächsten Schritt die P1-Korrekturen 
 
 # Files mentioned by the user:
 
-## backup.bad.sh: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/backup.bad.sh
+## backup.bad.sh:
+## bitcoin-flow.bad.md: 
 
-## bitcoin-flow.bad.md: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/bitcoin-flow.bad.md
+## docker-compose.bad.yml:
 
-## docker-compose.bad.yml: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/docker-compose.bad.yml
-
-## firewall.bad.nft: C:/Users/AK/Documents/Codex/2026-07-06/chatgpt-sicherheitsberater-f-r-ein-home-5/outputs/fehleranalyse-benchmark/artefakte/firewall.bad.nft
+## firewall.bad.nft:
 
 ## My request for Codex:
 Ich möchte, dass du für mich vier absichtlich fehlerhafte Artefakte aus einem Home-Lab-Setup systematisch prüfst. Bitte arbeite dabei ausschließlich mit den bereitgestellten Dateien. Am Live-System soll nichts verändert werden, und es sollen keine produktiven Konfigurationen ausgeführt werden.
@@ -491,13 +490,13 @@ Falls mehrere fachlich vertretbare Korrekturen möglich sind, möchte ich außer
 
 Die Prüfung ist rein dateibasiert erfolgt. Es wurde nichts am Live-System geändert und keine der Konfigurationen produktiv ausgeführt.
 
-Der vollständige Bericht liegt hier: [artefakt-pruefung-2026-07-08.md](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakt-pruefung-2026-07-08.md>).
+Der vollständige Bericht liegt hier: [artefakt-pruefung-2026-07-08.md]().
 
 Die bereinigten Fassungen liegen hier:
-- [backup.fixed.sh](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\backup.fixed.sh>)
-- [bitcoin-flow.fixed.md](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\bitcoin-flow.fixed.md>)
-- [docker-compose.fixed.yml](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\docker-compose.fixed.yml>)
-- [firewall.fixed.nft](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\firewall.fixed.nft>)
+- [backup.fixed.sh]()
+- [bitcoin-flow.fixed.md]()
+- [docker-compose.fixed.yml]()
+- [firewall.fixed.nft]()
 
 Die Hauptbefunde waren klar: zu offene Zugriffe, unsaubere Secret-/Seed-Behandlung, ein operativ gefährlicher Bitcoin-Flow und fehlende Default-Härtung. Bei mehreren vertretbaren Varianten habe ich jeweils die konservative, aber noch alltagstaugliche Lösung gewählt: Routine-Backups ohne besonders sensible Identitäten, Hot-/Cold-Trennung mit PSBT, Loopback-Bindings statt offener Host-Ports und `default drop` statt pauschaler Ost-West-Freigaben.
 
@@ -544,70 +543,11 @@ Falls mehrere fachlich vertretbare Korrekturen möglich sind, erkläre kurz, wel
 Die vier Artefakte sind jetzt rein dateibasiert und deutlich vollständiger geprüft worden. Am Live-System wurde nichts geändert und keine Konfiguration wurde produktiv ausgeführt.
 
 Der vollständige Bericht mit Fundlisten, Prioritäten, Kategorien, Korrekturbegründungen, Variantenwahl und Restrisiken liegt hier:
-[artefakt-pruefung-2026-07-08.md](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakt-pruefung-2026-07-08.md>)
+[artefakt-pruefung-2026-07-08.md]()
 
 Die bereinigten Fassungen liegen hier:
-- [backup.fixed.sh](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\backup.fixed.sh>)
-- [bitcoin-flow.fixed.md](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\bitcoin-flow.fixed.md>)
-- [docker-compose.fixed.yml](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\docker-compose.fixed.yml>)
-- [firewall.fixed.nft](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\artefakte-korrigiert\firewall.fixed.nft>)
+- [backup.fixed.sh]()
+- [bitcoin-flow.fixed.md]()
+- [docker-compose.fixed.yml]()
+- [firewall.fixed.nft]()
 
-Inhaltlich deckt die Prüfung jetzt explizit die von dir geforderten Punkte ab: Exponierung und Zugriffspfade, unnötige Privilegien, Secrets und Schluesselmaterial, Segmentierung und laterale Bewegung, Backup-Haertung inklusive Integritaet/Sperrschutz/Retention/Restore sowie beim Bitcoin-Teil Hot-/Cold-Trennung, Watch-only, PSBT, Offline-Signierung und unzulässige Online-Seeds.
-
-Wesentliche Korrekturlinie:
-- Backup: restriktive Rechte, Sperrschutz, Integritätsmanifest, Retention, Restore-Hinweise, sensible Exporte nur optional und verschlüsselt.
-- Bitcoin: klare Hot-/Cold-Trennung, Watch-only auf dem Server, PSBT und Offline-Signierung fuer Treasury.
-- Compose: kein `privileged`, kein Docker-Socket, keine offenen Default-Signups, keine breit exponierten Host-Ports.
-- Firewall: `default drop`, keine pauschale Ost-West-Freigabe, Management nur gezielt.
-
-Einschraenkung: Die Validierung blieb statisch. In dieser Desktop-Umgebung standen keine nutzbaren lokalen Parser fuer Bash/YAML/nftables bereit, daher habe ich bewusst nichts ausgefuehrt oder geladen.
-
-## Turn 16
-
-### User
-
-Erstelle mir den gesamten Chatverlauf als Markdown-Datei. Errechne auch die verbrauchten Tokens und die dadurch angefallenen Kosten
-
-### Assistant (Final)
-
-Ich habe dir den Export und die Metriken abgelegt.
-
-- Markdown-Export: [chatverlauf-export-2026-07-08.md](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\chatverlauf-export-2026-07-08.md>)
-- Metriken als JSON: [chatverlauf-metriken-2026-07-08.json](<C:\Users\AK\Documents\Codex\2026-07-06\du-arbeitest-auf-einer-vorbereiteten-isolierten-2\outputs\chatverlauf-metriken-2026-07-08.json>)
-
-Wichtig zur Einordnung:
-- Die Tokenwerte sind eine Untergrenze bzw. Schätzung für den sichtbaren Hauptverlauf.
-- Exakte serverseitige Nutzungsdaten, versteckte System-/Tool-/Reasoning-Tokens und die reale Modellwahl dieses Threads sind hier nicht offen einsehbar.
-- Wenn der Thread innerhalb der in deinem Plan enthaltenen Codex-Nutzung geblieben ist, können die zusätzlichen Geldkosten trotz Tokenverbrauch effektiv bei `0` liegen.
-- Die im Export aufgeführten Credit-/USD-Szenarien sind daher nur Heuristiken für eine mögliche tokenbasierte Zusatzabrechnung, keine offizielle Rechnung.
-
-## Token- und Kostenschätzung
-
-### Methodik
-
-- Tokenizer: `o200k_base`
-- Grundlage: nur der in diesem Export enthaltene sichtbare Hauptverlauf
-- Nicht enthalten: versteckte System-/Developer-Prompts, Tool-Schemas, Tool-Ausgaben, Caching-Details, Reasoning-Tokens und serverseitige interne Nutzungsdaten
-- `raw_visible_total_tokens` zählt den exportierten sichtbaren Verlauf einmal.
-- `lower_bound_cumulative_input_tokens` summiert den sichtbaren Verlauf so, wie er turnweise als minimaler Gesprächskontext erneut an das Modell gegangen sein könnte.
-- Die eigentliche Plattformrechnung kann höher oder niedriger ausfallen, je nach realem Modell, Caching, Thread-Compaction und Reasoning.
-
-### Ergebnisse
-
-- Sichtbare User-Tokens: `1819`
-- Sichtbare Assistant-Tokens: `8771`
-- Sichtbare Tokens gesamt, einmal gezählt: `10590`
-- Untergrenze kumulative Input-Tokens über alle Turns: `80720`
-- Untergrenze Gesamtverbrauch sichtbarer Hauptverlauf: `89491`
-
-### Szenario-Schätzung bei tokenbasierter Zusatzabrechnung
-
-- GPT-5.4-ähnliche Rate: ca. `8.3341` Credits
-- GPT-5.4-ähnliche Rate, USD-Äquivalent bei `25 Credits ≈ 1 USD`: ca. `$0.3334`
-- GPT-5.5-ähnliche Rate: ca. `16.6683` Credits
-- GPT-5.5-ähnliche Rate, USD-Äquivalent bei `25 Credits ≈ 1 USD`: ca. `$0.6667`
-
-### Einordnung
-
-- Wenn dieser Thread innerhalb der in deinem ChatGPT-/Codex-Plan enthaltenen Nutzung geblieben ist, können die zusätzlichen Geldkosten trotz Tokenverbrauch effektiv `$0` sein.
-- Sobald dein Planlimit überschritten ist und Codex aus Credits abrechnet, sind die obigen Werte nur Schätzungen für den sichtbaren Hauptverlauf, nicht die exakte Plattformrechnung.
