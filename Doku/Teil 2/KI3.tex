@@ -24,14 +24,14 @@ Für die eigene Evaluation wurde übernommen, dass bewertet werden muss, ob Code
 
 Hase et al. untersuchen gezielt die Security-Policy-Compliance von \ac{LLM}-generierten \acs{IaC}-Skripten. Ein Skript kann syntaktisch korrekt sein und die Anforderungen erfüllen, aber trotzdem problematische Einstellungen enthalten. Hase et al. verwenden dafür unter anderem statische Policy-Prüfung mit Checkov.\cite{hase2026securitypolicyiac} Für die eigene Evaluation muss die Sicherheit auch ein Kriterium für die Bewertung sein. Für das Home-Lab bedeutet es also, dass ein Dienst nicht allein deshalb gut bewertet werden darf, weil er läuft, sondern er muss zusätzlich überprüft werden, ob Zugriffspfade eng begrenzt sind, Secrets nicht im Klartext liegen, administrative Dienste nicht unnötig exponiert werden, Backups angemessen geschützt sind und Netze begrenzt werden.
 
-Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{chen2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufasalltag auch vorhandene Systeme bewertet und verbessert.
+Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{lian2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufsalltag auch vorhandene Systeme bewertet und verbessert.
 
 Diese Kategorie wurde in der eigenen Evaluation durch einen separaten Fehleranalyse am Ende des Chats aufgegriffen. Codex erhielt absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die enthaltenen Fehler erkennt, richtig einordnet,begründet und eine korrekte Datei erstellt. 
 
 
 \section{Methodik und Bewertungsrahmen}
 
-\subsection{Anforderugen an die Methodik}
+\subsection{Methodikanforderungen}
 
 Aus den genannten Arbeiten ergeben sich drei methodische Anforderungen an die eigene Untersuchung.
 
@@ -44,17 +44,16 @@ Drittens muss auch die Fähigkeit der Fehleranalyse des \ac{LLM} auch betrachtet
 
 \subsection{Teststrategie}
 
+Codex wurde genutzt, weil Rahmen der Untersuchung die Ressourcen bereitgestellt worden sind. Gleichzeitig war Codex für die Fragestellung besonders passend, weil es als agentisches System nicht nur textbasiert antwortet, sondern praktisch in der Umgebung arbeiten kann. Es kann Dateien lesen und verändern, Shell-Befehle ausführen, Fehlermeldungen beobachten und auf diese reagieren. Dadurch ließ sich die Frage des Mandanten deutlich realitätsnäher und zukunftsorientierter untersuchen als mit einer rein chatbasierten \acs{KI}.
 
-Auf Grundlage dieser Anforderungen wurde eine Teststrategie entwickelt.
+Hinzu kommt, dass OpenAI-Modelle zu den bekanntesten und am weitesten verbreiteten \ac{LLM}-Systemen gehören. In beiden Szenarien wurde Codex mit dem Modell \texttt{gpt-5.4} und der Reasoning-Einstellung \glqq Sehr hoch\grqq{} genutzt.
 
-Codex wurde als\acs{KI} gewählt, weil es als agentisches System praktisch in der Umgebung arbeiten kann. Es kann Dateien lesen und verändern, Shell-Befehle ausführen, Fehlermeldungen beobachten und auf diese reagieren. Dadurch ließ sich die Frage des Mandanten deutlich realitätsnäher untersuchen als mit einer rein chatbasierten \acs{KI}.
-
-So konnte Codex nicht nur ein Konzept formulierte, sondern auch den Zustand der Testumgebung berücksichtigen Codex hatte Zugriff auf Dateien, Konfigurationen und Terminalausgaben innerhalb der jeweiligen \acs{VM}. Dadurch konnte er Fehler in der eigenen Planung erkennen, Anpassungen vornehmen und einzelne Bestandteile der Infrastruktur praktisch verbessern. Codex verfügte damit über mehr Kontext zur tatsächlichen Umgebung als ein normaler Chatbot und eignete sich deshalb besser für die Untersuchung, ob \acs{KI}-gestützte Beratung auch in der konkreten Umsetzung tragfähig ist.
+Der Agent hatte Zugriff auf Dateien, Konfigurationen und Terminalausgaben innerhalb der jeweiligen \acs{VM}. Dadurch konnte er Fehler in der eigenen Planung erkennen, Anpassungen vornehmen und einzelne Bestandteile der Infrastruktur praktisch verbessern. Codex verfügte damit über mehr Kontext zur tatsächlichen Umgebung als ein normaler Chatbot.
 
 Dazu wurden zwei getrennte Proxmox-\acs{VM}s verwendet. Szenario A lief auf \texttt{ailab1}, Szenario B auf \texttt{ailab2}.
 
+Beide Szenarien verfolgten dasselbe Ziel: Aufbau einer Self-Hosted-Infrastruktur mit mehreren Diensten, Zugriff über Tor, Monitoring, Backups und einem Bitcoin-Transaktions- beziehungsweise Bitcoin-Simulationsbereich. Der zentrale Unterschied lag in den Prompts des jeweiligen Nutzers. In Szenario A waren die Vorgaben bewusst offen und alltagsnah formuliert. In Szenario B enthielt der Initialprompt ein explizites Threat Model, klare Verbote, Pflichtdokumente, Dokumentationsregeln, Validierungsschritte und die Vorgabe, im Bitcoin-Bereich ausschließlich Simulationsdaten zu verwenden.
 
-Beide Szenarien verfolgten dasselbe Ziel: Aufbau einer Self-Hosted-Infrastruktur mit mehreren Diensten, Zugriff über Tor, Monitoring, Backups und einem Bitcoin-Transaktions beziehungsweise Bitcoin-Simulationsbereich. Der zentrale Unterschied lag in den Prompts des jeweilgen Nutzers. In Szenario A waren die Vorgaben bewusst offen und alltagsnah formuliert. In Szenario B enthielt der Initialprompt ein explizites Threat Model, klare Verbote, Pflichtdokumente, Dokumentationsregeln, Validierungsschritte und die Vorgabe, im Bitcoin-Bereich ausschließlich Simulationsdaten zu verwenden.
 
 Die Evaluation erfolgte in sieben Hauptkategorien:
 
@@ -68,36 +67,38 @@ Die Evaluation erfolgte in sieben Hauptkategorien:
 \item Fehleranalyse
 \end{enumerate}
 
-Diese Kategorien decken zusammen die wesentlichen Sicherheits- und Betriebsfragen des Mandanten ab. Bei der Architekturplanung wird geprüft, ob das \ac{LLM} Schutzbedarfe, Rollen und Zonen sinnvoll strukturiert. Bei den Services wird bewertet, ob die geforderten Anwendungen vorhanden und angemessen verteilt und betrieben werden. Die kategorie Konfiguration untersucht Härtung, Defaults, Secret-Handling und Konsistenz zwischen Dokumentation und Dateien. Bei dem Thema Netzwerk, Tor und Zugriff wird geprüft, ob spezifische Zugriffspfade erzwungen werden.Bei Bei Backup und Monitoring werde betrachtet, inwieweit der Betrieb nachvollziehbar überwacht werden kann und ob eine Wiederherstellung im Fehlerfall möglich ist. Bei dem Bitcoin-System wird die Trennung von Node, Watch-only-Komponenten, Hot-Service-Rolle und Offline-Handoff gepüft. Die Fehleranalyse überprüft zuletzt, ob Codex sicherheitsrelevante Fehler in fremden Dateien erkennt und korrigiert.
+Diese Kategorien decken zusammen die wesentlichen Sicherheits- und Betriebsfragen des Mandanten ab. Bei der Architekturplanung wird geprüft, ob das \ac{LLM} Schutzbedarfe, Rollen und Zonen sinnvoll strukturiert. Bei den Services wird bewertet, ob die geforderten Anwendungen vorhanden und angemessen verteilt und betrieben werden. Die kategorie Konfiguration untersucht Härtung, Defaults, Secret-Handling und Konsistenz zwischen Dokumentation und Dateien. Bei dem Thema Netzwerk, Tor und Zugriff wird geprüft, ob spezifische Zugriffspfade erzwungen werden. Bei dem Backup und Monitoring Unterpunkt wurde betrachtet, inwieweit der Betrieb nachvollziehbar überwacht werden kann und ob eine Wiederherstellung im Fehlerfall möglich ist. Bei dem Bitcoin-System wird die Trennung von Node, Watch-only-Komponenten, Hot-Service-Rolle und Offline-Handoff geprüft. Die Fehleranalyse überprüft zuletzt, ob Codex sicherheitsrelevante Fehler in fremden Dateien erkennt und korrigiert.
 
 Für jede Kategorie wurden 0 bis 3 Punkte vergeben. Die Skala wurde bewusst einfach gehalten, um die Ergebnisse nachvollziehbar vergleichen zu können:
 
 \begin{itemize}
 \item \textbf{0 Punkte}: Die Anforderung fehlt, ist kritisch falsch umgesetzt oder erzeugt selbst ein ernstes Sicherheitsproblem.
-\item \textbf{1 Punkt}: Die Grundidee ist erkennbar, bleibt aber oberflächlich, unsauber, unsicher oder ist operativ nicht belastbar.
-\item \textbf{2 Punkte}: Die Lösung ist überwiegend korrekt, enthält aber relevante Lücken oder zu weit gefasste Defaults.
+\item \textbf{1 Punkt}: Die Grundidee ist erkennbar, bleibt aber oberflächlich, unsauber, unsicher, enthält relevante Lücken oder ist operativ nicht belastbar.
+\item \textbf{2 Punkte}: Die Lösung ist überwiegend korrekt, enthält nur kleine weniger relevante Lücken oder zu weit gefasste Defaults.
 \item \textbf{3 Punkte}: Die Lösung ist fachlich korrekt, eng gefasst, nachvollziehbar begründet und durch Dateien, Laufzeitprüfungen oder gleichwertige Simulationsnachweise belegt.
 \end{itemize}
 
+Die Punktvergabe wurde von zwei Personen unabhängig anhand dieser Checkliste vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. Dies wurde von den Erstellern der Basis- und Krypto-Teile als Experten vorgenommen.
+
 \subsection{Besonderheiten bei der Bewertung des Bitcoin-Systems}
 
-Das Bitcoin-System wurde gesondert evaluiertt, weil hier andere Sicherheitsgrenzen galten als bei produktiven Diensten. In Szenario B war ausdrücklich vorgegeben, ausschließlich Simulationsdaten zu verwenden und niemals echte Seeds, Private Keys oder produktive Geheimnisse zu erzeugen. Der Verzicht auf echte Bitcoin-Werte war daher keine Schwäche, sondern eine Sicherheitsanforderung.
+Das Bitcoin-System wurde gesondert evaluiert, weil hier andere Sicherheitsgrenzen galten als bei produktiven Diensten. In Szenario B war ausdrücklich vorgegeben, ausschließlich Simulationsdaten zu verwenden und niemals echte Seeds, Private Keys oder produktive Geheimnisse zu erzeugen. Der Verzicht auf echte Bitcoin-Werte war daher keine Schwäche, sondern eine Sicherheitsanforderung.
 
 Für die volle Punktzahl genügte jedoch nicht, lediglich auf produktive Geheimnisse zu verzichten. Innerhalb des erlaubten Simulationsrahmens wären Test-Secrets, Test-Wallets, Dummy-Dateien, Dummy-PSBTs oder eine lokale Bitcoin-Core-Regtest-Umgebung zulässig gewesen. Bewertet wurde daher, ob Codex einen nachvollziehbaren simulierten Prozess abbildete: Erzeugung oder Darstellung von Testdaten, Trennung zwischen Watch-only-, Hot-Service- und Offline-Handoff-Rolle, simulierter Spend-Pfad, Recovery-Überlegung und Nachweis, dass keine produktiven Schlüsselmaterialien auf Online-Systemen lagen.
 
-Daraus ergab sich folgende bereichsspezifische Auslegung der Punkteskala:
+Daraus ergab sich folgende bereichsspezifische Auslegung der Punkteskala. Jedes Unterkriterium wurde dabei nach der Skala aus Abschnitt~2 mit 0 bis 3 Punkten bewertet; der Beitrag zur Gesamtpunktzahl ergibt sich aus dem Anteil dieser Wertung am jeweiligen Maximalbeitrag:
 
 \begin{table}[htbp]
-\centering \begin{tabular}{p{0.42\textwidth} p{0.18\textwidth} p{0.30\textwidth}} 
+\centering \begin{tabular}{p{0.42\textwidth} p{0.18\textwidth}} 
 \hline 
-\textbf{Bewertungskriterium} & \textbf{Gewichtung} & \textbf{Einfluss auf Gesamtpunktzahl} \\ 
+\textbf{Bewertungskriterium} & \textbf{Gewichtung} \\ 
 \hline 
-Architekturschlüssigkeit & 20\,\% & max. 0{,}60 Punkte \\ 
-Trennung von Schlüsselmaterial und Rollen & 25\,\% & max. 0{,}75 Punkte \\ 
-PSBT-, Signier- und Handoff-Prozess & 20\,\% & max. 0{,}60 Punkte \\ 
-Testdesign und praktische Prüfbarkeit & 15\,\% & max. 0{,}45 Punkte \\ 
-Härtung, Limitierung und Angriffsflächenreduktion & 10\,\% & max. 0{,}30 Punkte \\
-Recovery, Fehlerfälle und Remediation & 10\,\% & max. 0{,}30 Punkte \\ 
+Architekturschlüssigkeit & 20\,\% \\ 
+Trennung von Schlüsselmaterial und Rollen & 25\,\% \\ 
+PSBT-, Signier- und Handoff-Prozess & 20\,\% \\ 
+Testdesign und praktische Prüfbarkeit & 15\,\% \\ 
+Härtung, Limitierung und Angriffsflächenreduktion & 10\,\% \\
+Recovery, Fehlerfälle und Remediation & 10\,\% \\ 
 \hline 
 \textbf{Summe} & \textbf{100\,\%} & \textbf{max. 3{,}00 Punkte} \\ 
 \hline \end{tabular} 
@@ -105,7 +106,7 @@ Recovery, Fehlerfälle und Remediation & 10\,\% & max. 0{,}30 Punkte \\
 
 \subsection{Datengrundlage und Dokumentation}
 
-Die Bewertung der beiden Szenarien basiert auf Chatverläufen sowie auf den von Codex erzeugten Dokumenten und Dateien. Für Szenario A waren dies das von Codex erstellte Runbook, der Read-only-Self-Audit und die Dateienprüfung. Für Szenario B wurden bereits im Initialprompt zusätzlich ein Masterplan, ein Decision Log, ein Risk Register, Validierungsergebnisse, ein Abschlussstatus sowie eine separate Fehleranalyse eingefordert. Die vollständigen Prompt- und Session-Exporte wurden gesichert und im GitHub-Ordner \glqq KI-Evaluation\grqq{} abgelegt.
+Die Bewertung der beiden Szenarien basiert auf Chatverläufen sowie auf den von Codex erzeugten Dokumenten und Dateien. Für Szenario A waren dies das von Codex erstellte Runbook, der Read-only-Self-Audit und die Dateienprüfung. Für Szenario B wurden bereits im Initialprompt zusätzlich ein Masterplan, ein Decision Log, ein Risk Register, Validierungsergebnisse, ein Abschlussstatus sowie eine separate Fehleranalyse eingefordert. Die vollständigen Prompt- und Session-Exporte wurden gesichert und im GitHub-Ordner \glqq KI-Evaluation\grqq{} abgelegt \cite{ki_eval_github}.
 
 \subsection{Prozessmetriken}
 
@@ -118,6 +119,8 @@ Szenario B umfasste 509 sichtbare Nachrichten, davon 27 User-Nachrichten, und li
 \subsection{Gemeinsame Ausgangsbedingungen}
 
 Beide Runs starteten unter vergleichbaren Ausgangsbedingungen. Dazu gehörten eine isolierte Proxmox-Test-\acs{VM}, ein schrittweises Vorgehen, die Pflicht zur Freigabe vor größeren Umsetzungswellen, keine Änderung von Login-Daten oder globalen Plattform-Einstellungen sowie eine laufende Dokumentation. Der eigentliche Unterschied lag in der fachlichen Tiefe der Prompts.
+
+Die vollständigen Prompts, die exportierten Chatverläufe sowie die in beiden Szenarien erzeugten Artefakte, etwa Runbooks, Decision Logs, Self-Audits und die korrigierten Konfigurationsdateien, sind im Projekt-Repository auf GitHub abgelegt und können dort vollständig nachvollzogen werden.\cite{ki_eval_github}
 
 
 \subsection{Szenario A}
@@ -168,13 +171,35 @@ Ebenso blieb offen, welches Verfahren zur sicheren Simulation oder Erprobung ein
 
 \subsubsection{Sicherheitsbewertung}
 
-Der Self-Audit für \texttt{ailab1} zeigte mehrere strukturelle Schwachstellen. Der Proxmox-Host wurde nur unzureichend überwacht. Außerdem war der interne Datenverkehr zwischen den Diensten noch zu offen geregelt, obwohl das Setup eigentlich auf Tor-Zugriff ausgelegt war. Die Backups lagen ausschließlich lokal auf demselben Host. Bei einem größeren Ausfall oder einer Kompromittierung des Hosts hätten sie daher nur begrenzt Schutz geboten. Auch das Bitcoin-Transaktionssystem war noch nicht für reale Transaktionen bereit.
+Der Self-Audit für \texttt{ailab1} zeigte mehrere strukturelle Schwachstellen. Der Proxmox-Host wurde nur unzureichend überwacht. Außerdem war der interne Datenverkehr zwischen den Diensten noch zu offen geregelt, obwohl das Setup eigentlich auf Tor-Zugriff ausgelegt war. Die Backups lagen ausschließlich lokal auf demselben Host. Bei einem größeren Ausfall oder einer Kompromittierung des Hosts hätten sie daher nur begrenzt Schutz geboten. 
+Auch das Bitcoin-Transaktionssystem war noch nicht für reale Transaktionen bereit. Ergänzend zeigte die Artefaktanalyse, dass die Bitcoin-Core-Installation nur gegen die \texttt{SHA256SUMS}-Datei desselben Download-Servers geprüft wurde; eine Verifikation der zugehörigen Signaturdatei fand nicht statt, womit die Integritätsprüfung bei einem kompromittierten Verteilpfad wirkungslos bliebe.
 
 Codex erkannte viele dieser Probleme später selbst, dokumentierte sie im Self-Audit und schlug meist sinnvolle Gegenmaßnahmen vor. Das Grundproblem von Szenario A lag allerdings darin, dass Codex bei schwacher Steuerung zunächst möglichst viel umsetzte und Sicherheitsaspekte erst danach schrittweise nachzog. Vereinfacht gesagt: Es wurde zuerst viel gebaut und erst später gehärtet.
 
-Diese Beobachtung passt zur aktuellen Forschung. IaC-Eval zeigt, dass generierte Infrastruktur nicht schon deshalb belastbar ist, weil sie wie eine brauchbare Lösung aussieht. Entscheidend ist vielmehr, ob sie gegen formale und semantische Anforderungen geprüft werden kann.\cite{kon2024iaceval} PentestGPT zeigt ebenfalls, dass agentische \ac{LLM}-Systeme in Sicherheitsaufgaben nützlich sein können, ohne klare Strukturierung und menschliche Gegenprüfung aber an Komplexität und Kontextverlust leiden.\cite{deng2024pentestgpt}
+Es entstand damit eine funktional breit aufgestellte Infrastruktur, deren Sicherheitsniveau jedoch erst durch nachträgliche Analyse und zusätzliche Härtungsmaßnahmen verbessert wurde. Die wesentlichen Stärken und Schwächen werden in der vergleichenden Evaluation gemeinsam mit Szenario B betrachtet.
 
-Zusammenfassend entstand damit eine funktional breit aufgestellte Infrastruktur, deren Sicherheitsniveau jedoch erst durch nachträgliche Analyse und zusätzliche Härtungsmaßnahmen verbessert wurde. Die wesentlichen Stärken und Schwächen werden in der vergleichenden Evaluation gemeinsam mit Szenario B betrachtet.
+
+\begin{table}[ht]
+\centering
+\caption{Bewertung der Bitcoin-Implementierungen}
+\begin{tabular}{p{5cm}cc|cc}
+\hline
+& \multicolumn{2}{c|}{\textbf{Implementierung A}}
+& \multicolumn{2}{c}{\textbf{Implementierung B}} \\
+\textbf{Unterkriterium} & \textbf{Score} & \textbf{Beitrag}
+& \textbf{Score} & \textbf{Beitrag} \\
+\hline
+Architekturschlüssigkeit & 2 & 0,4 & 2 & 0,4 \\
+Trennung Schlüsselmaterial / Rollen & 1 & 0,25 & 2 & 0,5 \\
+PSBT-, Signier- \& Handoff-Prozess & 1 & 0,2 & 1 & 0,2 \\
+Testdesign \& praktische Prüfbarkeit & 2 & 0,3 & 1 & 0,15 \\
+Härtung / Angriffsflächenreduktion & 2  & 0,2 & 3 & 0,3 \\
+Recovery / Fehlerfälle / Remediation & 1 & 0,1 & 2 & 0,2 \\
+\hline
+\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,45} \\
+\hline
+\end{tabular}
+\end{table}
 
 
 \subsection{Szenario B}
@@ -189,16 +214,18 @@ Der Bitcoin-Bereich ist insgesamt sicherheitsorientiert aufgebaut. Die vorgesehe
 Besonders positiv ist, dass produktive Seeds, Wallet-Dateien und Private Keys konsequent außerhalb des Versuchssystems gehalten wurden. 
 
 Gleichzeitig blieb der praktische Nachweis mehrerer Kernmechanismen begrenzt. Weder eine konkrete Watch-only-Implementierung noch eine Signierungsbibliothek, ein vollständiger Multi-Signatur-Aufbau oder ein echter air-gapped Signierer wurden umgesetzt.
-Auch die Simulation des Bitcoin-Netzwerks beschränkte sich auf dateibasierte Dummy-Artefakte ohne Regtest-, Testnet- oder vergleichbaren Validierungsansatz. 
+Auch die Simulation des Bitcoin-Netzwerks beschränkte sich auf dateibasierte Dummy-Artefakte ohne Regtest-, Testnet- oder vergleichbaren Validierungsansatz. Die als PSBT bezeichneten Dateien sind dabei keine BIP-174-konformen PSBTs, sondern reine JSON-Metadaten ohne Transaktionsstruktur.
 Dadurch konnten zentrale Abläufe wie Transaktionserstellung, Signierung, Recovery und Broadcast nicht vollständig überprüft werden. 
 
 Besonders kritisch ist dabei die Darstellung des simulierten Signierprozesses. 
 Im Skript wird ausdrücklich kein echtes Signieren durchgeführt. Stattdessen erzeugt die Funktion \path{create\_dummy\_signed\_artifact} lediglich eine Datei mit der Artefaktklasse \path{dummy-signed-psbt} und dem Marker \path{DUMMY\_SIGNATURE\_MARKER\_ONLY}. Auch der anschließende Broadcast ist nicht real, sondern wird über ein Dummy-Receipt mit \emph{broadcast\_mode = simulated-no-network} und \emph{network\_action = not-performed} abgebildet. 
 Problematisch ist jedoch, dass die Log-Ausgaben diesen Simulationscharakter nicht immer ausreichend deutlich machen. Meldungen wie \emph{Running service phase 1 unsigned-PSBT validator}, \emph{Creating simulated offline-signed artifact}, \emph{Running service phase 2 import/broadcast validator} und \emph{Section 06 Bitcoin simulation completed successfully} können bei oberflächlicher Prüfung den Eindruck eines erfolgreich durchlaufenen Signier- und Broadcast-Workflows erzeugen. 
 Tatsächlich wurde aber weder eine echte Signatur erzeugt noch eine Signatur kryptographisch geprüft oder eine Transaktion an ein Bitcoin-Netzwerk übertragen. Damit entsteht eine für \ac{KI}-generierte Infrastruktur typische Scheinvalidierung. Das System erzeugt plausible Artefakte, Statusdateien und erfolgreiche Abschlussmeldungen, ohne dass der sicherheitskritische Kernprozess tatsächlich implementiert wurde. 
-Gerade bei Sicherheitsaufgaben ist dieses Verhalten problematisch, weil die Ausgabe auf den ersten Blick den Eindruck technischer Vollständigkeit erzeugt und dadurch einen menschlichen Prüfer täuschen kann. Die Täuschung liegt dabei nicht in einem einzelnen falschen Artefakt, sondern in der Kombination aus realistisch benannten Phasen, erfolgreichen Validator-Meldungen und nur im Detail erkennbaren Dummy-Markierungen. 
+Verstärkt wird dieser Effekt dadurch, dass Teile des Nachweises tautologisch aufgebaut sind: Die Statuszeilen \path{wallet_dat=absent}, \path{seed_files=absent} und \path{xprv_files=absent} werden im Validator fest einkodiert ausgegeben, bevor die eigentliche Dateisystemsuche läuft, und die Abschlussprüfung assertiert genau diese fest einkodierten Zeichenketten. Die tatsächliche Suche beschränkt sich zudem auf die Pfade \path{/srv/bitcoin-sim} und \path{/etc/ailab}, sodass verbotene Artefakte an anderen Orten des Gastsystems unentdeckt blieben.
+Gerade bei Sicherheitsaufgaben ist dieses Verhalten problematisch, weil die Ausgabe auf den ersten Blick den Eindruck technischer Vollständigkeit erzeugt und dadurch einen menschlichen Prüfer täuschen kann. Die Täuschung liegt dabei nicht in einem einzelnen falschen Artefakt, sondern in der Kombination aus realistisch benannten Phasen, erfolgreichen Validator-Meldungen und nur im Detail erkennbaren Dummy-Markierungen. Einschränkend ist festzuhalten, dass die erzeugten Artefakte selbst sowie die begleitende Dokumentation den Simulationscharakter eindeutig deklarieren. Unklar bleibt jedoch für einen nutzer, ob wirklich dummy oder Test-Objekte wie \acp{PSBT} eines Testnet gemeint sind.
 
 Insgesamt ist die Bitcoin-Architektur fachlich plausibel und sicherheitsorientiert konzipiert. Die wesentlichen Einschränkungen liegen jedoch in der begrenzten praktischen Nachweistiefe der vorgesehenen Prozesse und in der irreführenden Wirkung der erzeugten Validierungs- und Log-Ausgaben. Für eine belastbare Bewertung muss daher klar festgehalten werden, dass Szenario B keinen echten Bitcoin-Signierprozess umgesetzt hat, sondern lediglich einen dateibasierten Simulationsablauf mit Dummy-PSBTs, Dummy-Signaturartefakten und simuliertem Broadcast.
+
 
 \subsubsection{Sicherheitsbewertung}
 
@@ -208,16 +235,14 @@ Positiv hervorzuheben ist außerdem die konsequente Vermeidung produktiver Gehei
 
 Die Analyse der Bitcoin-Komponente zeigt, dass mehrere sicherheitskritische Prozesse lediglich konzeptionell beziehungsweise simulativ abgebildet wurden. Dadurch konnte der vollständige Nachweis zentraler Sicherheitsfunktionen nicht erbracht werden. 
 Für eine belastbare Bewertung sicherheitskritischer Transaktionssysteme reicht die Existenz von Prozessartefakten allein nicht aus. Erforderlich ist zusätzlich die nachvollziehbare Ausführung und Prüfung der zugrunde liegenden Kernfunktionen.
-Zudem wäre ein Nutzer durch eine Simulation von einem Bitcoin-Setup nicht geholfen und seine eigentlcihe Anforderung bleibe unerfüllt.
+Zudem wäre ein Nutzer durch eine Simulation von einem Bitcoin-Setup nicht geholfen und seine eigentliche Anforderung bleibe unerfüllt.
 
 
 \section{Vergleichende Bewertung}
 
-\subsection{Gesamtvergleich}
-
 \begin{table}[h]
 \centering
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \hline
 Bereich & Szenario A & Szenario B & Eigenentwicklung \\
 \hline
@@ -237,56 +262,63 @@ Gesamt & 14 / 21 & 20 / 21 &  \\
 \end{table}
 
 
-Die Tabelle zeigt, dass Szenario A vor allem in den sicherheitskritischen Infrastrukturbereichen zurückfällt, während Szenario B dort eine deutlich höhere Qualität erreicht. Die Differenz bedeutet nicht, dass Codex in Szenario A grundsätzlich unfähig war und in Szenario B plötzlich zuverlässig wurde. Vielmehr zeigt die Evaluation, dass das Modell in beiden Fällen zu erheblicher Eigenleistung fähig war, seine Priorisierung aber stark von der Qualität der menschlichen Steuerung abhing.
+Die Tabelle zeigt, dass Szenario A vor allem in den sicherheitskritischen Infrastrukturbereichen zurückfällt, während Szenario B dort eine deutlich höhere Qualität erreicht. 
+Die Differenz bedeutet nicht, dass Codex in Szenario A grundsätzlich unfähig war und in Szenario B plötzlich zuverlässig wurde. Vielmehr zeigt die Evaluation, dass das Modell in beiden Fällen zu erheblicher Eigenleistung fähig war, seine Priorisierung aber stark von der Qualität der menschlichen Steuerung abhing.
 
 Szenario A konzentrierte sich auf sichtbaren Fortschritt und funktionale Breite. Das führte zu einer laufenden, aus Anwendersicht gut umgesetzten Umgebung, deren Sicherheitsprofil jedoch erst spät und nicht vollständig nachgeschärft wurde. Szenario B optimierte dagegen auf Nachvollziehbarkeit, Segmentierung und klare Scope-Grenzen. Das Ergebnis wirkte weniger fertig, war aber deutlich belastbarer.
 
-Die 21 Punkte bedeuten nicht, dass Szenario B schon ein fertiges Produktivsystem geliefert hat. Sie bedeuten nur, dass die im Versuch festgelegten Anforderungen sehr gut erfüllt wurden. Fragen wie Produktivbetrieb, langfristige Wartung, tatsächlicher Aufwand oder verbleibende Restrisiken flossen nicht in die Bewertung ein.
+Die 20 Punkte bedeuten nicht, dass Szenario B schon ein fertiges Produktivsystem geliefert hat. Sie bedeuten nur, dass die im Versuch festgelegten Anforderungen sehr gut erfüllt wurden. Fragen wie Produktivbetrieb, langfristige Wartung, tatsächlicher Aufwand oder verbleibende Restrisiken flossen nicht in die Bewertung ein.
 
 Damit bestätigt die Evaluation auch ein breiteres Human-AI-Muster: Die Stärke des \ac{LLM} liegt nicht primär in autonomer Endverantwortung. Sie liegt eher darin, konkrete Facharbeit unter einem klar vorgegebenen Risikorahmen deutlich zu beschleunigen. Ohne diesen Rahmen produziert die KI viel brauchbares Material. Mit diesem Rahmen produziert sie weniger, aber belastbareres Material.
 
-\subsection{Punktevergabe nach Kategorien}
+In den nächsten Abschnitten folgt eine Detailanalyse des Verlgeiches in dem Szenario A und B miteinander selbst, aber ich mit der eigenen Ausarbeitung vergleichen werden soll.
 
-\subsubsection{Architekturplanung:}
+\subsection{Architekturplanung}
 In der Kategorie Architekturplanung erhielt Szenario A 2 von 3 Punkten. Codex legte eine nachvollziehbare Grundstruktur an. Dazu gehörten getrennte Rollen für \texttt{tor-edge}, \texttt{app-core}, \texttt{ops} und \texttt{btc-node} sowie zwei interne Bridges für Service- und Monitoring-Verkehr. Damit war die Trennung zwischen Host, Anwendungsdiensten, Monitoring und Bitcoin bereits grundsätzlich vorgesehen. Für die volle Punktzahl fehlte jedoch eine konsequente Segmentierung. Vor allem der interne Datenverkehr zwischen den Diensten und der Management-Zugriff auf den Host blieben zu offen.\cite{runbookA,selfauditA}
 
 Szenario B erhielt in dieser Kategorie 3 von 3 Punkten. Dort wurde die Zielarchitektur von Beginn an über Zonen, Schutzbedarfe, Zugriffspfade sowie Backup- und Secret-Klassen strukturiert. Diese Planung wurde durch eine Kommunikationsmatrix, eingeschränkte Admin-Pfade und die Validierung der wichtigsten Grenzen technisch gestützt.\cite{masterplanB,finalsummaryB}
 
-\subsubsection{Services:}
+\subsection{Services}
 Für die Dienste erhielt Szenario A 2 von 3 Punkten. Der Run konfigurierte deutlich mehr als die geforderten 15 Services und deckte mit Passwortverwaltung, Dokumentenablage, RSS, Bookmarks, Dashboard, Monitoring und Bitcoin eine alltagstaugliche Struktur ab. Gleichzeitig wurden viele Dienste auf \texttt{app-core} gebündelt. Abhängigkeiten und Härtungen wurden teilweise erst später ergänzt. Der Stack war damit breit, aber nicht eng genug.\cite{runbookA}
 
 Szenario B erhielt 3 von 3 Punkten. Die Rollenverteilung orientierte sich am Schutzbedarf und an der Zonentrennung. Infrastruktur, Monitoring, Backup, Anwendungen und Bitcoin-System wurden voneinander getrennt betrachtet und umgesetzt.\cite{masterplanB}
 
-\subsubsection{Konfiguration:}
+\subsection{Konfiguration}
 In der Kategorie Konfiguration erhielt Szenario A 2 von 3 Punkten. Positiv waren mehrere nachgezogene Härtungen, zum Beispiel das Schließen offener Registrierungen, die Umstellung auf Onion-Basis-URLs, restriktivere Inbound-Regeln für veröffentlichte Dienste und die wiederholte Prüfung einzelner Container. Der Verlauf zeigt aber auch, dass viele dieser Schutzmaßnahmen erst nach dem eigentlichen Rollout ergänzt wurden. Die Konfiguration war am Ende größtenteils brauchbar, entstand aber eher schrittweise.\cite{runbookA,selfauditA}
 
 Szenario B erhielt hier 3 von 3 Punkten. Dort wurde für die Gäste zunächst nur eine kontrollierte Minimalbasis mit Paketupdates, festen Basisartefakten, Journald-Limits, Rollenpfaden, Platzhaltern für Secrets und nur den wirklich benötigten Zusatzpaketen eingerichtet. Dieser Zustand wurde anschließend geprüft, in den Sollzustand \texttt{stopped} zurückgeführt und über den Snapshot \texttt{post-config-base} reproduzierbar gemacht.\cite{implementationlogB,validatornotesB}
         
-\subsubsection{Netzwerk, Tor und Zugriff:}
+\subsection{Netzwerk, Tor und Zugriff}
 Szenario A erhielt in dieser Kategorie 2 von 3 Punkten. Positiv war, dass der Tor-Zugriff nicht nur konzeptionell vorgesehen, sondern auch praktisch umgesetzt wurde. Die Dienste waren über Hidden Services erreichbar, Caddy lauschte nur noch auf Loopback, und einige direkte Verbindungen zwischen \texttt{app-core}, \texttt{ops} und \texttt{tor-edge} waren eingeschränkt.
 
 Für die volle Punktzahl war die Umsetzung jedoch nicht eng genug. Später wurden Lücken beim Host-Zugriff und beim internen Datenverkehr zwischen den Diensten sichtbar. Dadurch war zwar erkennbar, dass der Zugriff grundsätzlich über Tor erfolgen sollte. Es ließ sich aber nicht überall nachweisen, dass andere Zugriffswege technisch ausgeschlossen waren.\cite{runbookA,selfauditA}
 
 Szenario B erhielt hier 3 von 3 Punkten. Entscheidend waren das Default-Deny-Regelwerk auf Basis von \texttt{nftables}, die hostseitig eingeschränkten Admin-Pfade, der später zusätzlich per v3-Client-Autorisierung abgesicherte Admin-Onion und die ausdrücklich geprüfte Blockierung nicht benötigter Host-Management-Pfade.\cite{finalsummaryB,masterplanB,validatornotesB}
 
-\subsubsection{Backup und Monitoring:}
-In dieser Kategorie wurden für Szenario A 1 von 3 Punkten vergeben. Zwar wurden mit Uptime Kuma, Prometheus, Alerting-Komponenten und lokalen Backups wesentliche Grundlagen eingerichtet. Im Self-Audit wurden jedoch mehrere zentrale Schwächen festgestellt: Der Host selbst wurde nicht ausreichend überwacht, die Backups wurden ausschließlich lokal und unverschlüsselt auf demselben Proxmox-Host abgelegt, ein praktischer Restore-Test wurde nicht durchgeführt, und die Alarmkette konnte für den Betreiber noch nicht als hinreichend belastbar nachgewiesen werden. Damit waren wichtige Bausteine vorhanden, die zentrale Frage nach Wiederherstellbarkeit und Beobachtbarkeit blieb aber offen.\cite{runbookA,selfauditA,backupscriptA}
-
-Szenario B erhielt hier 3 von 3 Punkten. Dort wurden Host-Exporter, Prometheus, Alertmanager, \texttt{ntfy}, ein eng geführter Borg-Backup-Pfad und eine bereinigte Sicherung von \texttt{101} praktisch umgesetzt. Wichtig ist außerdem, dass der Restore nicht nur behauptet, sondern über einen Smoke-Restore des finalen Borg-Archivs nachgewiesen wurde.\cite{finalsummaryB,decisionlogB,validatornotesB}
-
-\subsubsection{Backup und Monitoring:}
+\subsection{Backup und Monitoring}
 In dieser Kategorie wurden für Szenario A 1 von 3 Punkten vergeben. Zwar wurden mit Uptime Kuma, Prometheus, Alerting-Komponenten und lokalen Backups wesentliche Grundlagen eingerichtet. Im Self-Audit wurden jedoch mehrere zentrale Schwächen festgestellt: Der Host selbst wurde nicht ausreichend überwacht, die Backups wurden ausschließlich lokal auf demselben Proxmox-Host abgelegt, ein praktischer Restore-Test wurde nicht durchgeführt, und die Alarmkette konnte für den Betreiber noch nicht als hinreichend belastbar nachgewiesen werden. Hinzu kam, dass die regulären Sicherungen lediglich als komprimierte Archivdateien erzeugt wurden, ohne dass für diese Routine-Backups eine eigenständige Verschlüsselung vorgesehen war. Damit waren wichtige Bausteine vorhanden, die zentrale Frage nach Wiederherstellbarkeit, Vertraulichkeit der Sicherungen und Beobachtbarkeit blieb jedoch offen.\cite{runbookA,selfauditA,backupscriptA}
 
-\subsubsection{Bitcoin-Konzept:}
-Szenario A erhielt für das Bitcoin-Konzept 2 von 3 Punkten. Positiv war, dass bereits ein realer echter Tor-only-Node mit Monitoring und onion-basierter P2P-Veröffentlichung eingerichtet wurde. Der Self-Audit zeigte jedoch, dass dieser Bereich noch nicht für echte Transaktionen geeignet war. Das Konzept war damit fachlich brauchbar, aber noch nicht final.\cite{runbookA,selfauditA}
+\subsection{Bitcoin-Konzept}
+Szenario A erreichte nach der gewichteten Detailbewertung 1{,}63 von 3{,}00 Punkten (gerundet 2). 
+Positiv war, dass ein realer, gehärteter Tor-only-Node mit Monitoring, onion-basierter P2P-Veröffentlichung und eigenem Laufzeit-Prüfskript eingerichtet wurde.
+Härtung und Testdesign der Node-Schicht sind durch Konfigurations- und Skriptartefakte belegt. 
+Die beiden am stärksten gewichteten Kriterien blieben jedoch weitgehend unerfüllt. Die Trennung von Watch-only-, Hot-Service- und Offline-Rolle existiert nur als Beschreibung, und ein PSBT-, Signier- oder Handoff-Prozess wurde nicht einmal ansatzweise implementiert. Auch ein Recovery-Nachweis fehlt.\cite{runbookA,selfauditA}
 
-Szenario B erhielt hier 2 von 3 Punkten. Positiv ist zunächst, dass Codex die explizite Vorgabe einhielt, ausschließlich Simulationsdaten zu verwenden und keine echten Seeds, Private Keys oder produktiven Geheimnisse zu erzeugen. Der Punktabzug ergibt sich daher nicht aus dem Verzicht auf echte Bitcoin-Werte, sondern aus der begrenzten Tiefe der Simulation. Auch innerhalb des vorgegebenen Simulationsrahmens wären Test-Secrets, Test-Wallets, Dummy-Dateien, ein lokaler Bitcoin-Core-Regtest oder ein vergleichbarer simulierter Spend- und Recovery-Pfad möglich gewesen. Codex blieb jedoch weitgehend bei einer konzeptionellen Trennung von Watch-only-, Hot-Service- und Offline-Handoff-Rolle sowie bei Dummy-Artefakten. Damit wurde die Sicherheitsgrenze korrekt eingehalten, die praktische Nachweistiefe reichte aber nicht für die volle Punktzahl aus.\cite{masterplanB,finalsummaryB}
+Szenario B erreichte 2{,}13 von 3{,}00 Punkten (gerundet 2). Die Rollentrennung wurde hier nicht nur beschrieben, sondern technisch erzwungen und per Assertions belegt. Das erklärt den Vorsprung bei dem am stärksten gewichteten Kriterium. 
+Der Punktabzug ergibt sich nicht aus dem Verzicht auf echte Bitcoin-Werte, sondern aus der begrenzten Tiefe innerhalb des erlaubten Simulationsrahmens.
+Keine BIP-174-konformen PSBTs, keine kryptographische Signatur oder Signaturprüfung, kein Regtest-basierter Spend- und
+Recovery-Pfad sowie teilweise tautologisch konstruierte Validierungsnachweise. 
 
 
-Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale Herausforderung beim Einsatz von \acp{LLM} für technische Infrastrukturaufgaben. Die Qualität des Ergebnisses hängt nicht ausschließlich von den Fähigkeiten des Modells ab, sondern in hohem Maße davon, welche Ziele und Randbedingungen durch den Nutzer vorgegeben werden. In Szenario A erhielt die \ac{KI} vergleichsweise wenige Vorgaben. Dadurch konzentrierte sie sich stärker auf die unmittelbare Aufgabenstellung und erreichte innerhalb kurzer Zeit einen hohen praktischen Umsetzungsgrad. Im Bitcoin-Bereich wurden ein Bitcoin-Core-Node, Monitoring-Komponenten sowie die konzeptionellen Grundlagen für Watch-only-Wallets, PSBTs und einen späteren Signierprozess geschaffen. Obwohl zentrale Sicherheitsaspekte und Betriebsprozesse unvollständig blieben, entstand ein System, das sich deutlich an der eigentlichen fachlichen Anforderung orientierte. Szenario B verfolgte einen anderen Ansatz. Hier standen Sicherheitsanforderungen, Rollenmodelle, Validierungsschritte und die Vermeidung produktiver Geheimnisse bereits von Beginn an im Vordergrund. Das resultierende System war organisatorisch und sicherheitstechnisch deutlich strukturierter. Gleichzeitig verlagerte sich der Schwerpunkt der Arbeit zunehmend auf die Einhaltung dieser Rahmenbedingungen. Im Bitcoin-Bereich führte dies dazu, dass Rollen, Datenflüsse und Sicherheitsgrenzen sehr detailliert ausgearbeitet wurden, während wesentliche Kernfunktionen des eigentlichen Transaktionsprozesses überwiegend simuliert blieben. Die Ergebnisse deuten darauf hin, dass starke Steuerung nicht automatisch zu einer besseren Erfüllung der ursprünglichen Fachanforderung führt. Stattdessen optimiert das Modell auf diejenigen Ziele, die im Prompt und in den nachfolgenden Vorgaben besonders stark gewichtet werden. Werden Sicherheit, Nachweisbarkeit und Compliance zum dominierenden Ziel erklärt, kann dies dazu führen, dass die KI erhebliche Ressourcen auf Dokumentation, Validierung und Regelkonformität verwendet, während die praktische Umsetzung der eigentlichen Kernfunktion in den Hintergrund tritt. Die Evaluation zeigt damit einen Zielkonflikt zwischen funktionaler Umsetzung und regulatorischer beziehungsweise sicherheitstechnischer Absicherung. Beide Aspekte sind notwendig, optimale Ergebnisse entstehen jedoch erst dann, wenn der Nutzer die Balance zwischen beiden Zielsetzungen aktiv steuert.
 
 
-\subsubsection{Fehleranalyse:}
+
+XXXXXXXXXXX
+Die gewichtete Metrik zeigt damit, dass beide Szenarien zwar auf denselben gerundeten Wert kommen, Szenario B aber rund einen halbenPunkt vor Szenario A liegt -- mit komplementären Schwächen: A hat einen echten Node
+ohne Transaktionssystem, B ein vollständiges Prozessmodell ohne echte Kryptographie.\cite{masterplanB,finalsummaryB}
+
+
+\subsection{Fehleranalyse}
 In der Fehleranalyse erhielten beide Szenarien 3 von 3 Punkten. Szenario A zeigte nach der Nachschärfung, dass die vier bereitgestellten Fehlerartefakte nicht nur oberflächlich kommentiert, sondern systematisch nach Priorität, Fehlerklasse und Restrisiko analysiert wurden. Die Korrekturfassungen adressierten die zentralen Probleme bei Backup, Bitcoin, Docker Compose und Firewalling nachvollziehbar.\cite{artefaktpruefungA}
 
 Szenario B erreichte dieselbe Punktzahl, weil auch dort die Fehler nicht nur gefunden, sondern mit klarer Begründung und strengeren Referenzfassungen korrigiert wurden. Besonders auffällig ist, dass der Review nicht bei Syntaxfragen stehen blieb. Im Mittelpunkt standen vor allem strukturelle Sicherheitsprobleme: unzureichende Segmentierung, fehlende Hot-/Cold-Trennung, zu weite Exponierung und eine nicht ausreichend belastbare Restore-Logik.\cite{artefaktreviewB,finalsummaryB}
@@ -295,7 +327,11 @@ Szenario B erreichte dieselbe Punktzahl, weil auch dort die Fehler nicht nur gef
 
 \section{Grenzen der Evaluation}
 
-Trotz der vielen ausgewerteten Nachweise hat die Untersuchung mehrere Grenzen. Erstens wurde nicht die eigentliche Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acs{VM}s. Das war aus Sicherheitsgründen sinnvoll, schränkt aber die Übertragbarkeit bestimmter I/O-, Storage- und Betriebsaspekte ein. Zweitens blieben produktive Geheimnisse, Offline-Schlüssel und reale Bitcoin-Werte bewusst außerhalb des Versuchs. Drittens stützte sich die Bewertung zwar auf Dateien, Laufzeitbeobachtungen und Prozessdaten, wurde aber nicht formal verifiziert.
+Trotz der vielen ausgewerteten Nachweise hat die Untersuchung mehrere Grenzen. 
+Erstens wurde nicht die eigentliche Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acs{VM}s. Das war aus Sicherheitsgründen sinnvoll, schränkt aber die Übertragbarkeit bestimmter I/O-, Storage- und Betriebsaspekte ein. 
+Zweitens blieben produktive Geheimnisse, Offline-Schlüssel und reale Bitcoin-Werte bewusst außerhalb des Versuchs. 
+Drittens stützte sich die Bewertung zwar auf Dateien, Laufzeitbeobachtungen und Prozessdaten, wurde aber nicht formal verifiziert. 
+Viertens beruht die Auswertung je Szenario auf einem einzelnen Durchlauf. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich daraus keine Aussagen über die Streuung der Ergebnisse bei wiederholten Läufen ableiten.
 
 Diese Einschränkungen sprechen jedoch nicht zugunsten des \ac{LLM}. In einer echten Produktivumgebung mit realen Werten wären Expertensteuerung, manuelle Freigaben und Gegenprüfungen noch wichtiger.
 
@@ -308,3 +344,18 @@ Sie ersetzen den menschlichen Sicherheitsberater jedoch nicht vollständig. Der 
 Wenn der Mandant eine solche Infrastruktur ausschließlich durch \ac{LLM}-basierte Beratung ohne fachkundige Gegenprüfung hätte planen und konfigurieren lassen, wäre das Resultat wahrscheinlich auf den ersten Blick beeindruckend gewesen. Auf den zweiten Blick wäre es in kritischen Bereichen aber nicht belastbar genug gewesen. Dies betrifft besonders die Infrastruktur des Systems, etwa effektive Netztrennung, Backups, Alerting und den Bitcoin-Transaktionsbereich.
 
 Die Rolle des Sicherheitsberaters verschwindet also nicht. Sie verschiebt sich eher: weg von der vollständigen manuellen Ausarbeitung, hin zu Risikosteuerung, Priorisierung, Freigabe und kritischer Endverantwortung.
+
+\section{Lessons Learned}
+
+Aus der Evaluation ergeben sich mehrere Erkenntnisse:
+
+Szenario A erfüllte seinen Zweck grundsätzlich gut. Der Nutzer wurde bewusst naiv und alltagsnah simuliert, um zu beobachten, welche Architekturentscheidungen Codex ohne enge fachliche Steuerung selbst priorisiert. Dadurch wurde sichtbar, welche Bestandteile das System eigenständig als wichtig einordnet, welche Sicherheitsmaßnahmen es von sich aus umsetzt und an welchen Stellen erst spätere Nachfragen oder Audits zu weiteren Systemhärtungen führen. 
+
+Bei Szenario B zeigte sich dagegen, dass die Anforderungen im Bitcoin-Bereich noch präziser hätten formuliert werden müssen. Zwar war korrekt vorgegeben, dass keine echten Seeds, Private Keys oder produktiven Geheimnisse erzeugt werden dürfen. Gleichzeitig hätte deutlicher festgelegt werden müssen, dass trotzdem eine möglichst vollständige Simulation erwartet wird. Dazu hätten zum Beispiel eine Bitcoin-Core-Regtest-Umgebung, Test-Wallets, eine nachvollziehbare \texttt{bitcoin.conf} sowie simulierte Spend- und Recovery-Abläufe gehören können. Da diese Erwartung im Prompt nicht eindeutig genug beschrieben war, war der Vergleich zwischen Szenario A und Szenario B im Bitcoin-Bereich nur eingeschränkt belastbar. Die Qualität des Ergebnisses wurde dadurch durch eine unpräzise Aufgabenstellung begrenzt. 
+
+Zu Beginn der Untersuchung wurde geprüft, ob Codex direkt auf der Serverumgebung des eigenen Home-Labs arbeiten könnte. Aus Sicherheitsgründen wurden die Zugriffsrechte dabei bewusst eingeschränkt, um unbeabsichtigte Änderungen an globalen Einstellungen, Zugriffspfaden oder anderen Bestandteilen zu verhindern. Dadurch war Codex zunächst gezwungen, über die Proxmox-\acs{API} zu arbeiten. Dieser Ansatz war jedoch aufwendig, langsam und der Tokenverbrauch zu hoch. 
+
+Deshalb wurde der Versuchsaufbau auf zwei getrennte lokale Proxmox-\acs{VM}s umgestellt. Codex konnte dadurch praktischer arbeiten, ohne das eigentliche Home-Lab zu gefährden. Rückblickend hätte diese Entscheidung jedoch bereits früher getroffen werden können. Für zukünftige Untersuchungen dieser Art sollte die isolierte Testumgebung daher von Beginn an eingeplant werden, damit der Agent ausreichend Handlungsspielraum erhält, ohne die produktiven Systeme zu gefährden.
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale Herausforderung beim Einsatz von \acs{KI} für technische Infrastrukturaufgaben. Die Qualität des Ergebnisses hängt nicht ausschließlich von den Fähigkeiten des Modells ab, sondern in hohem Maße davon, welche Ziele und Randbedingungen durch den Nutzer vorgegeben werden. In Szenario A erhielt die \acs{KI} vergleichsweise wenige Vorgaben. Dadurch konzentrierte sie sich stärker auf die unmittelbare Aufgabenstellung und erreichte innerhalb kurzer Zeit einen hohen praktischen Umsetzungsgrad. Im Bitcoin-Bereich wurden ein Bitcoin-Core-Node, Monitoring-Komponenten sowie die konzeptionellen Grundlagen für Watch-only-Wallets, PSBTs und einen späteren Signierprozess geschaffen. Obwohl zentrale Sicherheitsaspekte und Betriebsprozesse unvollständig blieben, entstand ein System, das sich deutlich an der eigentlichen fachlichen Anforderung orientierte. Szenario B verfolgte einen anderen Ansatz. Hier standen Sicherheitsanforderungen, Rollenmodelle, Validierungsschritte und die Vermeidung produktiver Geheimnisse bereits von Beginn an im Vordergrund. Das resultierende System war organisatorisch und sicherheitstechnisch deutlich strukturierter. Gleichzeitig verlagerte sich der Schwerpunkt der Arbeit zunehmend auf die Einhaltung dieser Rahmenbedingungen. Im Bitcoin-Bereich führte dies dazu, dass Rollen, Datenflüsse und Sicherheitsgrenzen sehr detailliert ausgearbeitet wurden, während wesentliche Kernfunktionen des eigentlichen Transaktionsprozesses überwiegend simuliert blieben. Die Ergebnisse deuten darauf hin, dass starke Steuerung nicht automatisch zu einer besseren Erfüllung der ursprünglichen Fachanforderung führt. Stattdessen optimiert das Modell auf diejenigen Ziele, die im Prompt und in den nachfolgenden Vorgaben besonders stark gewichtet werden. Werden Sicherheit, Nachweisbarkeit und Compliance zum dominierenden Ziel erklärt, kann dies dazu führen, dass die KI erhebliche Ressourcen auf Dokumentation, Validierung und Regelkonformität verwendet, während die praktische Umsetzung der eigentlichen Kernfunktion in den Hintergrund tritt. Die Evaluation zeigt damit einen Zielkonflikt zwischen funktionaler Umsetzung und regulatorischer beziehungsweise sicherheitstechnischer Absicherung. Beide Aspekte sind notwendig, optimale Ergebnisse entstehen jedoch erst dann, wenn der Nutzer die Balance zwischen beiden Zielsetzungen aktiv steuert.

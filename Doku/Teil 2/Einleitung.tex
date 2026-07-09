@@ -3,7 +3,7 @@
 
 \subsection{Forschungsstand}
 
-In der Arbeit \glqq IaC-Eval: A Code Generation Benchmark for Cloud Infrastructure-as-Code Programs\grqq von Kon et al. entwickelten die Autoren einen eigenen Prüfablauf für durch \ac{LLM}-generierte Infrastructure-as-Code-Programme.Dafür entwickelten sie etwa 500 erstellte Szenarien für AWS-basierte Terraform-Konfigurationen.
+In der Arbeit \glqq IaC-Eval: A Code Generation Benchmark for Cloud Infrastructure-as-Code Programs\grqq von Kon et al. entwickelten die Autoren einen eigenen Prüfablauf für durch \acs{KI}-generierte Infrastructure-as-Code-Programme.Dafür entwickelten sie etwa 500 erstellte Szenarien für AWS-basierte Terraform-Konfigurationen.
 
 In der Evaluation prüften sie, ob die Ausgabe verarbeitbar war. Im zweiten Schritt wurde die Ausgabe mit der Rego-basierten Intent-Spezifikation über \acf{OPA} verglichen. Diese Spezifikation beschreibt, welche Ressourcen, Abhängigkeiten und Attribute für die jeweilige Aufgabe tatsächlich erforderlich oder zulässig sind. Eine Lösung gilt laut Kon et al. nicht schon als korrekt, wenn Terraform sie akzeptiert, sondern erst dann, wenn sie auch die fachlichen Forderungen an die Infrastruktur der Aufgabe erfüllt.\cite{kon2024iaceval}
 
@@ -11,9 +11,9 @@ Gerade dieser zweite Schritt ist für die vorliegende Arbeit methodisch wichtig.
 
 Für die eigene Evaluation wurde übernommen, dass bewertet werden muss, ob Codex nicht nur eine plausible Architektur beschreibt oder Dateien erzeugt, sondern ob diese Dateien und der Systemzustand tatsächlich zu den Anforderungen passen: getrennte Rollen, restriktive Zugriffspfade, Tor als kontrollierter Zugang, wirksame Netzwerkgrenzen, geschützte Backups, Monitoring sowie ein sicher begrenzter Bitcoin-Simulationsprozess.
 
-Hase et al. untersuchen gezielt die Security-Policy-Compliance von \ac{LLM}-generierten \acs{IaC}-Skripten. Ein Skript kann syntaktisch korrekt sein und die Anforderungen erfüllen, aber trotzdem problematische Einstellungen enthalten. Hase et al. verwenden dafür unter anderem statische Policy-Prüfung mit Checkov.\cite{hase2026securitypolicyiac} Für die eigene Evaluation muss die Sicherheit auch ein Kriterium für die Bewertung sein. Für das Home-Lab bedeutet es also, dass ein Dienst nicht allein deshalb gut bewertet werden darf, weil er läuft, sondern er muss zusätzlich überprüft werden, ob Zugriffspfade eng begrenzt sind, Secrets nicht im Klartext liegen, administrative Dienste nicht unnötig exponiert werden, Backups angemessen geschützt sind und Netze begrenzt werden.
+Hase et al. untersuchen gezielt die Security-Policy-Compliance von \acs{KI}-generierten \acs{IaC}-Skripten. Ein Skript kann syntaktisch korrekt sein und die Anforderungen erfüllen, aber trotzdem problematische Einstellungen enthalten. Hase et al. verwenden dafür unter anderem statische Policy-Prüfung mit Checkov.\cite{hase2026securitypolicyiac} Für die eigene Evaluation muss die Sicherheit auch ein Kriterium für die Bewertung sein. Für das Home-Lab bedeutet es also, dass ein Dienst nicht allein deshalb gut bewertet werden darf, weil er läuft, sondern er muss zusätzlich überprüft werden, ob Zugriffspfade eng begrenzt sind, Secrets nicht im Klartext liegen, administrative Dienste nicht unnötig exponiert werden, Backups angemessen geschützt sind und Netze begrenzt werden.
 
-Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{chen2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufasalltag auch vorhandene Systeme bewertet und verbessert.
+Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \acs{KI}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \acs{KI} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{chen2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufasalltag auch vorhandene Systeme bewertet und verbessert.
 
 Diese Kategorie wurde in der eigenen Evaluation durch einen separaten Fehleranalyse am Ende des Chats aufgegriffen. Codex erhielt absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die enthaltenen Fehler erkennt, richtig einordnet,begründet und eine korrekte Datei erstellt. 
 
@@ -22,16 +22,16 @@ Diese Kategorie wurde in der eigenen Evaluation durch einen separaten Fehleranal
 
 Aus den genannten Arbeiten ergeben sich drei methodische Anforderungen an die eigene Untersuchung.
 
-Erstens muss zwischen sprachlicher Plausibilität und technischer Umsetzung unterschieden werden. Ein \ac{LLM} kann eine überzeugende Architektur beschreiben, ohne dass diese im System tatsächlich umgesetzt wurde. Deshalb wurden nicht nur Konzepte, sondern auch erzeugte Dateien, Regeln usw. ausgewertet.
+Erstens muss zwischen sprachlicher Plausibilität und technischer Umsetzung unterschieden werden. Ein \acs{KI} kann eine überzeugende Architektur beschreiben, ohne dass diese im System tatsächlich umgesetzt wurde. Deshalb wurden nicht nur Konzepte, sondern auch erzeugte Dateien, Regeln usw. ausgewertet.
 
 Zweitens muss die Sicherheit als eigenes Kriterium behandelt werden. Aus Hase et al. folgt, dass syntaktisch oder funktional richtige Infrastruktur trotzdem Policy-Verstöße enthalten kann.\cite{hase2026securitypolicyiac} Deshalb wurden kritische Ausschlussfehler definiert. Dazu gehörten öffentlich erreichbare Admin-Dienste ohne zusätzliche Beschränkung, unsegmentierte Netze, unverschlüsselte sensible Backups, Klartext-Secrets in Dokumentation oder Compose-Dateien sowie echte Seeds oder Private Keys auf Online-Systemen. Trat ein solcher Fehler in einer Kategorie auf, konnte diese Kategorie höchstens mit einem Punkt bewertet werden.
 
-Drittens muss auch die Fähigkeit der Fehleranalyse des \ac{LLM} auch betrachtet werden. Deshalb erhielten beide Szenarien identische, absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die Fehler nur oberflächlich kommentiert oder ob es sie fachlich korrekt einordnet und richtige Konfigurationen erstellt.
+Drittens muss auch die Fähigkeit der Fehleranalyse der \acs{KI} betrachtet werden. Deshalb erhielten beide Szenarien identische, absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die Fehler nur oberflächlich kommentiert oder ob es sie fachlich korrekt einordnet und richtige Konfigurationen erstellt.
 
 
-\subsection{Eigene Teststrategie}
+\subsection{Teststrategie}
 
-Auf Grundlage dieser Anforderungen wurde eine Teststrategie entwickelt.
+Auf Grundlage der Anforderungen wurde eine Teststrategie entwickelt.
 
 Dazu wurden zwei getrennte Proxmox-\acs{VM}s verwendet. Szenario A lief auf \texttt{ailab1}, Szenario B auf \texttt{ailab2}.
 
@@ -49,7 +49,7 @@ Die Evaluation erfolgte in sieben Hauptkategorien:
 \item Fehleranalyse
 \end{enumerate}
 
-Diese Kategorien decken zusammen die wesentlichen Sicherheits- und Betriebsfragen des Mandanten ab. Bei der Architekturplanung wird geprüft, ob das \ac{LLM} Schutzbedarfe, Rollen und Zonen sinnvoll strukturiert. Bei den Services wird bewertet, ob die geforderten Anwendungen vorhanden und angemessen verteilt und betrieben werden. Die kategorie Konfiguration untersucht Härtung, Defaults, Secret-Handling und Konsistenz zwischen Dokumentation und Dateien. Bei dem Thema Netzwerk, Tor und Zugriff wird geprüft, ob spezifische Zugriffspfade erzwungen werden.Bei Bei Backup und Monitoring werde betrachtet, inwieweit der Betrieb nachvollziehbar überwacht werden kann und ob eine Wiederherstellung im Fehlerfall möglich ist. Bei dem Bitcoin-System wird die Trennung von Node, Watch-only-Komponenten, Hot-Service-Rolle und Offline-Handoff gepüft. Die Fehleranalyse überprüft zuletzt, ob Codex sicherheitsrelevante Fehler in fremden Dateien erkennt und korrigiert.
+Bei der Architekturplanung wird geprüft, ob die \acs{KI} Schutzbedarfe, Rollen und Zonen sinnvoll strukturiert. Bei den Services wird bewertet, ob die geforderten Anwendungen vorhanden und angemessen verteilt und betrieben werden. Die kategorie Konfiguration untersucht Härtung, Defaults, Secret-Handling und Konsistenz zwischen Dokumentation und Dateien. Bei dem Thema Netzwerk, Tor und Zugriff wird geprüft, ob spezifische Zugriffspfade erzwungen werden.Bei Bei Backup und Monitoring werde betrachtet, inwieweit der Betrieb nachvollziehbar überwacht werden kann und ob eine Wiederherstellung im Fehlerfall möglich ist. Bei dem Bitcoin-System wird die Trennung von Node, Watch-only-Komponenten, Hot-Service-Rolle und Offline-Handoff gepüft. Die Fehleranalyse überprüft zuletzt, ob Codex sicherheitsrelevante Fehler in fremden Dateien erkennt und korrigiert.
 
 Für jede Kategorie wurden 0 bis 3 Punkte vergeben. Die Skala wurde bewusst einfach gehalten, um die Ergebnisse nachvollziehbar vergleichen zu können:
 
