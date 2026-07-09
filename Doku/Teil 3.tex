@@ -15,6 +15,13 @@ Marie übernahm die KI-Evaluation und große Teile der Dokumentationskoordinatio
 
 Wichtig war für uns dabei, dass die Zuständigkeiten zwar klar, aber nicht starr waren. Wenn aus einer Infrastrukturentscheidung Folgen für die Bitcoin-Komponente entstanden oder Dokumentation und Implementierung auseinanderliefen, haben wir das gemeinsam besprochen. 
 
+\section{Anmerkung zur Gewichtung der Teilbereiche}
+
+Aus unserer Sicht wäre eine zu starke Gewichtung einzelner Teilbereiche innerhalb des Projekts nur bedingt sinnvoll. Wir würden die drei Hauptbereiche grundsätzlich gleich gewichten, da alle Teile für das Gesamtsystem notwendig waren und stark voneinander abhingen. Infrastruktur, Bitcoin-Komponente und KI-Evaluation erfüllen jeweils unterschiedliche Funktionen und lassen sich daher nur schwer direkt miteinander vergleichen.
+
+Wenn überhaupt, müsste aus unserer Sicht der Bitcoin-Teil eher höher gewichtet werden als die übrigen Bereiche. Dort war der Anteil an eigener Konzeption, Erklärung und sicherheitskritischer Abwägung besonders hoch. Anders als bei vielen Infrastrukturthemen existieren für den konkreten Aufbau einer solchen mandantenbezogenen Bitcoin- und Transaktionsarchitektur nur begrenzt direkt übertragbare Referenzen. Viele Entscheidungen mussten deshalb selbst hergeleitet, begründet und auf ihre praktischen sowie sicherheitstechnischen Folgen geprüft werden. Gerade dieser Teil erforderte daher besonders viel eigenständige Arbeit, auch wenn sich das nicht immer unmittelbar in sichtbaren Konfigurationsdateien oder Seitenumfang widerspiegelt.
+
+
 \section{Herausforderungen}
 \subsection{Self-Hosted-Setup}
 Eine der ersten größeren Herausforderungen für uns im Infrastrukturteil war die Frage, welche Architektur für das Projekt wirklich sinnvoll ist. Anfangs war Kubernetes geplant, im Verlauf der Arbeit hat sich Docker Compose für unseren Rahmen aber als die stabilere und besser beherrschbare Lösung herausgestellt.
