@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule local homelab backups
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=homelab-backup.service
+
+[Install]
+WantedBy=timers.target

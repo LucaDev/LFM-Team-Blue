@@ -1,0 +1,171 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - ./data/redis:/data
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "3000:3000"
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:-10.10.10.10,10.10.20.10,127.0.0.1,localhost}
+      TZ: Europe/Berlin
+    volumes:
+      - ./config/homepage:/app/config
+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      - postgres
+    ports:
+      - "8080:80"
+    environment:
+      DOMAIN: ${VAULTWARDEN_DOMAIN:-http://10.10.10.10:8080}
+      SIGNUPS_ALLOWED: ${VAULTWARDEN_SIGNUPS_ALLOWED:-false}
+      INVITATIONS_ALLOWED: "true"
+      WEBSOCKET_ENABLED: "true"
+      ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN}
+      TZ: Europe/Berlin
+    volumes:
+      - ./data/vaultwarden:/data
+
+  linkding:
+    image: sissbruecker/linkding:latest
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "9090:9090"
+    environment:
+      LD_SUPERUSER_NAME: ${LINKDING_SUPERUSER_NAME}
+      LD_SUPERUSER_PASSWORD: ${LINKDING_SUPERUSER_PASSWORD}
+      TZ: Europe/Berlin
+    volumes:
+      - ./data/linkding:/etc/linkding/data
+
+  miniflux:
+    image: miniflux/miniflux:latest
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      DATABASE_URL: postgres://miniflux:${MINIFLUX_DB_PASSWORD}@postgres/miniflux?sslmode=disable
+      RUN_MIGRATIONS: "1"
+      CREATE_ADMIN: "1"
+      ADMIN_USERNAME: ${MINIFLUX_ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${MINIFLUX_ADMIN_PASSWORD}
+      BASE_URL: ${MINIFLUX_BASE_URL:-http://10.10.10.10:8081}
+      TZ: Europe/Berlin
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      USERMAP_UID: "1000"
+      USERMAP_GID: "1000"
+      PAPERLESS_REDIS: redis://redis:6379
+      PAPERLESS_DBHOST: postgres
+      PAPERLESS_DBPORT: "5432"
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD}
+      PAPERLESS_URL: ${PAPERLESS_URL:-http://10.10.10.10:8000}
+      PAPERLESS_TIME_ZONE: Europe/Berlin
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD}
+      PAPERLESS_ACCOUNT_ALLOW_SIGNUPS: "false"
+      TZ: Europe/Berlin
+    volumes:
+      - ./data/paperless/data:/usr/src/paperless/data
+      - ./data/paperless/media:/usr/src/paperless/media
+      - ./data/paperless/export:/usr/src/paperless/export
+      - ./data/paperless/consume:/usr/src/paperless/consume
+
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "8082:8080"
+    environment:
+      LANGS: en_GB
+      SYSTEM_DEFAULTLOCALE: de-DE
+      TZ: Europe/Berlin
+
+  gitea:
+    image: gitea/gitea:latest
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./data/gitea:/data
+
+  actual-budget:
+    image: actualbudget/actual-server:latest
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "5006:5006"
+    environment:
+      TZ: Europe/Berlin
+    volumes:
+      - ./data/actual:/data
+
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    restart: unless-stopped
+    logging: *default-logging
+    ports:
+      - "8083:80"
+    command:
+      - --address=0.0.0.0
+      - --port=80
+      - --database=/database/filebrowser.db
+      - --root=/srv
+    volumes:
+      - ./data/filebrowser/srv:/srv
+      - ./data/filebrowser/database:/database

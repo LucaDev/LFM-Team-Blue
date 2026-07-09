@@ -1,0 +1,33 @@
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+
+  http_2xx_or_3xx:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+      valid_status_codes:
+        - 200
+        - 301
+        - 302
+        - 303
+        - 307
+        - 308
+
+  http_2xx_or_3xx_or_401:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+      valid_status_codes:
+        - 200
+        - 301
+        - 302
+        - 303
+        - 307
+        - 308
+        - 401

@@ -1,0 +1,39 @@
+- Productivity:
+    - Vaultwarden:
+        href: http://10.10.10.10:8080
+        description: Passwortmanager
+    - Linkding:
+        href: http://10.10.10.10:9090
+        description: Bookmark-Sammlung
+    - Miniflux:
+        href: http://10.10.10.10:8081
+        description: RSS Reader
+    - Gitea:
+        href: http://10.10.10.10:3001
+        description: Git und kleine Projekte
+    - Actual Budget:
+        href: http://10.10.10.10:5006
+        description: Haushaltsbudget
+- Documents:
+    - Paperless-ngx:
+        href: http://10.10.10.10:8000
+        description: Dokumentenarchiv
+    - Stirling PDF:
+        href: http://10.10.10.10:8082
+        description: PDF Werkzeuge
+    - File Browser:
+        href: http://10.10.10.10:8083
+        description: Dateien im Lab
+- Ops:
+    - Grafana:
+        href: http://10.10.20.20:3000
+        description: Dashboards
+    - Prometheus:
+        href: http://10.10.20.20:9090
+        description: Metriken
+    - Uptime Kuma:
+        href: http://10.10.20.20:3001
+        description: Verfügbarkeitschecks
+    - Alertmanager:
+        href: http://10.10.20.20:9093
+        description: Alert Übersicht

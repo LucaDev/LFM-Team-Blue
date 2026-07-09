@@ -1,0 +1,36 @@
+- Productivity:
+    - Vaultwarden:
+        href: __VAULTWARDEN_ONION__
+        description: Passwortmanager via Tor
+    - Linkding:
+        href: __LINKDING_ONION__
+        description: Bookmark-Sammlung via Tor
+    - Miniflux:
+        href: __MINIFLUX_ONION__
+        description: RSS Reader via Tor
+    - Gitea:
+        href: __GITEA_ONION__
+        description: Git und kleine Projekte via Tor
+    - Actual Budget:
+        href: __ACTUAL_ONION__
+        description: Haushaltsbudget via Tor
+- Documents:
+    - Paperless-ngx:
+        href: __PAPERLESS_ONION__
+        description: Dokumentenarchiv via Tor
+    - Stirling PDF:
+        href: __STIRLING_ONION__
+        description: PDF Werkzeuge via Tor
+    - File Browser:
+        href: __FILEBROWSER_ONION__
+        description: Dateien im Lab via Tor
+- Ops:
+    - Homepage Onion:
+        href: __HOMEPAGE_ONION__
+        description: Tor-Einstiegspunkt
+    - Grafana:
+        href: __GRAFANA_ONION__
+        description: Dashboards via Tor
+    - Uptime Kuma:
+        href: __UPTIME_ONION__
+        description: Verfügbarkeitschecks via Tor

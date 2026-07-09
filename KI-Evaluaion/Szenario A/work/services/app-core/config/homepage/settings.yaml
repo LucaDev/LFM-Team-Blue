@@ -1,0 +1,13 @@
+title: AILab1 Home Lab
+theme: dark
+color: slate
+layout:
+  Productivity:
+    style: row
+    columns: 3
+  Documents:
+    style: row
+    columns: 3
+  Ops:
+    style: row
+    columns: 3

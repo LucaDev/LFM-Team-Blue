@@ -1,0 +1,74 @@
+groups:
+  - name: homelab-availability
+    rules:
+      - alert: InstanceDown
+        expr: up{job=~"prometheus|blackbox-exporter|node-exporters"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Target down: {{ $labels.instance }}"
+          description: "{{ $labels.job }} target {{ $labels.instance }} is unreachable."
+
+      - alert: EndpointProbeFailing
+        expr: probe_success{job=~"blackbox-http-.*"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP check failing: {{ $labels.instance }}"
+          description: "Blackbox probing for {{ $labels.instance }} is failing."
+
+      - alert: HighMemoryPressure
+        expr: up{job="node-exporters"} == 1 and (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory pressure on {{ $labels.instance }}"
+          description: "Memory usage exceeded 90 percent for 10 minutes."
+
+      - alert: TorHiddenServiceRouteFailing
+        expr: homelab_tor_hidden_service_up{instance="10.10.10.2:9100"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tor route failing: {{ $labels.service }}"
+          description: "The tor-edge local onion self-test no longer matches the expected response for {{ $labels.service }}."
+
+      - alert: TorHiddenServiceMetricsMissing
+        expr: count(homelab_tor_hidden_service_up{instance="10.10.10.2:9100"}) < 12
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tor self-test metrics incomplete"
+          description: "tor-edge is exposing fewer hidden-service self-test metrics than expected."
+
+      - alert: BitcoinRPCUnavailable
+        expr: homelab_bitcoin_rpc_up{instance="10.10.10.30:9100"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Bitcoin RPC unavailable on {{ $labels.instance }}"
+          description: "The local btc-node exporter cannot reach Bitcoin Core RPC."
+
+      - alert: BitcoinLowPeers
+        expr: homelab_bitcoin_rpc_up{instance="10.10.10.30:9100"} == 1 and homelab_bitcoin_initialblockdownload{instance="10.10.10.30:9100"} == 0 and homelab_bitcoin_peers{instance="10.10.10.30:9100"} < 2
+        for: 20m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Bitcoin peer count low on {{ $labels.instance }}"
+          description: "btc-node has fewer than two peers outside of initial block download."
+
+      - alert: BitcoinOnionServiceMissing
+        expr: homelab_bitcoin_rpc_up{instance="10.10.10.30:9100"} == 1 and homelab_bitcoin_onion_service_advertised{instance="10.10.10.30:9100"} == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Bitcoin onion listener missing on {{ $labels.instance }}"
+          description: "btc-node is running but is not currently advertising an onion local address."

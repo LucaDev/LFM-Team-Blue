@@ -1,0 +1,28 @@
+[Unit]
+Description=Bitcoin Core daemon
+After=network-online.target tor.service
+Wants=network-online.target tor.service
+
+[Service]
+Type=simple
+User=bitcoin
+Group=bitcoin
+ExecStartPre=/usr/bin/test -x /opt/bitcoin-core/current/bin/bitcoind
+ExecStart=/opt/bitcoin-core/current/bin/bitcoind -conf=/etc/bitcoin/bitcoin.conf -datadir=/var/lib/bitcoind
+ExecStop=/opt/bitcoin-core/current/bin/bitcoin-cli -conf=/etc/bitcoin/bitcoin.conf -datadir=/var/lib/bitcoind stop
+TimeoutStartSec=infinity
+TimeoutStopSec=600
+Restart=on-failure
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/bitcoind
+ReadOnlyPaths=/etc/bitcoin /run/tor/control.authcookie
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

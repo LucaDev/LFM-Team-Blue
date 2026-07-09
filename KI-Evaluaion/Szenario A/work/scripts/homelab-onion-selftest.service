@@ -1,0 +1,8 @@
+[Unit]
+Description=Run tor-edge local hidden-service self-test
+After=tor.service caddy.service prometheus-node-exporter.service
+Wants=tor.service caddy.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/homelab-onion-selftest.sh

@@ -1,0 +1,64 @@
+{
+  admin off
+  auto_https off
+}
+
+:10080 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:3000
+}
+
+:10081 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:8080
+}
+
+:10082 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:9090
+}
+
+:10083 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:8081
+}
+
+:10084 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:8000
+}
+
+:10085 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:8082
+}
+
+:10086 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:3001
+}
+
+:10087 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:5006
+}
+
+:10088 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.10.10:8083
+}
+
+:10089 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.20.20:3000
+}
+
+:10090 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.20.20:3001
+}
+
+:10091 {
+  bind 127.0.0.1
+  reverse_proxy 10.10.20.20:2586
+}
