@@ -28,19 +28,6 @@
 
 Hinweis: `reasoning_output_tokens` wird im Sessionlog separat ausgewiesen, aber nicht zusaetzlich auf `total_tokens` aufgeschlagen. Fuer die Kostenschaetzung wird deshalb nur mit `input_tokens`, `cached_input_tokens` und `output_tokens` gerechnet.
 
-### API-aequivalente Kostenschaetzung fuer GPT-5.4
-
-| Szenario | Input | Cached input | Output | Gesamt |
-| --- | ---: | ---: | ---: | ---: |
-| Standardtarif unter 270K Kontext | $381.68 | $30.23 | $13.31 | $425.22 |
-| Long-context, falls >272K-Regel fuer die Session greift | $763.37 | $60.46 | $19.96 | $843.79 |
-
-Verwendete Annahmen:
-
-- Standardtarif: GPT-5.4 `Input $2.50 / 1M`, `Cached input $0.25 / 1M`, `Output $15.00 / 1M`.
-- Long-context-Regel: fuer GPT-5.4 werden Sessions mit Prompts ueber 272K Input-Tokens mit `2x input` und `1.5x output` berechnet; fuer die Schaetzung wird derselbe 2x-Faktor auch auf `cached input` angewendet.
-- Der lokale Sessionlog zeigt mindestens einen Prompt mit `461,776` Input-Tokens (uncached + cached), daher ist die Long-context-Variante die naheliegendere API-Analogie. Die Standard-Variante bleibt als Untergrenze dokumentiert.
-- Das ist eine API-aequivalente Schaetzung. Ob Codex Desktop intern identisch abgerechnet wird, ist dem lokalen Sessionlog nicht zu entnehmen.
 
 ## Verlauf
 
