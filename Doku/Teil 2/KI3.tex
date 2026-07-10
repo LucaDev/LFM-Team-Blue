@@ -26,9 +26,9 @@ Hase et al. untersuchen gezielt die Security-Policy-Compliance von \ac{LLM}-gene
 
 Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{lian2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufsalltag auch vorhandene Systeme bewertet und verbessert.
 
-Diese Kategorie wurde in der eigenen Evaluation durch eine separate Fehleranalyse am Ende des Chats aufgegriffen. Codex erhielt absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die enthaltenen Fehler erkennt, richtig einordnet, begründet und eine korrekte Datei erstellt. 
+Diese Prüfkategorie wurde in der eigenen Evaluation als separate Fehleranalyse am Ende beider Szenarien aufgegriffen; die konkrete Umsetzung wird in Abschnitt~\ref{subsec:methodikanforderungen} beschrieben.
 
-Die drei Arbeiten unterscheiden sich methodisch deutlich und viele Elemente sind nicht direkt auf die vorliegende Fragestellung anwendbar. Die Tabelle~\ref{tab:forschungsstand-methoden} stellt die Evaluationsmethodologien für einen esseren Vergleich gegenüber.
+Die drei Arbeiten unterscheiden sich methodisch deutlich und viele Elemente sind nicht direkt auf die vorliegende Fragestellung anwendbar. Die Tabelle~\ref{tab:forschungsstand-methoden} stellt die Evaluationsmethodologien für einen besseren Vergleich gegenüber.
 
 \begin{table}[htbp]
 \centering
@@ -59,9 +59,8 @@ eigenes Ausschlusskriterium & separate Fehleranalyse-Aufgabe \\
 \label{tab:forschungsstand-methoden}
 \end{table}
 
-Der größte Unterschied besteht wohl in der Testmenge.
-Wie es für wissenschaftliche Arbeiten üblich ist basieren diese ihre Erkenntnisse auf großen, automatisiert prüfbaren, reproduzierbaren Aufgabenmengen.
-Dies war aufgrund von monetären und zeitlichen Begrenzungen nicht vollständig für die vorliegende Aufgabenstellung anwendbar, weshalb sich die vorliegende Untersuchung auf einen Durchlauf je Szenario beschränkt. 
+Der größte Unterschied liegt in der Testmenge. Alle drei Arbeiten stützen ihre Erkenntnisse auf große, automatisiert prüfbare und reproduzierbare Aufgabenmengen. 
+Das war aufgrund monetärer und zeitlicher Begrenzungen für die vorliegende Aufgabenstellung nicht umsetzbar, weshalb sich die Untersuchung auf einen Durchlauf je Szenario beschränkt
 Aggregierte Erfolgsquoten wie in den Benchmarks der veröffentlichten Arbeiten sind hier deshalb nicht sinnvoll anwendbar. 
 Stattdessen soll  die Prüftiefe im Einzelfall erhöht werden, wobei jede Kategorie anhand definierter Indikatoren gegen Dateien, Laufzeitzustand und Dokumentation geprüft wird. Zudem begrenzen sicherheitskritische Ausschlussfehler die erreichbare Punktzahl.
 Die externen Arbeiten liefern damit die Prüfprinzipien, nicht die Messinstrumente.
@@ -77,7 +76,7 @@ Erstens muss zwischen sprachlicher Plausibilität und technischer Umsetzung unte
 
 Zweitens muss die Sicherheit als eigenes Kriterium behandelt werden. Aus Hase et al. folgt, dass syntaktisch oder funktional richtige Infrastruktur trotzdem Policy-Verstöße enthalten kann.\cite{hase2026securitypolicyiac} Deshalb wurden kritische Ausschlussfehler definiert. Dazu gehörten öffentlich erreichbare Admin-Dienste ohne zusätzliche Beschränkung, unsegmentierte Netze, unverschlüsselte sensible Backups, Klartext-Secrets in Dokumentation oder Compose-Dateien sowie echte Seeds oder Private Keys auf Online-Systemen. Trat ein solcher Fehler in einer Kategorie auf, konnte diese Kategorie höchstens mit einem Punkt bewertet werden.
 
-Drittens muss auch die Fähigkeit der Fehleranalyse des \ac{LLM} auch betrachtet werden. Deshalb erhielten beide Szenarien identische, absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die Fehler nur oberflächlich kommentiert oder ob es sie fachlich korrekt einordnet und richtige Konfigurationen erstellt.
+Drittens muss auch die Fähigkeit der Fehleranalyse des \ac{LLM} betrachtet werden. Deshalb erhielten beide Szenarien identische, absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die Fehler nur oberflächlich kommentiert oder ob es sie fachlich korrekt einordnet und richtige Konfigurationen erstellt.
 
 
 \subsection{Teststrategie}
@@ -115,36 +114,61 @@ Nachweise belegt ist.
 \begin{table}[htbp]
 \centering
 \small
+\newcommand{\indikatoren}[1]{\begin{itemize}[nosep,topsep=0pt,partopsep=0pt,leftmargin=1.2em]#1\end{itemize}}
 \begin{tabular}{p{0.26\textwidth} p{0.64\textwidth}}
 \hline
 \textbf{Kategorie} & \textbf{Prüfindikatoren} \\
 \hline
-Architekturplanung & Zonen- und Rollenmodell mit Schutzbedarfen, begründete
-Platzierung der Dienste, dokumentierte erlaubte Kommunikationspfade, Trennung
-von Admin-, Anwendungs- und Bitcoin-Bereich \\
+Architekturplanung &
+\indikatoren{
+\item Zonen- und Rollenmodell mit Schutzbedarfen
+\item Begründete Platzierung der Dienste
+\item Dokumentierte erlaubte Kommunikationspfade
+\item Trennung von Admin-, Anwendungs- und Bitcoin-Bereich
+} \\
 \addlinespace
-Services & geforderte Dienste vorhanden und lauffähig; Verteilung nach
-Schutzbedarf statt Bündelung auf einer Rolle; minimale Berechtigungen je
-Dienst; keine unnötigen Zusatzdienste \\
+Services &
+\indikatoren{
+\item Geforderte Dienste vorhanden und lauffähig
+\item Verteilung nach Schutzbedarf statt Bündelung auf einer Rolle
+\item Minimale Berechtigungen je Dienst
+\item Keine unnötigen Zusatzdienste
+} \\
 \addlinespace
-Konfiguration & gehärtete Defaults (Registrierung, Ports, Rechte);
-Secret-Handling ohne Klartext; Konsistenz zwischen Dokumentation und realen
-Dateien; reproduzierbarer Systemzustand \\
+Konfiguration &
+\indikatoren{
+\item gehärtete Defaults (Registrierung, Ports, Rechte)
+\item Secret-Handling ohne Klartext
+\item Konsistenz zwischen Dokumentation und realen Dateien
+\item Reproduzierbarer Systemzustand
+} \\
 \addlinespace
-Netzwerk, Tor und Zugriff & Default-Deny nachweisbar; Dienste nur über die
-vorgesehenen Tor-Pfade erreichbar; Admin-Zugang zusätzlich beschränkt
-(z.\,B. v3-Client-Auth); interne Kommunikation zwischen den Diensten begrenzt \\
+Netzwerk, Tor und Zugriff &
+\indikatoren{
+\item Default-Deny nachweisbar
+\item Dienste nur über die vorgesehenen Tor-Pfade erreichbar
+\item Admin-Zugang zusätzlich beschränkt (z.\,B. v3-Client-Auth)
+\item Interne Kommunikation zwischen den Diensten begrenzt
+} \\
 \addlinespace
-Backup und Monitoring & Backups verschlüsselt und nicht ausschließlich lokal;
-Restore praktisch getestet; Host und Dienste überwacht; Alarmkette bis zum
-Betreiber nachvollziehbar \\
+Backup und Monitoring &
+\indikatoren{
+\item Backups verschlüsselt und nicht ausschließlich lokal
+\item Restore praktisch getestet
+\item Host und Dienste überwacht
+\item Alarmkette bis zum Betreiber nachvollziehbar
+} \\
 \addlinespace
-Fehleranalyse & alle vier Fehlerartefakte erkannt; fachlich korrekte
-Einordnung mit Begründung; Korrekturfassung behebt die Kernprobleme; keine
-neuen Sicherheitsfehler in der Korrektur \\
+Fehleranalyse &
+\indikatoren{
+\item Alle vier Fehlerartefakte erkannt
+\item Fachlich korrekte Einordnung mit Begründung
+\item Korrekturfassung behebt die Kernprobleme
+\item Keine neuen Sicherheitsfehler in der Korrektur
+} \\
 \hline
 \end{tabular}
-\caption{Prüfindikatoren der Hauptkategorien. Das Bitcoin-Konzept wird
+\caption{Prüfindikatoren der Hauptkategorien. \\Das Bitcoin-Konzept wird
 gesondert operationalisiert (Abschnitt~\ref{subsec:btc-bewertung}).}
 \label{tab:kategorien-indikatoren}
 \end{table}
@@ -158,7 +182,7 @@ Für jede Kategorie wurden 0 bis 3 Punkte vergeben. Die Skala wurde bewusst einf
 \item \textbf{3 Punkte}: Die Lösung ist fachlich korrekt, eng gefasst, nachvollziehbar begründet und durch Dateien, Laufzeitprüfungen oder gleichwertige Simulationsnachweise belegt.
 \end{itemize}
 
-Die Punktvergabe wurde von zwei Personen unabhängig anhand Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. 
+Die Punktvergabe wurde von zwei Personen unabhängig anhand der Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. 
 Als Bewerter fungierten die Ersteller des Basis- beziehungsweise Krypto-Teils, da nur sie die nötige fachliche Tiefe für die jeweiligen Kategorien mitbrachten. 
 Diese Doppelrolle als Architekten der Referenzlösung und Bewerter der KI-Ergebnisse ist zugleich ein methodisches Risiko, weil eigene Designentscheidungen unbewusst als Maßstab dienen können.
 Dieses Risiko wird in Abschnitt~\ref{sec:grenzen} als Einschränkung weiter ausgewiesen.
@@ -171,7 +195,7 @@ Für die volle Punktzahl genügte jedoch nicht, lediglich auf produktive Geheimn
 
 Daraus ergab sich folgende \ac{BTC}-spezifische Auslegung der Punkteskala.
 Jedes Unterkriterium wurde nach der Skala aus Abschnitt~\ref{subsec:methodikanforderungen} mit 0 bis 3 Punkten bewertet.
-Der Beitrag zur Gesamtwertung ergibt sich aus Wertung mal Gewichtung, sodass maximal 3{,}00 Punkte erreichbar sind. Die Ausschlussregel gilt dabei auf Kategorieebene ,sodass ein kritischer Ausschlussfehler wie ein Vorliegen von echtem Schlüsselmaterial auf einem Online-System dazu führt das gesamte \ac{BTC}-Konzept unabhängig von den Unterwertungen mit höchstens einem Punkt bewertet.
+Der Beitrag zur Gesamtwertung ergibt sich aus Wertung mal Gewichtung, sodass maximal 3{,}00 Punkte erreichbar sind. Die Ausschlussregel gilt dabei auf Kategorieebene, sodass ein kritischer Ausschlussfehler das gesamte \ac{BTC}-Konzept unabhängig von den Unterwertungen mit höchstens einem Punkt bewertet.
 
 \begin{table}[htbp]
 \centering \begin{tabular}{p{0.42\textwidth} p{0.18\textwidth}} 
@@ -211,6 +235,12 @@ Die vollständigen Prompts, die exportierten Chatverläufe sowie die in beiden S
 \subsection{Szenario A}
 
 In Szenario A begann der praktische Teil mit einem kurzen, naiven Prompt. Der Nutzer beschrieb, was das Home-Lab leisten sollte, machte aber kaum genaue Vorgaben zu Threat Model, Sicherheitszonen oder Prüfung. Die weiteren Prompts dienten vor allem dazu, einzelne Abschnitte freizugeben, zwischen Projektphasen zu wechseln, auf erkannte Probleme zu reagieren und spätere Korrekturen oder Härtungen anzustoßen. Der Run war dadurch offen und stark auf sichtbare Ergebnisse ausgerichtet. Codex hatte viel Handlungsspielraum und konnte schnell eine breite Lösung aufbauen. Sicherheitsrelevante Punkte wurden jedoch erst im weiteren Verlauf konsequent mitgedacht.
+
+Zwei Bestandteile des Verlaufs lagen dabei bewusst außerhalb der simulierten Laienrolle. 
+Erstens legte ein vorangestellter Meta-Prompt in beiden Szenarien denselben Versuchsrahmen fest.
+Dabei wurde der Scope der Test-\acs{VM}, die Freigabepflichten und die feste Abfolge der Arbeitsabschnitte entlang der späteren Bewertungskategorien definiert. Diese Struktur diente der Vergleichbarkeit der beiden Runs und stellte keine fachliche Steuerung der Inhalte dar. 
+Zweitens wurde die abschließende Fehleranalyse in beiden Szenarien mit wortgleichen, fachlich detaillierten Prüfaufträgen gestellt, damit diese Kategorie als standardisiertes Testinstrument vergleichbar bleibt. Innerhalb der eigentlichen Simulation blieben die Prompts dagegen durchgehend
+alltagssprachlich und beschränken sich auf Freigaben, allgemeine Rückfragen und generisch formulierte Bitten, einen Schritt noch einmal auf Risiken zu prüfen, ohne eigene fachliche Vorgaben.
 
 \subsection{Szenario B}
 
@@ -464,26 +494,24 @@ Szenario B erreichte dieselbe Punktzahl, weil auch dort die Fehler nicht nur gef
 
 
 
-\section{Grenzen der Evaluation}
+\section{Grenzen der Evaluation} \label{sec:grenzen}
 
 Trotz der vielen ausgewerteten Nachweise hat die Untersuchung mehrere Grenzen. 
-Erstens wurde nicht die eigentliche Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acs{VM}s. Das war aus Sicherheitsgründen sinnvoll, schränkt aber die Übertragbarkeit bestimmter I/O-, Storage- und Betriebsaspekte ein. 
-Zweitens blieben produktive Geheimnisse, Offline-Schlüssel und reale Bitcoin-Werte bewusst außerhalb des Versuchs. 
-Drittens stützte sich die Bewertung zwar auf Dateien, Laufzeitbeobachtungen und Prozessdaten, wurde aber nicht formal verifiziert. 
-Viertens beruht die Auswertung je Szenario auf einem einzelnen Durchlauf. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich daraus keine Aussagen über die Streuung der Ergebnisse bei wiederholten Läufen ableiten.
-Fünftens wurde nur ein einzelnes agentisches System mit einem Modell
-(Codex mit \texttt{gpt-5.4}) untersucht. Aussagen über \acs{LLM}s im
-Allgemeinen sind daraus nur eingeschränkt ableitbar.
-Sechstens waren die Bewerter zugleich die Architekten der Referenzlösung.
-Insbesondere der Vergleich mit der Eigenentwicklung ist dadurch keine
-unabhängige Fremdbewertung.
-Siebtens ist die Beweislage zwischen den Szenarien nicht symmetrisch:
-Szenario~B musste bereits per Prompt genau jene Dokumente erzeugen, die
-später als Bewertungsnachweise dienten, und erhielt mit mehr
-Nutzer-Nachrichten und längerer Laufzeit auch ein größeres
-Steuerungsbudget. Der Punktabstand misst daher die Kombination aus
-fachlicher Promptqualität und Steuerungsumfang, nicht die Promptqualität
-allein.
+\section{Grenzen der Evaluation}
+\label{sec:grenzen}
+
+Trotz der vielen ausgewerteten Nachweise hat die Untersuchung mehrere Grenzen:
+
+\begin{itemize}
+\item \textbf{Testumgebung statt Zielumgebung:} Es wurde nicht die eigentliche
+Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acp{VM}. Beweggründe dafür liegen in der Sicherheit, jedoch schränkt dies auch die Übertragbarkeit bestimmter I/O-, Storage- und Betriebsaspekte ein.
+\item \textbf{Kein produktives Material:} Produktive Geheimnisse, Offline-Schlüssel und reale Bitcoin-Werte blieben bewusst außerhalb des Versuchs. Dies kann beispielsweise durch Nutzung der Testnet Ableitungspfade für Bitcoin-Geheimnisse umgangen werden.
+\item \textbf{Keine formale Verifikation:} Die Bewertung stützte sich auf Dateien, Laufzeitbeobachtungen und Prozessdaten.
+\item \textbf{Einzeldurchlauf:} Die Auswertung beruht je Szenario auf einem einzelnen Durchlauf. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich daraus keine Aussagen über die Streuung der Ergebnisse bei wiederholten Läufen ableiten.
+\item \textbf{Ein System, ein Modell:} Untersucht wurde nur ein einzelnes agentisches System mit einem Modell (Codex mit \texttt{gpt-5.4}). Aussagen über \acs{LLM}s im Allgemeinen sind daraus nur eingeschränkt ableitbar.
+\item \textbf{Doppelrolle der Bewerter:} Die Bewerter waren zugleich die Architekten der Referenzlösung. Insbesondere der Vergleich mit der Eigenentwicklung ist dadurch keine unabhängige Fremdbewertung. Der Grad der Objektivität wurde versucht durch eine Bewertung durch mehrere Personen zu erhöhen.
+\item \textbf{Asymmetrische Beweislage:} Szenario~B musste bereits per Prompt genau die Dokumente erzeugen, die später als Bewertungsnachweise dienten. Dafür erhielt dieser Versuch sowohl mehr Nutzer-Nachrichten, längerer Laufzeit als auch ein größeres Steuerungsbudget. Der Punktabstand misst daher die Kombination aus fachlicher Promptqualität und Steuerungsumfang, nicht die Qualität allein.
+\end{itemize}
 
 Diese Einschränkungen sprechen jedoch nicht zugunsten des \ac{LLM}. In einer echten Produktivumgebung mit realen Werten wären Expertensteuerung, manuelle Freigaben und Gegenprüfungen noch wichtiger.
 
