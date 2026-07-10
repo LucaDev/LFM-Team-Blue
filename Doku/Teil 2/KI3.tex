@@ -14,7 +14,7 @@ Für beide Szenarien wurden getrennte lokale Proxmox-\acs{VM}s bereitgestellt. D
 
 \subsection{Forschungsstand}
 
-In der Arbeit \glqq IaC-Eval: A Code Generation Benchmark for Cloud Infrastructure-as-Code Programs\grqq von Kon et al. entwickelten die Autoren einen eigenen Prüfablauf für durch \ac{LLM}-generierte Infrastructure-as-Code-Programme.Dafür entwickelten sie etwa 500 erstellte Szenarien für AWS-basierte Terraform-Konfigurationen.
+In der Arbeit \glqq IaC-Eval: A Code Generation Benchmark for Cloud Infrastructure-as-Code Programs\grqq von Kon et al. entwickelten die Autoren einen eigenen Prüfablauf für durch \ac{LLM}-generierte Infrastructure-as-Code-Programme. Dafür entwickelten sie etwa 500 erstellte Szenarien für AWS-basierte Terraform-Konfigurationen.
 
 In der Evaluation prüften sie, ob die Ausgabe verarbeitbar war. Im zweiten Schritt wurde die Ausgabe mit der Rego-basierten Intent-Spezifikation über \acf{OPA} verglichen. Diese Spezifikation beschreibt, welche Ressourcen, Abhängigkeiten und Attribute für die jeweilige Aufgabe tatsächlich erforderlich oder zulässig sind. Eine Lösung gilt laut Kon et al. nicht schon als korrekt, wenn Terraform sie akzeptiert, sondern erst dann, wenn sie auch die fachlichen Forderungen an die Infrastruktur der Aufgabe erfüllt.\cite{kon2024iaceval}
 
@@ -26,12 +26,50 @@ Hase et al. untersuchen gezielt die Security-Policy-Compliance von \ac{LLM}-gene
 
 Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{lian2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufsalltag auch vorhandene Systeme bewertet und verbessert.
 
-Diese Kategorie wurde in der eigenen Evaluation durch einen separaten Fehleranalyse am Ende des Chats aufgegriffen. Codex erhielt absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die enthaltenen Fehler erkennt, richtig einordnet,begründet und eine korrekte Datei erstellt. 
+Diese Kategorie wurde in der eigenen Evaluation durch eine separate Fehleranalyse am Ende des Chats aufgegriffen. Codex erhielt absichtlich fehlerhafte Dateien aus den Bereichen Backup, Bitcoin, Docker Compose und Firewall. Bewertet wurde, ob Codex die enthaltenen Fehler erkennt, richtig einordnet, begründet und eine korrekte Datei erstellt. 
+
+Die drei Arbeiten unterscheiden sich methodisch deutlich und viele Elemente sind nicht direkt auf die vorliegende Fragestellung anwendbar. Die Tabelle~\ref{tab:forschungsstand-methoden} stellt die Evaluationsmethodologien für einen esseren Vergleich gegenüber.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.16\textwidth} p{0.24\textwidth} p{0.24\textwidth} p{0.24\textwidth}}
+\hline
+ & \textbf{Kon et al.} & \textbf{Hase et al.} & \textbf{Lian et al.} \\
+\hline
+Gegenstand & Generierung von IaC (Terraform/AWS) & Policy-Compliance
+generierter IaC & Validierung bestehender Konfigurationen \\
+\addlinespace
+Prüfverfahren & formale Intent-Spezifikation (Rego/\acs{OPA}) gegen die
+Nutzeranforderung & statische Policy-Scans (u.\,a. Checkov) & Erkennung
+gezielt eingebauter Fehlkonfigurationen \\
+\addlinespace
+Metriken & Anteil intent-korrekter Lösungen über die Aufgabenmenge &
+Anteil und Art der Policy-Verstöße je Modell & Erkennungsrate,
+Fehlklassifikationen, Halluzinationen \\
+\addlinespace
+Stichprobe & größerer Aufgaben-Benchmark & viele generierte Skripte & viele
+Konfigurationsdateien mehrerer Systeme \\
+\addlinespace
+Übernommen & Anforderungsabgleich statt reiner Lauffähigkeit & Sicherheit als
+eigenes Ausschlusskriterium & separate Fehleranalyse-Aufgabe \\
+\hline
+\end{tabular}
+\caption{Evaluationsmethodologien des Forschungsstands im Vergleich.}
+\label{tab:forschungsstand-methoden}
+\end{table}
+
+Der größte Unterschied besteht wohl in der Testmenge.
+Wie es für wissenschaftliche Arbeiten üblich ist basieren diese ihre Erkenntnisse auf großen, automatisiert prüfbaren, reproduzierbaren Aufgabenmengen.
+Dies war aufgrund von monetären und zeitlichen Begrenzungen nicht vollständig für die vorliegende Aufgabenstellung anwendbar, weshalb sich die vorliegende Untersuchung auf einen Durchlauf je Szenario beschränkt. 
+Aggregierte Erfolgsquoten wie in den Benchmarks der veröffentlichten Arbeiten sind hier deshalb nicht sinnvoll anwendbar. 
+Stattdessen soll  die Prüftiefe im Einzelfall erhöht werden, wobei jede Kategorie anhand definierter Indikatoren gegen Dateien, Laufzeitzustand und Dokumentation geprüft wird. Zudem begrenzen sicherheitskritische Ausschlussfehler die erreichbare Punktzahl.
+Die externen Arbeiten liefern damit die Prüfprinzipien, nicht die Messinstrumente.
 
 
 \section{Methodik und Bewertungsrahmen}
 
-\subsection{Methodikanforderungen}
+\subsection{Methodikanforderungen} \label{subsec:methodikanforderungen}
 
 Aus den genannten Arbeiten ergeben sich drei methodische Anforderungen an die eigene Untersuchung.
 
@@ -44,7 +82,7 @@ Drittens muss auch die Fähigkeit der Fehleranalyse des \ac{LLM} auch betrachtet
 
 \subsection{Teststrategie}
 
-Codex wurde genutzt, weil Rahmen der Untersuchung die Ressourcen bereitgestellt worden sind. Gleichzeitig war Codex für die Fragestellung besonders passend, weil es als agentisches System nicht nur textbasiert antwortet, sondern praktisch in der Umgebung arbeiten kann. Es kann Dateien lesen und verändern, Shell-Befehle ausführen, Fehlermeldungen beobachten und auf diese reagieren. Dadurch ließ sich die Frage des Mandanten deutlich realitätsnäher und zukunftsorientierter untersuchen als mit einer rein chatbasierten \acs{KI}.
+Codex wurde genutzt, weil im Rahmen der Untersuchung die Ressourcen bereitgestellt worden sind. Gleichzeitig war Codex für die Fragestellung besonders passend, weil es als agentisches System nicht nur textbasiert antwortet, sondern praktisch in der Umgebung arbeiten kann. Es kann Dateien lesen und verändern, Shell-Befehle ausführen, Fehlermeldungen beobachten und auf diese reagieren. Dadurch ließ sich die Frage des Mandanten deutlich realitätsnäher und zukunftsorientierter untersuchen als mit einer rein chatbasierten \acs{KI}.
 
 Hinzu kommt, dass OpenAI-Modelle zu den bekanntesten und am weitesten verbreiteten \ac{LLM}-Systemen gehören. In beiden Szenarien wurde Codex mit dem Modell \texttt{gpt-5.4} und der Reasoning-Einstellung \glqq Sehr hoch\grqq{} genutzt.
 
@@ -69,6 +107,48 @@ Die Evaluation erfolgte in sieben Hauptkategorien:
 
 Diese Kategorien decken zusammen die wesentlichen Sicherheits- und Betriebsfragen des Mandanten ab. Bei der Architekturplanung wird geprüft, ob das \ac{LLM} Schutzbedarfe, Rollen und Zonen sinnvoll strukturiert. Bei den Services wird bewertet, ob die geforderten Anwendungen vorhanden und angemessen verteilt und betrieben werden. Die kategorie Konfiguration untersucht Härtung, Defaults, Secret-Handling und Konsistenz zwischen Dokumentation und Dateien. Bei dem Thema Netzwerk, Tor und Zugriff wird geprüft, ob spezifische Zugriffspfade erzwungen werden. Bei dem Backup und Monitoring Unterpunkt wurde betrachtet, inwieweit der Betrieb nachvollziehbar überwacht werden kann und ob eine Wiederherstellung im Fehlerfall möglich ist. Bei dem Bitcoin-System wird die Trennung von Node, Watch-only-Komponenten, Hot-Service-Rolle und Offline-Handoff geprüft. Die Fehleranalyse überprüft zuletzt, ob Codex sicherheitsrelevante Fehler in fremden Dateien erkennt und korrigiert.
 
+Damit die Punktvergabe in den Kategorien nicht pauschal erfolgt, wurde jede
+Kategorie über feste Prüfindikatoren operationalisiert. Ein Indikator gilt nur
+dann als erfüllt, wenn er durch Dateien, Laufzeitprüfungen oder gleichwertige
+Nachweise belegt ist.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.26\textwidth} p{0.64\textwidth}}
+\hline
+\textbf{Kategorie} & \textbf{Prüfindikatoren} \\
+\hline
+Architekturplanung & Zonen- und Rollenmodell mit Schutzbedarfen, begründete
+Platzierung der Dienste, dokumentierte erlaubte Kommunikationspfade, Trennung
+von Admin-, Anwendungs- und Bitcoin-Bereich \\
+\addlinespace
+Services & geforderte Dienste vorhanden und lauffähig; Verteilung nach
+Schutzbedarf statt Bündelung auf einer Rolle; minimale Berechtigungen je
+Dienst; keine unnötigen Zusatzdienste \\
+\addlinespace
+Konfiguration & gehärtete Defaults (Registrierung, Ports, Rechte);
+Secret-Handling ohne Klartext; Konsistenz zwischen Dokumentation und realen
+Dateien; reproduzierbarer Systemzustand \\
+\addlinespace
+Netzwerk, Tor und Zugriff & Default-Deny nachweisbar; Dienste nur über die
+vorgesehenen Tor-Pfade erreichbar; Admin-Zugang zusätzlich beschränkt
+(z.\,B. v3-Client-Auth); interne Kommunikation zwischen den Diensten begrenzt \\
+\addlinespace
+Backup und Monitoring & Backups verschlüsselt und nicht ausschließlich lokal;
+Restore praktisch getestet; Host und Dienste überwacht; Alarmkette bis zum
+Betreiber nachvollziehbar \\
+\addlinespace
+Fehleranalyse & alle vier Fehlerartefakte erkannt; fachlich korrekte
+Einordnung mit Begründung; Korrekturfassung behebt die Kernprobleme; keine
+neuen Sicherheitsfehler in der Korrektur \\
+\hline
+\end{tabular}
+\caption{Prüfindikatoren der Hauptkategorien. Das Bitcoin-Konzept wird
+gesondert operationalisiert (Abschnitt~\ref{subsec:btc-bewertung}).}
+\label{tab:kategorien-indikatoren}
+\end{table}
+
 Für jede Kategorie wurden 0 bis 3 Punkte vergeben. Die Skala wurde bewusst einfach gehalten, um die Ergebnisse nachvollziehbar vergleichen zu können:
 
 \begin{itemize}
@@ -78,15 +158,20 @@ Für jede Kategorie wurden 0 bis 3 Punkte vergeben. Die Skala wurde bewusst einf
 \item \textbf{3 Punkte}: Die Lösung ist fachlich korrekt, eng gefasst, nachvollziehbar begründet und durch Dateien, Laufzeitprüfungen oder gleichwertige Simulationsnachweise belegt.
 \end{itemize}
 
-Die Punktvergabe wurde von zwei Personen unabhängig anhand dieser Checkliste vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. Dies wurde von den Erstellern der Basis- und Krypto-Teile als Experten vorgenommen.
+Die Punktvergabe wurde von zwei Personen unabhängig anhand Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. 
+Als Bewerter fungierten die Ersteller des Basis- beziehungsweise Krypto-Teils, da nur sie die nötige fachliche Tiefe für die jeweiligen Kategorien mitbrachten. 
+Diese Doppelrolle als Architekten der Referenzlösung und Bewerter der KI-Ergebnisse ist zugleich ein methodisches Risiko, weil eigene Designentscheidungen unbewusst als Maßstab dienen können.
+Dieses Risiko wird in Abschnitt~\ref{sec:grenzen} als Einschränkung weiter ausgewiesen.
 
-\subsection{Besonderheiten bei der Bewertung des Bitcoin-Systems}
+\subsection{Bewertung des Bitcoin-Systems} \label{subsec:btc-bewertung}
 
 Das Bitcoin-System wurde gesondert evaluiert, weil hier andere Sicherheitsgrenzen galten als bei produktiven Diensten. In Szenario B war ausdrücklich vorgegeben, ausschließlich Simulationsdaten zu verwenden und niemals echte Seeds, Private Keys oder produktive Geheimnisse zu erzeugen. Der Verzicht auf echte Bitcoin-Werte war daher keine Schwäche, sondern eine Sicherheitsanforderung.
 
 Für die volle Punktzahl genügte jedoch nicht, lediglich auf produktive Geheimnisse zu verzichten. Innerhalb des erlaubten Simulationsrahmens wären Test-Secrets, Test-Wallets, Dummy-Dateien, Dummy-PSBTs oder eine lokale Bitcoin-Core-Regtest-Umgebung zulässig gewesen. Bewertet wurde daher, ob Codex einen nachvollziehbaren simulierten Prozess abbildete: Erzeugung oder Darstellung von Testdaten, Trennung zwischen Watch-only-, Hot-Service- und Offline-Handoff-Rolle, simulierter Spend-Pfad, Recovery-Überlegung und Nachweis, dass keine produktiven Schlüsselmaterialien auf Online-Systemen lagen.
 
-Daraus ergab sich folgende bereichsspezifische Auslegung der Punkteskala. Jedes Unterkriterium wurde dabei nach der Skala aus Abschnitt~2 mit 0 bis 3 Punkten bewertet; der Beitrag zur Gesamtpunktzahl ergibt sich aus dem Anteil dieser Wertung am jeweiligen Maximalbeitrag:
+Daraus ergab sich folgende \ac{BTC}-spezifische Auslegung der Punkteskala.
+Jedes Unterkriterium wurde nach der Skala aus Abschnitt~\ref{subsec:methodikanforderungen} mit 0 bis 3 Punkten bewertet.
+Der Beitrag zur Gesamtwertung ergibt sich aus Wertung mal Gewichtung, sodass maximal 3{,}00 Punkte erreichbar sind. Die Ausschlussregel gilt dabei auf Kategorieebene ,sodass ein kritischer Ausschlussfehler wie ein Vorliegen von echtem Schlüsselmaterial auf einem Online-System dazu führt das gesamte \ac{BTC}-Konzept unabhängig von den Unterwertungen mit höchstens einem Punkt bewertet.
 
 \begin{table}[htbp]
 \centering \begin{tabular}{p{0.42\textwidth} p{0.18\textwidth}} 
@@ -100,7 +185,7 @@ Testdesign und praktische Prüfbarkeit & 15\,\% \\
 Härtung, Limitierung und Angriffsflächenreduktion & 10\,\% \\
 Recovery, Fehlerfälle und Remediation & 10\,\% \\ 
 \hline 
-\textbf{Summe} & \textbf{100\,\%} & \textbf{max. 3{,}00 Punkte} \\ 
+\textbf{Summe} & \textbf{100\,\%} \\ 
 \hline \end{tabular} 
 \caption{Gewichtete Unterkriterien zur Bewertung der Bitcoin-Sicherheitskonzepte.} \label{tab:btc_bewertung_gewichtung} \end{table}
 
@@ -332,6 +417,19 @@ Erstens wurde nicht die eigentliche Home-Lab-Zielumgebung genutzt, sondern zwei 
 Zweitens blieben produktive Geheimnisse, Offline-Schlüssel und reale Bitcoin-Werte bewusst außerhalb des Versuchs. 
 Drittens stützte sich die Bewertung zwar auf Dateien, Laufzeitbeobachtungen und Prozessdaten, wurde aber nicht formal verifiziert. 
 Viertens beruht die Auswertung je Szenario auf einem einzelnen Durchlauf. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich daraus keine Aussagen über die Streuung der Ergebnisse bei wiederholten Läufen ableiten.
+Fünftens wurde nur ein einzelnes agentisches System mit einem Modell
+(Codex mit \texttt{gpt-5.4}) untersucht. Aussagen über \acs{LLM}s im
+Allgemeinen sind daraus nur eingeschränkt ableitbar.
+Sechstens waren die Bewerter zugleich die Architekten der Referenzlösung.
+Insbesondere der Vergleich mit der Eigenentwicklung ist dadurch keine
+unabhängige Fremdbewertung.
+Siebtens ist die Beweislage zwischen den Szenarien nicht symmetrisch:
+Szenario~B musste bereits per Prompt genau jene Dokumente erzeugen, die
+später als Bewertungsnachweise dienten, und erhielt mit mehr
+Nutzer-Nachrichten und längerer Laufzeit auch ein größeres
+Steuerungsbudget. Der Punktabstand misst daher die Kombination aus
+fachlicher Promptqualität und Steuerungsumfang, nicht die Promptqualität
+allein.
 
 Diese Einschränkungen sprechen jedoch nicht zugunsten des \ac{LLM}. In einer echten Produktivumgebung mit realen Werten wären Expertensteuerung, manuelle Freigaben und Gegenprüfungen noch wichtiger.
 
