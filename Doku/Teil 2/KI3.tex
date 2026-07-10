@@ -340,9 +340,9 @@ Trennung Schlüsselmaterial / Rollen & 1 & 0,25 & 2 & 0,5 & 3 & 0,75 \\
 PSBT-, Signier- \& Handoff-Prozess & 1 & 0,2 & 1 & 0,2 & 3 & 0,6 \\
 Testdesign \& praktische Prüfbarkeit & 2 & 0,3 & 1 & 0,15 & 2 & 0,3 \\
 Härtung / Angriffsflächenreduktion & 2 & 0,2 & 3 & 0,3 & 3 & 0,3 \\
-Recovery / Fehlerfälle / Remediation & 1 & 0,1 & 2 & 0,2 & 2 & 0,2 \\
+Recovery / Fehlerfälle / Remediation & 1 & 0,1 & 2 & 0,2 & 3 & 0,3 \\
 \hline
-\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,75} & & \textbf{2,75} \\
+\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,75} & & \textbf{2,85} \\
 \hline
 \end{tabular}
 \caption{Bewertung der Bitcoin-Implementierungen}
@@ -393,6 +393,8 @@ Die gewichtete Detailbewertung für Szenario B (Tabelle~\ref{tab:btc-detailbewer
 Die Architekturschlüssigkeit erreicht 2 von 3 Punkten. Das Rollen-, Zonen- und Datenklassenmodell ist konsistent dokumentiert und wurde in der Umsetzung eingehalten. 
 Der Abzug ergibt sich, da die im Masterplan vorgesehenen schmalen RPC-Kommunikationspfade zwischen Service- und Node-Rolle in der Umsetzung durch einen rein dateibasierten Ablauf ersetzt wurden.
 
+
+XXXXXservices nicht richtig umgesetzt, nur 1 unktxxx
 Die Trennung von Schlüsselmaterial und Rollen erhält 2 von 3 Punkten. Sie wurde nicht nur beschrieben, sondern technisch erzwungen.
 Über einen dedizierten Systembenutzer ohne Login-Shell, ein rollenspezifisches Rechtemodell auf den Verarbeitungspfaden und einen root-only-Handoff auf dem Host, jeweils belegt durch Laufzeitprüfungen von Rechten und Prozessen. 
 Die volle Punktzahl scheitert daran, dass Teile des geforderten Nachweises deklarativ bleiben und so mehrere Statuszeilen fest einkodiert sind und sich die Suche nach verbotenen Artefakten auf zwei Verzeichnispfade des Gastsystems beschränkt.
@@ -493,7 +495,9 @@ Szenario A beschrieb dieselben Rollen lediglich, ohne dass je eine Wallet existi
 Szenario B erzwang die Trennung zwar technisch über Benutzer- und Rechtemodell, jedoch nur für Dummy-Daten und mit teilweise fest einkodiertem Nachweis. Die Eigenentwicklung ist damit das einzige der drei Systeme, in dem echtes Schlüsselmaterial über Regtest-Ableitungspfade existiert \emph{und} nachweislich getrennt gehalten wird. Die anderen Entwicklungen evaluierten den Aufbau eines Testsystems und die Bildung solch eines Schlüsselmaterials nicht.
 Die Trennung der Eigentwicklung ist nicht nur behauptet oder simuliert, sondern unter realen Bedingungen wirksam und kann mit den vorliegenden Daten reproduziert werden.
 
-\subsubsection{PSBT-, Signier- und Handoff-Prozess (Eigenentwicklung 3, A 1, B 1):} In dieser Unterkategorie liegt der deutlichste Abstand vor. Die Eigenentwicklung erzeugt echte \ac{BIP}-174-\acp{PSBT} über \path{walletcreatefundedpsbt}, prüft sie auf der Signierer-\ac{VM} strukturell, signiert kryptographisch, zeichnet im 2-aus-3-Multi-Signatur-Verfahren offline gegen und broadcastet die finalisierte \ac{TX} real über Bitcoin Core. Zusätzlich ist der Wechselmedium-Handoff einschließlich Lebenszyklus- und Löschlogik implementiert und die PSBTs können über einen externen trigger vollautomatisch generiert werden. Eine automatische Evaluation der Geldbestände der Hot-Wallet und eine gerechte Reaktion wurde ebenfalls implementiert.
+
+
+\subsubsection{PSBT-, Signier- und Handoff-Prozess (Eigenentwicklung 3, A 1, B 1):} In dieser Unterkategorie liegt der deutlichste Abstand inbesondere im Signierer vor. Die Eigenentwicklung erzeugt echte \ac{BIP}-174-\acp{PSBT} über \path{walletcreatefundedpsbt}, prüft sie auf der Signierer-\ac{VM} strukturell, signiert kryptographisch, zeichnet im 2-aus-3-Multi-Signatur-Verfahren offline gegen und broadcastet die finalisierte \ac{TX} real über Bitcoin Core. Zusätzlich ist der Wechselmedium-Handoff einschließlich Lebenszyklus- und Löschlogik implementiert und die PSBTs können über einen externen trigger vollautomatisch generiert werden. Eine automatische Evaluation der Geldbestände der Hot-Wallet und eine gerechte Reaktion wurde ebenfalls implementiert.
 Szenario A evaluiert diese Prozesse nicht vollständig und weißt große Lücken auf. Zwar wird Bitcoin Core als Node betrieben, jedoch wird diese nicht in einem testmodus betrieben und kommt so über den Start des Blcokchain scanning nicht hinaus. Evaluiert wird ebenfalls ein refill prozess in Form einer \path{limits.json}, belässt es jedoch bei der Erstellung der Datei.
 Zum Signieren wird keine automatische Lösung vorgeschlagen und es wird auf einen externen nicht weiter behandelten externen Signierer verwiesen, den der Prompter eigenständig evaluieren sollte.
 Szenario B führt eine vollständig Prozess-Choreografie durch. Jedoch bestehen deren Artefakte aus JSON-Metadaten statt \acp{PSBT} und deren Signatur wird durch eine Markerzeichenkette simuliert. Während diese Aspekte evaluiert werden und beispielsweise Bitcoin Core ausgewählt wird, wird keine Maßnahme tatsächlich umgesetzt. Die Ansätze verlassen nicht die theoretische Phase und stattdessen wird der Prompter mit statischen Ausgaben getäuscht.
