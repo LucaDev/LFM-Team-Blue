@@ -24,7 +24,7 @@ Für die eigene Evaluation wurde übernommen, dass bewertet werden muss, ob Code
 
 Hase et al. untersuchen in ihrer auf dem IEEE-Symposium ISDFS 2026 veröffentlichten Arbeit gezielt die Security-Policy-Compliance von \ac{LLM}-generierten \acs{IaC}-Skripten. Ein Skript kann syntaktisch korrekt sein und die Anforderungen erfüllen, aber trotzdem problematische Einstellungen enthalten. Hase et al. verwenden dafür unter anderem statische Policy-Prüfung mit Checkov.\cite{hase2026securitypolicyiac} Für die eigene Evaluation muss die Sicherheit auch ein Kriterium für die Bewertung sein. Für das Home-Lab bedeutet es also, dass ein Dienst nicht allein deshalb gut bewertet werden darf, weil er läuft, sondern er muss zusätzlich überprüft werden, ob Zugriffspfade eng begrenzt sind, Secrets nicht im Klartext liegen, administrative Dienste nicht unnötig exponiert werden, Backups angemessen geschützt sind und Netze begrenzt werden.
 
-Chen et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{lian2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufsalltag auch vorhandene Systeme bewertet und verbessert.
+Lian et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{lian2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \acs{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufsalltag auch vorhandene Systeme bewertet und verbessert.
 
 Diese Prüfkategorie wurde in der eigenen Evaluation als separate Fehleranalyse am Ende beider Szenarien aufgegriffen; die konkrete Umsetzung wird in Abschnitt~\ref{subsec:methodikanforderungen} beschrieben.
 
@@ -217,6 +217,9 @@ Recovery, Fehlerfälle und Remediation & 10\,\% \\
 \hline \end{tabular} 
 \caption{Gewichtete Unterkriterien zur Bewertung der Bitcoin-Sicherheitskonzepte.} \label{tab:btc_bewertung_gewichtung} \end{table}
 
+Die hohe Gewichtung von Schlüsseltrennung und Signierprozess folgt zudem unmittelbar aus der
+Kernanforderung des Mandanten, Zahlungen tatsächlich als Bitcoin-Transaktion auszuführen.
+
 Für die Übernahme in die Kategorienwertung der vergleichenden Evaluation wird der gewichtete Gesamtwert kaufmännisch auf ganze Punkte gerundet.
 
 \subsection{Datengrundlage und Dokumentation}
@@ -283,7 +286,7 @@ Szenario A war von Beginn an auf eine möglichst weitgehende praktische Umsetzun
 Unter grober Steuerung entstand damit nicht nur ein Konzept, sondern ein realer, prüfbarer Zwischenstand. Codex übernahm Aufgaben, die in der Praxis häufig von Administratoren erledigt werden: Paket- und Servicekonfiguration, Containerisierung, Netzwerkverhalten, Dokumentation, Monitoring-Anschluss und spätere Fehlerkorrektur.
 
 Auch für den Bitcoin-Bereich entstand ein funktionsfähiger Aufbau. Dokumentiert sind ein pruned Bitcoin-Core-Node, onion-basierte P2P-Konnektivität, Monitoring-Komponenten sowie Überlegungen zu Watch-only-Wallets, dem Einsatz von \acp{PSBT} und einer Trennung zwischen operativer Hot-Wallet und langfristiger Verwahrung. 
-Darüber hinaus wurden mögliche Nachfüllprozesse für eine Hot-Wallet und die Nutzung einer separaten Treasury-Komponente beschrieben. 
+Darüber hinaus wurden mögliche Nachfüllprozesse für eine Hot-Wallet und die Nutzung einer separaten Treasury-Komponente im Sessionverlauf evaluiert. Über diese Evaluation hinaus entstanden dazu keine Artefakte.
 
 Mehrere zentrale Bestandteile verblieben jedoch auf konzeptioneller Ebene. Die Evaluation eines Electrum-Servers wurde diskutiert, aber nicht praktisch umgesetzt. Ebenso blieb der Cold-Signing-Prozess als Konzept beschrieben und wurde nicht mit einem realen air-gapped Signierer umgesetzt. 
 Die Rolle eines menschlichen Operators wurde grundsätzlich berücksichtigt, jedoch nicht als eigenständiger Freigabe- oder Betriebsprozess ausgearbeitet. Weitere offene Punkte betrafen die konkrete Auswahl einer Watch-only-Wallet, die Frage der Seed-Erzeugung, die verwendete Signierungsbibliothek sowie den Aufbau eines Multi-Signatur-Modells. Während das Mempool-Tracking praktisch umgesetzt wurde, blieb die Erzeugung und Verarbeitung von \acp{PSBT} überwiegend konzeptionell beschrieben. 
@@ -409,8 +412,11 @@ Nach der Skala ist eine fehlende Signier- und Prüffunktion in einem Signier-Kri
 
 Das Testdesign erhält 1 von 3 Punkten. 
 Das Validator-Framework ist umfangreich und führt echte Prüfungen von Listenern, Prozessen und Dateirechten durch, wird jedoch durch zwei strukturelle Schwächen entwertet.
-Erstens prüft die Abschlussvalidierung teilweise fest einkodierte Statuszeilen gegen sich selbst und kann in diesen Punkten per Konstruktion nicht fehlschlagen. 
-Zweitens existiert für die eigentlichen Bitcoin-Kernfunktionen keine praktische Prüfbarkeit, obwohl eine Regtest-Umgebung innerhalb des Simulationsrahmens ausdrücklich zulässig gewesen wäre.
+Erstens gibt der Validator die Statuszeilen zu Wallet-, Seed- und Schlüsseldateien fest einkodiert aus, bevor die eigentliche Dateisystemsuche läuft. Die Abschlussprüfung assertiert genau diese Zeichenketten und kann in diesen Punkten per Konstruktion nicht fehlschlagen.
+Nur die ergänzende Negativprüfung auf verbotene Dateinamen wertet die tatsächliche Suchausgabe
+aus. Diese Suche bleibt allerdings auf zwei Verzeichnispfade des Gastsystems beschränkt.
+Zweitens existiert für die eigentlichen Bitcoin-Kernfunktionen keine praktische Prüfbarkeit. Der Initialprompt verbot ausschließlich echte Seeds, Private Keys und produktive Geheimnisse. Eine lokale Regtest-Umgebung erzeugt lediglich wertloses Testschlüsselmaterial in Form eines anderen Ableitungspfades enthalten und hätte diesen Rahmen somit nicht verletzt.
+Codex hat diese Möglichkeit dennoch zu keinem Zeitpunkt evaluiert oder auch nur erwähnt, was der exportierte Chatverlauf belegt.\cite{ki_eval_github} Gerade diese Eigenleistung wäre von einem Sicherheitsberater zu erwarten gewesen.
 
 Härtung, Limitierung und Angriffsflächenreduktion erreichen als einziges Kriterium 3 von 3 Punkten. 
 Auf beiden Gästen sind keine Bitcoin-Listener offen und keine Bitcoin-Daemons aktiv, was durch reale Laufzeitprüfungen belegt ist. Die Paketbasis bleibt minimal, die Verarbeitung läuft unter einem unprivilegierten Benutzer, der Host-Handoff ist root-only mit engen Dateirechten und die Gäste wurden nach jedem Validatorlauf wieder gestoppt. Die Lösung ist damit eng gefasst und belegt.
@@ -483,8 +489,9 @@ In dieser Kategorie wurden für Szenario A 1 von 3 Punkten vergeben. Zwar wurden
 \subsection{Bitcoin-Konzept}
 Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}75 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}85 Punkte (gerundet 3). 
 Die Eigenentwicklung wurde nach demselben Schema und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Der folgende Vergleich stellt die drei Implementierungen je Unterkriterium direkt gegenüber und verwendet die ausführlichen Detail-Analysen für A und B der Einzelbewertung.
+Die Rundung auf ganze Punkte überzeichnet dabei den Abstand der beiden \ac{KI}-Szenarien. Ungerundet trennen Szenario A und B lediglich 0{,}30 Punkte, während die gerundete Darstellung einen vollen Punkt suggeriert. Für die Interpretation sind deshalb die ungerundeten Werte aus Tabelle~\ref{tab:btc-detailbewertung} maßgeblich.
 
-Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen nur kurz in der Tabelle~\ref{chap:ki-evaluation} aufgelistet. Diese Tabelle begründet die gegebene Bewertung und liefert Vergleichspunkte für die nächsten Absätze. Die genannten Aspekte können in der vorherigen Ausarbeitung nachgelesen werden \ref{Krypto}.
+Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen nur kurz in der Tabelle~\ref{tab:btc-eigen-details} aufgelistet. Diese Tabelle begründet die gegebene Bewertung und liefert Vergleichspunkte für die nächsten Absätze. Die genannten Aspekte können in der vorherigen Ausarbeitung nachgelesen werden \ref{Krypto}.
 
 \begin{table}[htbp]
 \centering
@@ -504,13 +511,13 @@ PSBT-, Signier- \& Handoff-Prozess & 3 &
 Echte \ac{BIP}-174-\acp{PSBT} über \path{walletcreatefundedpsbt}; Strukturprüfung auf \path{witness_utxo} und \ac{BIP}32-Pfade; Signatur über \path{embit} aus der \ac{TPM}-Entsiegelung; 2-aus-3-Multi-Signatur offline; realer Broadcast; Nutzung \ac{BTC}-Core; vollautomatischer Trigger mit Balance-Evaluation und Handoff-Löschlogik. \\
 \addlinespace
 Testdesign \& praktische Prüfbarkeit & 2 &
-Regtest-Umgebung als Validierungsbasis, Simulationsskripte für Spend-, Refill- und Sicherungspfad, gezielter Negativtest der \ac{TPM}-Bindung; keine automatisierte, wiederholbare Testsuite. \\
+Regtest-Umgebung als Validierungsbasis, Simulationsskripte für Spend-, Refill- und Sicherungspfad, gezielter Negativtest der \ac{TPM}-Bindung, laufende Metrik-Endpunkte der Dienste (\path{metrics.py}); keine automatisierte, wiederholbare Testsuite. \\
 \addlinespace
 Härtung / Angriffsflächenreduktion & 3 &
 Container mit \path{cap_drop: [ALL]}, \path{read_only}, \path{no-new-privileges}, non-root-\ac{UID} sowie \path{mem_limit} und \path{pids_limit}; \path{nftables} mit Drop auf Ein- und Ausgang und WireGuard-only; \ac{HMAC} mit Nonce und Deduplizierung; zweistufiger Velocity-Cap; NixOS mit Flake-Pinning. \\
 \addlinespace
 Recovery / Fehlerfälle / Remediation & 3 &
-2-aus-3-Modell als struktureller Recovery-Mechanismus, \ac{TPM}-Reseal als dokumentierter Betriebsschritt, negativ getestete \ac{PCR}-Bindung, Rotationsskripte \path{rotate_secrets.sh} und \path{seed_delete.sh}; nur der rein analoge Seed-Restore ist designbedingt nicht praktisch durchgespielt. \\
+2-aus-3-Modell als struktureller Recovery-Mechanismus, \ac{TPM}-Reseal als dokumentierter Betriebsschritt, negativ getestete \ac{PCR}-Bindung, Rotationsskripte \path{rotate_secrets.sh} und \path{delete_seed.sh}. Nur der rein analoge Seed-Restore ist designbedingt nicht praktisch durchgespielt. \\
 \midrule
 \textbf{Gesamt} & \textbf{2,85} & gerundet 3 von 3 \\
 \bottomrule
@@ -537,7 +544,9 @@ Die Trennung der Eigentwicklung ist nicht nur behauptet oder simuliert, sondern 
 \subsubsection{PSBT-, Signier- und Handoff-Prozess}
 \textbf{Eigenentwicklung: 3, A: 1, B: 1.} In dieser Unterkategorie liegt der deutlichste Abstand, insbesondere im Signierer.
 Die Eigenentwicklung setzt durchgängige Prozesse produktiv um, während
-Szenario A diese nicht vollständig und relevante Lücken aufweist. Bitcoin Core wird zwar als Node betrieben, jedoch nicht in einem Testmodus, sodass der Node über den Start des Blockchain-Scannings nicht hinauskommt. Ein Refill-Prozess wird in Form einer \path{limits.json} zwar angelegt, bleibt aber bei der reinen Erstellung der Datei stehen. Zum Signieren wird keine automatische Lösung vorgeschlagen, sondern auf einen externen, nicht weiter behandelten Signierer verwiesen, den der Prompter eigenständig evaluieren sollte.
+Szenario A diese nicht vollständig und relevante Lücken aufweist. Bitcoin Core wird zwar als Node betrieben, jedoch nicht in einem Testmodus, sodass der Node über den Start des Blockchain-Scannings nicht hinauskommt. 
+Ein Refill-Prozess zwischen Treasury und Hot-Wallet wurde im Sessionverlauf zwar evaluiert und konzeptionell beschrieben, eine Umsetzung in Artefakten erfolgte jedoch nicht.
+Zum Signieren wird keine automatische Lösung vorgeschlagen, sondern auf einen externen, nicht weiter behandelten Signierer verwiesen, den der Prompter eigenständig evaluieren sollte.
 Szenario B führt eine vollständige Prozess-Choreografie durch, deren Artefakte jedoch aus JSON-Metadaten statt \acp{PSBT} bestehen und deren Signatur nur über eine Markerzeichenkette simuliert wird. Zwar werden einzelne Aspekte evaluiert und etwa Bitcoin Core ausgewählt, umgesetzt wird jedoch keine der Maßnahmen. Die Ansätze verlassen die theoretische Phase nicht und der Prompter wird stattdessen mit statischen Ausgaben getäuscht.
 
 Beide \ac{KI}-Szenarien scheitern damit am selben Kernkriterium aus entgegengesetzten Richtungen. A liefert den Unterbau ohne Prozess und B den Prozess ohne Kryptographie. Für den Mandanten bedeutet dies, dass keines der beiden \ac{KI}-Szenarien die eigentliche Kernanforderung erfüllt, eine Zahlung tatsächlich als Bitcoin-Transaktion auszuführen. 
@@ -549,16 +558,34 @@ Szenario B bleibt in der Wirkung sogar noch weiter zurück, da es einen funktion
 Szenario A prüfte seine Node-Schicht mit einem echten Laufzeit-Prüfskript, kam jedoch nicht über das scanning der mainnet Blockchain hinaus. Dementsprechend stellt sich A durch einen sehr viel kleineren Umfang, aber dafür mit einem adäquateres Testing dar und erreicht so eine gleiche Wertung.
 Szenario B baute das umfangreichste Prüf-Framework, entwertete es jedoch durch tautologische Selbstprüfungen und die fehlende Prüfbarkeit der Kernfunktionen, die nicht praktisch testbar existieren. Es entsteht statt einer tatsächlichen Prüfung eher eine Scheinvalidierung.
 Es zeigt sich ein struktureller Zusammenhang zwischen A und B, wobei Testqualität der Umsetzungstiefe folgt und so mit einem Fortschreiten der allgemeinen Stand mit weiterentwickelt wird.
-A stellt sich im Verlgeich zu B als sehr viel kleiner, aber dafür ehrlicher heraus.
+A stellt sich im Vergleich zu B als sehr viel kleiner, aber dafür ehrlicher heraus.
+
+Ein weiterer Unterschied liegt in der Beobachtbarkeit des Bitcoin-Systems selbst. 
+Szenario A liefert hier den stärksten Nachweis. Ein eigener Metrik-Exporter erfasst fortlaufend den Node-Zustand und Alerts für \ac{RPC}-Ausfall und Peer-Verlust sind in Prometheus definiert. Die Eigenentwicklung stellt vergleichbare Zustandsdaten über die Metrik-Endpunkte
+ihrer Dienste bereit. 
+Szenario B verfügt über keinerlei laufende Überwachung, da nach den Validatorläufen keine Dienste mehr aktiv sind.
 
 \subsubsection{Härtung, Limitierung und Angriffsflächenreduktion}
 \textbf{Eigenentwicklung: 3, A: 2, B: 3.} Diese Kategorie ist das einzige Kriterium, in dem Szenario B die volle Punktzahl mit der Eigenentwicklung teilt. Dies beruht jedoch nicht auf einem durchgehend tiefen Sicherheitskonzept, sondern auf gegensätzlichen Gründen. Szenario B minimiert die Angriffsfläche durch Abwesenheit, da ohne laufende Daemons, ohne offene Listener und mit nach dem Validatorlauf gestoppten Gästen schlicht keine Angriffsfläche entsteht.
-Die Eigenentwicklung härtet dagegen ein laufendes System auf mehreren Ebenen. 
-Szenario A härtet seinen Node solide über systemd-Sandboxing wie \path{ProtectSystem=full} und \path{NoNewPrivileges}, betreibt ihn aber nicht containerisiert und lässt zudem die Signaturprüfung der Bitcoin-Core-Installation aus, also den sicherheitskritischsten Schritt der Lieferkette. Die Mischung aus \path{nftables} und \path{iptables} (siehe paht{homelab-btc-firewall.sh}) fällt wie bereits erwähnt ebenfalls negativ auf.
-Daneben verwendet das Szenario für die \ac{BTC}-Core Authentifizierung direkt das Cookie Modell (siehe path{bitcoin.conf}: \emph{rpccookiefile=/var/lib/bitcoind/.cookie}), was sich als eine gute Härtung darstellt und die unauthorisierte \ac{PSBT} Erstellung für registrierte Wallets durch einen Angreifer weiter erschwert.
+Die Eigenentwicklung härtet dagegen ein laufendes System auf mehreren Ebenen.
+
+Eine verbleibende Lücke betrifft auch hier die Lieferkette der Eigenentwicklung. Der Container-Build der Hot-Wallet klont das offizielle Bitcoin-Core-Repository und checkt lediglich das Tag \path{v31.0} aus, ohne den zugehörigen Commit-Hash zu pinnen oder das Tag kryptographisch zu verifizieren. Das ist dieselbe Fehlerklasse wie die fehlende Signaturprüfung in Szenario A, wenn auch mit kleinerer Angriffsfläche, da direkt aus dem Quell-Repository gebaut wird. 
+Die Wertung bleibt vertretbar, weil die Härtung des laufenden Systems mehrschichtig belegt ist und sich die Lücke durch ein Pinning auf den Commit-Hash unmittelbar schließen lässt.
+Szenario A härtet seinen Node solide über systemd-Sandboxing wie \path{ProtectSystem=full} und \path{NoNewPrivileges}, betreibt ihn aber nicht containerisiert und lässt zudem die Signaturprüfung der Bitcoin-Core-Installation aus, also den sicherheitskritischsten Schritt der Lieferkette. Die Mischung aus \path{nftables} und \path{iptables} (siehe \path{nftables.conf} versus \path{homelab-btc-firewall.sh}) fällt wie bereits erwähnt ebenfalls negativ auf.
+
+Zur Limitierung gehört in der Eigenentwicklung auch das Gebühren-Handling. Der \ac{OPA} erzwingt je Transaktion feste Ober- und Untergrenzen für Gebühr und Gebührenrate (siehe \path{hot.rego}).
+Ein vergleichbares Fee-Handling fehlt in beiden \ac{KI}-Szenarien vollständig, obwohl fehlerhafte Gebühren in einem automatisierten Zahlungssystem unmittelbar Verluste erzeugen.
+
+Daneben verwendet das Szenario für die \ac{RPC}-Authentifizierung von Bitcoin-Core das Cookie-Verfahren (siehe \path{bitcoin.conf}, \emph{rpccookiefile}). Das ist positiv zu bewerten, da damit auf die veralteten statischen Zugangsdaten über \emph{rpcuser} und \emph{rpcpassword} verzichtet wird. Das Cookie wird bei jedem Start neu erzeugt und ist nur lokal mit entsprechenden
+Dateirechten lesbar. Gegen einen Angreifer, der bereits lokale Leserechte auf dem Node besitzt, schützt das Verfahren jedoch nicht.
+Auffällig ist zudem der Eintrag \path{privatebroadcast=0} in der \path{bitcoin.conf}. Gerade bei einem Tor-only-Node hätte die Aktivierung dieser Option einen zusätzlichen Privacy-Gewinn beim Broadcast eigener Transaktionen geboten. Codex hat die Option explizit gesetzt, aber weder begründet noch diskutiert.
 Die Punktgleichheit von B und Eigenentwicklung ist mit Vorsicht zu lesen. Härtung durch Weglassen ist erheblich leichter zu erreichen als Härtung im laufenden Betrieb und zeigt zugleich die Schwäche einer Bewertung an starren, voneinander unabhängigen Metriken.
 
 Konkret bedeutet die volle Punktzahl für Szenario B keinen Sicherheitsgewinn, den der Mandant nutzen könnte. Sobald reale Dienste hinzukämen, entfiele die Schutzwirkung der Abwesenheit vollständig und die Härtung müsste erst noch aufgebaut werden, sodass der Punktwert den tatsächlichen Nutzen deutlich überzeichnet. Szenario A liefert dagegen eine echte, aber lückenhafte Härtung und bleibt genau an der kritischsten Stelle zurück, da eine untergeschobene Node-Binärdatei mangels Signaturprüfung unbemerkt bliebe. Allein bei der Eigenentwicklung entspricht die Wertung einem Schutz, der im laufenden Betrieb für den Mandanten tatsächlich wirksam ist.
+
+Auch der Broadcast-Pfad unterscheidet sich. 
+Szenario A bindet den Node konsequent Tor-only an und schützt damit den Standort des Nodes. Die Eigenentwicklung sendet finale Transaktionen ebenfalls über einen Onion-Pfad.
+Szenario B besitzt mangels Netzwerkfunktion keinen Broadcast-Pfad.
 
 \subsubsection{Recovery, Fehlerfälle und Remediation}
 \textbf{Eigenentwicklung: 3, A: 1, B: 2.} Die Eigenentwicklung definiert Wiederherstellungspfade für jede Komponente und nutzt das 2-aus-3-Modell als strukturellen Recovery-Mechanismus.
@@ -584,7 +611,8 @@ Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acp{VM}. Bewegg
 \item \textbf{Kein produktives Material:} Produktive Geheimnisse, Offline-Schlüssel und reale Bitcoin-Werte blieben bewusst außerhalb des Versuchs. Dies kann beispielsweise durch Nutzung der Testnet Ableitungspfade für Bitcoin-Geheimnisse umgangen werden.
 \item \textbf{Keine formale Verifikation:} Die Bewertung stützte sich auf Dateien, Laufzeitbeobachtungen und Prozessdaten.
 \item \textbf{Einzeldurchlauf:} Die Auswertung beruht je Szenario auf einem einzelnen Durchlauf. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich daraus keine Aussagen über die Streuung der Ergebnisse bei wiederholten Läufen ableiten.
-\item \textbf{Ein System, ein Modell:} Untersucht wurde nur ein einzelnes agentisches System mit einem Modell (Codex mit \texttt{gpt-5.4}). Aussagen über \acs{LLM}s im Allgemeinen sind daraus nur eingeschränkt ableitbar.
+\item \textbf{Ein System, ein Modell:} Untersucht wurde nur ein einzelnes agentisches System mit einem Modell (Codex mit \texttt{gpt-5.4}). Die Erwartung einer möglichst vollständigen Simulation war im Prompt bewusst nicht explizit beschrieben. Damit sollte sichtbar werden, ob das \ac{LLM}
+solche Validierungsansätze eigenständig vorschlägt. Keines der beiden Szenarien hat die naheliegende Regtest-Option von sich aus evaluiert.
 \item \textbf{Doppelrolle der Bewerter:} Die Bewerter waren zugleich die Architekten der Referenzlösung. Insbesondere der Vergleich mit der Eigenentwicklung ist dadurch keine unabhängige Fremdbewertung. Der Grad der Objektivität wurde versucht durch eine Bewertung durch mehrere Personen zu erhöhen.
 \item \textbf{Asymmetrische Beweislage:} Szenario~B musste bereits per Prompt genau die Dokumente erzeugen, die später als Bewertungsnachweise dienten. Dafür erhielt dieser Versuch sowohl mehr Nutzer-Nachrichten, längerer Laufzeit als auch ein größeres Steuerungsbudget. Der Punktabstand misst daher die Kombination aus fachlicher Promptqualität und Steuerungsumfang, nicht die Qualität allein.
 \end{itemize}
