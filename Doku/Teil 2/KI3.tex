@@ -91,7 +91,7 @@ Der Agent hatte Zugriff auf Dateien, Konfigurationen und Terminalausgaben innerh
 Dazu wurden zwei getrennte Proxmox-\acs{VM}s verwendet. Szenario A lief auf \texttt{ailab1}, Szenario B auf \texttt{ailab2}.
 Um die Vergleichbarkeit zu sichern, wurden alle übrigen Faktoren konstant gehalten, wobei beide \acp{VM} identisch dimensioniert waren. Daneben kamen dasselbe Modell und dieselbe Reasoning-Einstellung der \ac{KI} zum Einsatz, beide Läufe folgten demselben Meta-Prompt-Rahmen und erhielten identische Fehlerartefakte für die abschließende Fehleranalyse. 
 Bewusst variiert wurde ausschließlich die fachliche Tiefe der Nutzereingaben. Nicht kontrollierbar waren Umfang und Dauer der Interaktion, die sich aus dem jeweiligen Nutzerverhalten ergaben.
-Diese Asymmetrie wird in Abschnitt~\ref{sec:grenzen} als Einschränkung
+Diese Asymmetrie wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung
 ausgewiesen.
 
 Beide Szenarien verfolgten dasselbe Ziel: Aufbau einer Self-Hosted-Infrastruktur mit mehreren Diensten, Zugriff über Tor, Monitoring, Backups und einem Bitcoin-Transaktions- beziehungsweise Bitcoin-Simulationsbereich. Der zentrale Unterschied lag in den Prompts des jeweiligen Nutzers. In Szenario A waren die Vorgaben bewusst offen und alltagsnah formuliert. In Szenario B enthielt der Initialprompt ein explizites Threat Model, klare Verbote, Pflichtdokumente, Dokumentationsregeln, Validierungsschritte und die Vorgabe, im Bitcoin-Bereich ausschließlich Simulationsdaten zu verwenden.
@@ -116,7 +116,7 @@ Kategorie über vier feste Prüfindikatoren operationalisiert (siehe Tabelle~\re
 Als voll erfüllt gilt ein Indikator nur, wenn er durch Dateien, Laufzeitprüfungen oder gleichwertige Nachweise belegt ist. Die Kategoriewertung ergibt sich als ungewichtetes arithmetisches Mittel der vier Indikatorwertungen, kaufmännisch auf ganze Punkte gerundet. Die Kategorien folgen damit derselben Logik wie das gesondert operationalisierte Bitcoin-Konzept (Abschnitt~\ref{subsec:btc-bewertung}).
 Dabei werden die Unterkriterien lediglich zusätzlich gewichtet, weil sie sich in ihrer Sicherheitsrelevanz deutlich stärker unterscheiden.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
 \newcommand{\indikatoren}[1]{\begin{itemize}[nosep,topsep=0pt,partopsep=0pt,leftmargin=1.2em]#1\end{itemize}}
@@ -173,8 +173,7 @@ Fehleranalyse &
 } \\
 \hline
 \end{tabular}
-\caption{Prüfindikatoren der Hauptkategorien. \\Das Bitcoin-Konzept wird
-gesondert operationalisiert (Abschnitt~\ref{subsec:btc-bewertung}).}
+\caption{Prüfindikatoren der Hauptkategorien für die Basis-System Komponente}
 \label{tab:kategorien-indikatoren}
 \end{table}
 
@@ -190,7 +189,7 @@ Für jeden Prüfindikator und damit für jede Kategorie wurden 0 bis 3 Punkte ve
 Die Punktvergabe wurde von zwei Personen unabhängig anhand der Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. 
 Als Bewerter fungierten die Ersteller des Basis- beziehungsweise Krypto-Teils, da nur sie die nötige fachliche Tiefe für die jeweiligen Kategorien mitbrachten. 
 Diese Doppelrolle als Architekten der Referenzlösung und Bewerter der KI-Ergebnisse ist zugleich ein methodisches Risiko, weil eigene Designentscheidungen unbewusst als Maßstab dienen können.
-Dieses Risiko wird in Abschnitt~\ref{sec:grenzen} als Einschränkung weiter ausgewiesen.
+Dieses Risiko wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung weiter ausgewiesen.
 
 \subsection{Bewertung des Bitcoin-Systems} \label{subsec:btc-bewertung}
 
@@ -228,7 +227,7 @@ Die Bewertung der beiden Szenarien basiert auf Chatverläufen sowie auf den von 
 
 Auch die Prozessdimension wurde dokumentiert. Szenario A umfasste im lokalen Sessionlog 392 sichtbare Nachrichten, davon 19 User-Nachrichten, und lief über rund 12,3 Stunden. Die erste Architektur lag nach etwa 0,12 Minuten vor, die erste reale Umsetzung nach rund 23,3 Minuten. Das Sessionlog weist 98,7 Mio. uncached Input-Tokens, 90,6 Mio. cached Input-Tokens und 620.622 Output-Tokens aus.
 
-Szenario B umfasste 509 sichtbare Nachrichten, davon 27 User-Nachrichten, und lief rund 27,2 Stunden. Die erste echte Umsetzung begann hier erst nach etwa 143,2 Minuten. Der gemessene Tokenverbrauch lag mit 152,8 Mio. uncached Input-Tokens, 121,0 Mio. cached Input-Tokens und 893.576 Output-Tokens nochmals höher.
+Szenario B umfasste 509 sichtbare Nachrichten, davon 27 User- Nachrichten, und lief rund 27,2 Stunden. Die erste echte Umsetzung begann hier erst nach etwa 143,2 Minuten. Der gemessene Tokenverbrauch lag mit 152,8 Mio. uncached Input-Tokens, 121,0 Mio. cached Input-Tokens und 893.576 Output-Tokens nochmals höher.
 
 \section{Promptdesign und Versuchsverlauf}
 
@@ -434,10 +433,10 @@ Services & 2 & 3 & \\
 Konfiguration & 2 & 3 & \\
 Netzwerk / Tor / Zugriff & 2 & 3 & \\
 Backup / Monitoring & 1 & 3 & \\
-Bitcoin-Konzept & 2 & 2 & 3 \\
+Bitcoin-Konzept & 1 & 2 & 3 \\
 Fehleranalyse & 3 & 3 & \\
 \hline
-Gesamt & 14 / 21 & 20 / 21 & \\
+Gesamt & 13 / 21 & 20 / 21 & \\
 \hline
 \end{tabular}
 \caption{Punktbewertung}
@@ -482,7 +481,7 @@ Szenario B erhielt hier 3 von 3 Punkten. Entscheidend waren das Default-Deny-Reg
 In dieser Kategorie wurden für Szenario A 1 von 3 Punkten vergeben. Zwar wurden mit Uptime Kuma, Prometheus, Alerting-Komponenten und lokalen Backups wesentliche Grundlagen eingerichtet. Im Self-Audit wurden jedoch mehrere zentrale Schwächen festgestellt: Der Host selbst wurde nicht ausreichend überwacht, die Backups wurden ausschließlich lokal auf demselben Proxmox-Host abgelegt, ein praktischer Restore-Test wurde nicht durchgeführt, und die Alarmkette konnte für den Betreiber noch nicht als hinreichend belastbar nachgewiesen werden. Hinzu kam, dass die regulären Sicherungen lediglich als komprimierte Archivdateien erzeugt wurden, ohne dass für diese Routine-Backups eine eigenständige Verschlüsselung vorgesehen war. Damit waren wichtige Bausteine vorhanden, die zentrale Frage nach Wiederherstellbarkeit, Vertraulichkeit der Sicherungen und Beobachtbarkeit blieb jedoch offen.\cite{runbookA,selfauditA,backupscriptA}
 
 \subsection{Bitcoin-Konzept}
-Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}75 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}75 Punkte (gerundet 3). 
+Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}75 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}85 Punkte (gerundet 3). 
 Die Eigenentwicklung wurde nach demselben Schema und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Der folgende Vergleich stellt die drei Implementierungen je Unterkriterium direkt gegenüber und verwendet die ausführlichen Detail-Analysen für A und B der Einzelbewertung.
 
 Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen nur kurz in der Tabelle~\ref{chap:-evaluation} aufgelistet. Diese Tabelle begründet die gegebene Bewertung und liefert Vergleichspunkte für die nächsten Absätze. Die genannten Aspekte können in der vorherigen Ausarbeitung nachgelesen werden \ref{Krypto}.
@@ -524,10 +523,12 @@ Recovery / Fehlerfälle / Remediation & 3 &
 \textbf{Eigenentwicklung: 3, A: 2, B: 2.} Die Eigenentwicklung zeichnet sich durch das Entwickeln und Verwerfen verschiedener Ansätze dar und bildet einen durchgehenden finalen Ansatz.
 Szenario A legt eine ähnlich stimmige Grundstruktur an, ließ aber zentrale Architekturfragen wie Wallet-Auswahl, Seed-Erzeugung und Multi-Signatur-Modell offen.
 Szenario B im Gegensatz plant konsistent, ersetzte die vorgesehenen RPC-Pfade aber ohne dokumentierten Abgleich durch einen dateibasierten Ablauf. Der Unterschied liegt somit weniger im Zonenmodell als im Umgang mit Entscheidungen.
-Die Eigenentwicklung löst offene Architekturfragen auf, begründet Abweichungen, statt sie offenzulassen und setzt sie in einer produktive Lösung um. Die durchgehende, produktive Umsetzung fehlt in A als auch B
+Die Eigenentwicklung löst offene Architekturfragen auf, begründet Abweichungen, statt sie offenzulassen und setzt sie in einer produktiven Lösung um. Die durchgehende, produktive Umsetzung fehlt in A als auch B.
+Außerdem zeichnen sich die beiden \ac{KI}-Szenarien durch nur sehr obeflächliche Überlegung aus. Die Eigenentwicklungen unterstützt die manuelle Nutzer-Verifikation von \acp{PSBT} in der Cold-Wallet durch die automatische Signierung durch Key~A, was dem Operator direkt in der \ac{GUI} angezeigt wird. 
+Eine vergleichbare tiefe Überlegung oder Unterstützung des Operator such man in den \ac{KI}-Szenarien vergebens.
 
 \subsubsection{Trennung von Schlüsselmaterial und Rollen}
-\textbf{Eigenentwicklung: 3, A: 1, B: 2.} In der Eigenentwicklung ist die Trennung dreifach technisch erzwungen und ein aufwändiges Modell für die segregation-of-duty aufgebaut worden.
+\textbf{Eigenentwicklung: 3, A: 1, B: 2.} In der Eigenentwicklung ist die Trennung dreifach technisch erzwungen und ein aufwändiges Modell für die Segregation of Duties aufgebaut worden.
 Szenario A beschrieb dieselben Rollen lediglich, ohne dass je eine Wallet existierte oder die tatsächlich verwendeten Schutzschichten und Services evaluiert oder festgelegt werden.
 Szenario B erzwang die Trennung zwar technisch über Benutzer- und Rechtemodell, jedoch nur für Dummy-Daten und mit teilweise fest einkodiertem Nachweis. Die Eigenentwicklung ist damit das einzige der drei Systeme, in dem echtes Schlüsselmaterial über Regtest-Ableitungspfade existiert \emph{und} nachweislich getrennt gehalten wird. Die anderen Entwicklungen evaluierten den Aufbau eines Testsystems und die Bildung solch eines Schlüsselmaterials nicht.
 Die Trennung der Eigentwicklung ist nicht nur behauptet oder simuliert, sondern unter realen Bedingungen wirksam und kann mit den vorliegenden Daten reproduziert werden.
@@ -544,17 +545,17 @@ Szenario A bleibt hinter dieser Anforderung zurück, weil der Nutzer den entsche
 Szenario B bleibt in der Wirkung sogar noch weiter zurück, da es einen funktionsfähigen Ablauf lediglich vortäuscht und ein Mandant, der es übernähme, ein System besäße, das Erfolgsmeldungen erzeugt, aber keinen einzigen Satoshi bewegen kann. Da dieses Kriterium mit 20\,\% gewichtet ist und beide Szenarien hier nur einen Punkt erreichen, verfehlen beide den zentralen Nutzen des Auftrags, während allein die Eigenentwicklung den vollständigen Transaktionsweg belastbar bereitstellt.
 
 \subsubsection{Testdesign und praktische Prüfbarkeit}
-\textbf{Eigenentwicklung: 2, A: 2, B: 1.} Die Eigenentwicklung stellt mit der Regtest-Umgebung genau den Validierungsansatz bereit, den die Metrik als Maßstab nennt. Ergänzt wird dies ergänzt um Simulationsskripte für Spend-, Refill- und Sicherungspfad jedoch werden tatsächliche Laufzeit-Tests vermisst. Diese Ansatz einer Simulation des \ac{BTC}-Netzwerk wird in A und B nicht einmal evaluiert.
+\textbf{Eigenentwicklung: 2, A: 2, B: 1.} Die Eigenentwicklung stellt mit der Regtest-Umgebung genau den Validierungsansatz bereit, den die Metrik als Maßstab nennt. Ergänzt wird dies um Simulationsskripte für Spend-, Refill- und Sicherungspfad jedoch werden tatsächliche Laufzeit-Tests vermisst. Dieser Ansatz eines Testens des \ac{BTC}-Netzwerk mit einer realitätsnahen Simulation wird in A und B wird nicht umgesetzt. Während A noch regtest evaluiert, wird der mögliche Einsatz nicht von Szenario B erkannt. Stattdessen simuliert B einen eigenen, sehr primitiv, statischen Prozess und bleibt damit weit hinter A zurück. 
 Szenario A prüfte seine Node-Schicht mit einem echten Laufzeit-Prüfskript, kam jedoch nicht über das scanning der mainnet Blockchain hinaus. Dementsprechend stellt sich A durch einen sehr viel kleineren Umfang, aber dafür mit einem adäquateres Testing dar und erreicht so eine gleiche Wertung.
 Szenario B baute das umfangreichste Prüf-Framework, entwertete es jedoch durch tautologische Selbstprüfungen und die fehlende Prüfbarkeit der Kernfunktionen, die nicht praktisch testbar existieren. Es entsteht statt einer tatsächlichen Prüfung eher eine Scheinvalidierung.
 Es zeigt sich ein struktureller Zusammenhang zwischen A und B, wobei Testqualität der Umsetzungstiefe folgt und so mit einem Fortschreiten der allgemeinen Stand mit weiterentwickelt wird.
-A stellt sich im Verlgeich zu B als sehr vieler kleiner, aber dafür ehrlicher heraus.
+A stellt sich im Verlgeich zu B als sehr viel kleiner, aber dafür ehrlicher heraus.
 
 \subsubsection{Härtung, Limitierung und Angriffsflächenreduktion}
 \textbf{Eigenentwicklung: 3, A: 2, B: 3.} Diese Kategorie ist das einzige Kriterium, in dem Szenario B die volle Punktzahl mit der Eigenentwicklung teilt. Dies beruht jedoch nicht auf einem durchgehend tiefen Sicherheitskonzept, sondern auf gegensätzlichen Gründen. Szenario B minimiert die Angriffsfläche durch Abwesenheit, da ohne laufende Daemons, ohne offene Listener und mit nach dem Validatorlauf gestoppten Gästen schlicht keine Angriffsfläche entsteht.
 Die Eigenentwicklung härtet dagegen ein laufendes System auf mehreren Ebenen. 
-Szenario A härtet seinen Node solide über systemd-Sandboxing wie \path{ProtectSystem=full} und \path{NoNewPrivileges}, betreibt ihn aber nicht containerisiert und lässt zudem die Signaturprüfung der Bitcoin-Core-Installation aus, also den sicherheitskritischsten Schritt der Lieferkette. Die Mischung aus \path{nftables} und \ac{iptables} fällt wie bereits erwähnt ebenfalls negativ auf.
-Daneben verwendet das Szenario für die \ac{BTC}-Core Authentifizierung direkt das Cookie Modell, was sich als eine gute Härtung darstellt und die unauthorisierte \ac{PSBT} Erstellung für registrierte Wallets durch einen Angreifer weiter erschwert.
+Szenario A härtet seinen Node solide über systemd-Sandboxing wie \path{ProtectSystem=full} und \path{NoNewPrivileges}, betreibt ihn aber nicht containerisiert und lässt zudem die Signaturprüfung der Bitcoin-Core-Installation aus, also den sicherheitskritischsten Schritt der Lieferkette. Die Mischung aus \path{nftables} und \path{iptables} (siehe paht{homelab-btc-firewall.sh}) fällt wie bereits erwähnt ebenfalls negativ auf.
+Daneben verwendet das Szenario für die \ac{BTC}-Core Authentifizierung direkt das Cookie Modell (siehe path{bitcoin.conf}: \emph{rpccookiefile=/var/lib/bitcoind/.cookie}), was sich als eine gute Härtung darstellt und die unauthorisierte \ac{PSBT} Erstellung für registrierte Wallets durch einen Angreifer weiter erschwert.
 Die Punktgleichheit von B und Eigenentwicklung ist mit Vorsicht zu lesen. Härtung durch Weglassen ist erheblich leichter zu erreichen als Härtung im laufenden Betrieb und zeigt zugleich die Schwäche einer Bewertung an starren, voneinander unabhängigen Metriken.
 
 Konkret bedeutet die volle Punktzahl für Szenario B keinen Sicherheitsgewinn, den der Mandant nutzen könnte. Sobald reale Dienste hinzukämen, entfiele die Schutzwirkung der Abwesenheit vollständig und die Härtung müsste erst noch aufgebaut werden, sodass der Punktwert den tatsächlichen Nutzen deutlich überzeichnet. Szenario A liefert dagegen eine echte, aber lückenhafte Härtung und bleibt genau an der kritischsten Stelle zurück, da eine untergeschobene Node-Binärdatei mangels Signaturprüfung unbemerkt bliebe. Allein bei der Eigenentwicklung entspricht die Wertung einem Schutz, der im laufenden Betrieb für den Mandanten tatsächlich wirksam ist.
@@ -567,14 +568,14 @@ Bemerkenswert ist, dass allein die Eigenentwicklung ein Konzept für den Verlust
 
 Dieser Unterschied ist für den Mandanten unmittelbar wertentscheidend. Da Szenario A keinen Restore-Test durchführt, bliebe im Ernstfall offen, ob eine Sicherung überhaupt wiederherstellbar wäre, womit ein realer Verlust droht. Szenario B bleibt trotz nachgewiesener Snapshots ebenfalls hinter einer belastbaren Wiederherstellung zurück, da der eigentliche Transaktionsworkflow im Fehlerfall ungeprüft bleibt. Erst die Eigenentwicklung trennt damit einen wiederherstellbaren von einem im Verlustfall unrettbaren Aufbau, was bei einem System mit realem Gegenwert den entscheidenden Ausschlag gibt.
 
-Der Abstand von rund einem Punkt zwischen der Eigenentwicklung und beiden \ac{KI}-Szenarien konzentriert sich damit auf die beiden am stärksten gewichteten Kriterien Schlüsseltrennung und Signierprozess, die zusammen 45\,\% der Bewertung ausmachen und in denen keines der \ac{KI}-Szenarien über 2 Punkte hinauskam. Zugleich verliert auch die Eigenentwicklung an derselben Skala messbar Punkte bei der fehlenden Testautomatisierung und praktisch nachgewiesener Recovery. Einschränkend gilt, dass die Bewertung der Eigenentwicklung durch deren Architekten erfolgte und damit keine unabhängige Fremdbewertung darstellt (siehe Grenzen der Evaluation).\cite{NixOsHot_github,Krypto_Basis_github,NixOsCold_github}
+Der Abstand von rund einem Punkt zwischen der Eigenentwicklung und beiden \ac{KI}-Szenarien konzentriert sich damit auf die beiden am stärksten gewichteten Kriterien Schlüsseltrennung und Signierprozess, die zusammen 45\,\% der Bewertung ausmachen und in denen keines der \ac{KI}-Szenarien über 2 Punkte hinauskam. Zugleich verliert auch die Eigenentwicklung an derselben Skala messbar Punkte bei der fehlenden Testautomatisierung. Einschränkend gilt, dass die Bewertung der Eigenentwicklung durch deren Architekten erfolgte und damit keine unabhängige Fremdbewertung darstellt (siehe \ref{sec:grenzen_eval}.\cite{NixOsHot_github,Krypto_Basis_github,NixOsCold_github}
 
 \subsection{Fehleranalyse}
 In der Fehleranalyse erhielten beide Szenarien 3 von 3 Punkten. Szenario A zeigte nach der Nachschärfung, dass die vier bereitgestellten Fehlerartefakte nicht nur oberflächlich kommentiert, sondern systematisch nach Priorität, Fehlerklasse und Restrisiko analysiert wurden. Die Korrekturfassungen adressierten die zentralen Probleme bei Backup, Bitcoin, Docker Compose und Firewalling nachvollziehbar.\cite{artefaktpruefungA}
 
 Szenario B erreichte dieselbe Punktzahl, weil auch dort die Fehler nicht nur gefunden, sondern mit klarer Begründung und strengeren Referenzfassungen korrigiert wurden. Besonders auffällig ist, dass der Review nicht bei Syntaxfragen stehen blieb. Im Mittelpunkt standen vor allem strukturelle Sicherheitsprobleme: unzureichende Segmentierung, fehlende Hot-/Cold-Trennung, zu weite Exponierung und eine nicht ausreichend belastbare Restore-Logik.\cite{artefaktreviewB,finalsummaryB}
 
-
+\section{Grenzen der Evaluation} \label{sec:grenzen_eval}
 Trotz der vielen ausgewerteten Nachweise hat die Untersuchung mehrere Grenzen:
 
 \begin{itemize}
@@ -606,11 +607,11 @@ Aus der Evaluation ergeben sich mehrere Erkenntnisse:
 
 Szenario A erfüllte seinen Zweck grundsätzlich gut. Der Nutzer wurde bewusst naiv und alltagsnah simuliert, um zu beobachten, welche Architekturentscheidungen Codex ohne enge fachliche Steuerung selbst priorisiert. Dadurch wurde sichtbar, welche Bestandteile das System eigenständig als wichtig einordnet, welche Sicherheitsmaßnahmen es von sich aus umsetzt und an welchen Stellen erst spätere Nachfragen oder Audits zu weiteren Systemhärtungen führen. 
 
-Bei Szenario B zeigte sich dagegen, dass die Anforderungen im Bitcoin-Bereich noch präziser hätten formuliert werden müssen. Zwar war korrekt vorgegeben, dass keine echten Seeds, Private Keys oder produktiven Geheimnisse erzeugt werden dürfen. Gleichzeitig hätte deutlicher festgelegt werden müssen, dass trotzdem eine möglichst vollständige Simulation erwartet wird. Dazu hätten zum Beispiel eine Bitcoin-Core-Regtest-Umgebung, Test-Wallets, eine nachvollziehbare \texttt{bitcoin.conf} sowie simulierte Spend- und Recovery-Abläufe gehören können. Da diese Erwartung im Prompt nicht eindeutig genug beschrieben war, war der Vergleich zwischen Szenario A und Szenario B im Bitcoin-Bereich nur eingeschränkt belastbar. Die Qualität des Ergebnisses wurde dadurch durch eine unpräzise Aufgabenstellung begrenzt. 
+Bei Szenario B zeigte sich dagegen, dass die Anforderungen im Bitcoin-Bereich noch präziser hätten formuliert werden müssen. Zwar war korrekt vorgegeben, dass keine echten Seeds, Private Keys oder produktiven Geheimnisse erzeugt werden dürfen. Gleichzeitig hätte deutlicher festgelegt werden müssen, dass trotzdem eine möglichst vollständige Simulation erwartet wird. Dazu hätten zum Beispiel eine Bitcoin-Core-Regtest-Umgebung, Test-Wallets, eine nachvollziehbare \texttt{bitcoin.conf} sowie simulierte Spend- und Recovery-Abläufe gehören können. Da diese Erwartung im Prompt nicht eindeutig genug beschrieben war, war der Vergleich zwischen Szenario A und Szenario B im Bitcoin-Bereich nur eingeschränkt belastbar. Die Qualität des Ergebnisses wurde dadurch durch eine unpräzise Aufgabenstellung begrenzt.
+
+Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale Herausforderung beim Einsatz von \acs{KI} für technische Infrastrukturaufgaben. Die Qualität des Ergebnisses hängt nicht ausschließlich von den Fähigkeiten des Modells ab, sondern in hohem Maße davon, welche Ziele und Randbedingungen durch den Nutzer vorgegeben werden. In Szenario A erhielt die \acs{KI} vergleichsweise wenige Vorgaben. Dadurch konzentrierte sie sich stärker auf die unmittelbare Aufgabenstellung und erreichte innerhalb kurzer Zeit einen hohen praktischen Umsetzungsgrad. Im Bitcoin-Bereich wurden ein Bitcoin-Core-Node, Monitoring-Komponenten sowie die konzeptionellen Grundlagen für Watch-only-Wallets, PSBTs und einen späteren Signierprozess geschaffen. Obwohl zentrale Sicherheitsaspekte und Betriebsprozesse unvollständig blieben, entstand ein System, das sich deutlich an der eigentlichen fachlichen Anforderung orientierte. Szenario B verfolgte einen anderen Ansatz. Hier standen Sicherheitsanforderungen, Rollenmodelle, Validierungsschritte und die Vermeidung produktiver Geheimnisse bereits von Beginn an im Vordergrund. Das resultierende System war organisatorisch und sicherheitstechnisch deutlich strukturierter. Gleichzeitig verlagerte sich der Schwerpunkt der Arbeit zunehmend auf die Einhaltung dieser Rahmenbedingungen. Im Bitcoin-Bereich führte dies dazu, dass Rollen, Datenflüsse und Sicherheitsgrenzen sehr detailliert ausgearbeitet wurden, während wesentliche Kernfunktionen des eigentlichen Transaktionsprozesses überwiegend simuliert blieben. Die Ergebnisse deuten darauf hin, dass starke Steuerung nicht automatisch zu einer besseren Erfüllung der ursprünglichen Fachanforderung führt. Stattdessen optimiert das Modell auf diejenigen Ziele, die im Prompt und in den nachfolgenden Vorgaben besonders stark gewichtet werden. Werden Sicherheit, Nachweisbarkeit und Compliance zum dominierenden Ziel erklärt, kann dies dazu führen, dass die KI erhebliche Ressourcen auf Dokumentation, Validierung und Regelkonformität verwendet, während die praktische Umsetzung der eigentlichen Kernfunktion in den Hintergrund tritt. Die Evaluation zeigt damit einen Zielkonflikt zwischen funktionaler Umsetzung und regulatorischer beziehungsweise sicherheitstechnischer Absicherung. Beide Aspekte sind notwendig, optimale Ergebnisse entstehen jedoch erst dann, wenn der Nutzer die Balance zwischen beiden Zielsetzungen aktiv steuert.
 
 Zu Beginn der Untersuchung wurde geprüft, ob Codex direkt auf der Serverumgebung des eigenen Home-Labs arbeiten könnte. Aus Sicherheitsgründen wurden die Zugriffsrechte dabei bewusst eingeschränkt, um unbeabsichtigte Änderungen an globalen Einstellungen, Zugriffspfaden oder anderen Bestandteilen zu verhindern. Dadurch war Codex zunächst gezwungen, über die Proxmox-\acs{API} zu arbeiten. Dieser Ansatz war jedoch aufwendig, langsam und der Tokenverbrauch zu hoch. 
 
 Deshalb wurde der Versuchsaufbau auf zwei getrennte lokale Proxmox-\acs{VM}s umgestellt. Codex konnte dadurch praktischer arbeiten, ohne das eigentliche Home-Lab zu gefährden. Rückblickend hätte diese Entscheidung jedoch bereits früher getroffen werden können. Für zukünftige Untersuchungen dieser Art sollte die isolierte Testumgebung daher von Beginn an eingeplant werden, damit der Agent ausreichend Handlungsspielraum erhält, ohne die produktiven Systeme zu gefährden.
 
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale Herausforderung beim Einsatz von \acs{KI} für technische Infrastrukturaufgaben. Die Qualität des Ergebnisses hängt nicht ausschließlich von den Fähigkeiten des Modells ab, sondern in hohem Maße davon, welche Ziele und Randbedingungen durch den Nutzer vorgegeben werden. In Szenario A erhielt die \acs{KI} vergleichsweise wenige Vorgaben. Dadurch konzentrierte sie sich stärker auf die unmittelbare Aufgabenstellung und erreichte innerhalb kurzer Zeit einen hohen praktischen Umsetzungsgrad. Im Bitcoin-Bereich wurden ein Bitcoin-Core-Node, Monitoring-Komponenten sowie die konzeptionellen Grundlagen für Watch-only-Wallets, PSBTs und einen späteren Signierprozess geschaffen. Obwohl zentrale Sicherheitsaspekte und Betriebsprozesse unvollständig blieben, entstand ein System, das sich deutlich an der eigentlichen fachlichen Anforderung orientierte. Szenario B verfolgte einen anderen Ansatz. Hier standen Sicherheitsanforderungen, Rollenmodelle, Validierungsschritte und die Vermeidung produktiver Geheimnisse bereits von Beginn an im Vordergrund. Das resultierende System war organisatorisch und sicherheitstechnisch deutlich strukturierter. Gleichzeitig verlagerte sich der Schwerpunkt der Arbeit zunehmend auf die Einhaltung dieser Rahmenbedingungen. Im Bitcoin-Bereich führte dies dazu, dass Rollen, Datenflüsse und Sicherheitsgrenzen sehr detailliert ausgearbeitet wurden, während wesentliche Kernfunktionen des eigentlichen Transaktionsprozesses überwiegend simuliert blieben. Die Ergebnisse deuten darauf hin, dass starke Steuerung nicht automatisch zu einer besseren Erfüllung der ursprünglichen Fachanforderung führt. Stattdessen optimiert das Modell auf diejenigen Ziele, die im Prompt und in den nachfolgenden Vorgaben besonders stark gewichtet werden. Werden Sicherheit, Nachweisbarkeit und Compliance zum dominierenden Ziel erklärt, kann dies dazu führen, dass die KI erhebliche Ressourcen auf Dokumentation, Validierung und Regelkonformität verwendet, während die praktische Umsetzung der eigentlichen Kernfunktion in den Hintergrund tritt. Die Evaluation zeigt damit einen Zielkonflikt zwischen funktionaler Umsetzung und regulatorischer beziehungsweise sicherheitstechnischer Absicherung. Beide Aspekte sind notwendig, optimale Ergebnisse entstehen jedoch erst dann, wenn der Nutzer die Balance zwischen beiden Zielsetzungen aktiv steuert.
