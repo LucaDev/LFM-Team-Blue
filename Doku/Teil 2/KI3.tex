@@ -263,10 +263,31 @@ Codex erkannte viele dieser Probleme später selbst, dokumentierte sie im Self-A
 
 Es entstand damit eine funktional breit aufgestellte Infrastruktur, deren Sicherheitsniveau jedoch erst durch nachträgliche Analyse und zusätzliche Härtungsmaßnahmen verbessert wurde. Die wesentlichen Stärken und Schwächen werden in der vergleichenden Evaluation gemeinsam mit Szenario B betrachtet.
 
+\subsubsection{Bewertung des Bitcoin-Konzepts}
+
+Die gewichtete Detailbewertung für Szenario A (Tabelle~\ref{tab:btc-detailbewertung}) ergibt 1{,}45 von 3{,}00 Punkten. Die Einzelwertungen begründen sich wie folgt aus den erzeugten Artefakten.
+
+Die Architekturschlüssigkeit erreicht 2 von 3 Punkten. Der Node wurde als eigene, segmentierte Rolle mit Tor-only-Anbindung betrieben, und die beschriebene Aufteilung in Node, Watch-only-Sicht, Hot-Wallet und Treasury ist in sich stimmig. Für die volle Punktzahl fehlte die Auflösung zentraler Architekturfragen, etwa zur Auswahl der Watch-only-Wallet, zur Seed-Erzeugung und zu einem Multi-Signatur-Modell.
+
+Die Trennung von Schlüsselmaterial und Rollen erhält 1 von 3 Punkten. Zwar lag nachweislich zu keinem Zeitpunkt Schlüsselmaterial auf dem System, da nie eine Wallet angelegt wurde, aber die geforderte Trennung von Watch-only-, Hot-Service- und Offline-Rolle  verblieb als reine Beschreibung ohne technische Umsetzung. Dies wird nach der Skala als eine relevante Lücke gewertet.
+
+Der PSBT-, Signier- und Handoff-Prozess erhält 1 von 3 Punkten, da er ausschließlich als Text existiert. Im gesamten Artefaktbestand von Szenario A findet sich kein Wallet-, PSBT- oder Signier-Code.
+
+Das Testdesign erreicht 2 von 3 Punkten. Für die umgesetzte Node-Schicht existiert mit \path{verify-bitcoin-section.sh} ein eigenes Prüfskript, das Dienststatus, Port-Bindungen, RPC-Erreichbarkeit, Firewall-Regeln und die Prometheus-Anbindung tatsächlich zur Laufzeit abfragt. Ergänzend liefert ein Metrik-Exporter fortlaufende Zustandsdaten. 
+Ein Spend- oder Recovery-Pfad konnte mangels Umsetzung nicht getestet werden. Diese Lücke ist jedoch bereits in den beiden vorgenannten Kriterien abgewertet, während das Testdesign für den tatsächlich vorhandenen Umfang eng gefasst ist.
+
+Härtung, Limitierung und Angriffsflächenreduktion erreichen 2 von 3 Punkten. Die Node-Konfiguration in \path{bitcoin.conf} bindet RPC und P2P ausschließlich an Loopback, erzwingt Onion-only-Konnektivität, deaktiviert Peer-Discovery und DNS-Seeds und begrenzt Verbindungszahl und Speicherbedarf. Dazu kommen vorteilhaft systemd-Sandboxing des Daemons und eine Default-Drop-Firewallkette. 
+Der Punktabzug ergibt sich aus der Installationskette, wobei Bitcoin Core wurde nur gegen die \texttt{SHA256SUMS}-Datei desselben Download-Servers geprüft wird und die Verifikation der zugehörigen Signaturdatei außer Acht lässt. In der geheimnisfreien Testumgebung wurde dies als kleinere Lücke eingestuft.
+
+Recovery, Fehlerfälle und Remediation erhalten 1 von 3 Punkten. Das Backup exportiert Konfigurations- und Wiederanlaufartefakte der Nodes und Alerts für RPC-Ausfall und Peer-Verlust sind definiert. 
+Nachteilig findet ein Restore-Test jedoch nicht statt, die Sicherungen lagen ausschließlich lokal auf demselben Host. 
+Eine Wallet-Recovery-Betrachtung fehlt, da die Wallet selbst nicht fertig gestellt wurde.\cite{runbookA,selfauditA}
+
+In Summe ergibt sich für Szenario A 1{,}45 von 3{,}00 Punkten; für die Kategorienwertung der vergleichenden Evaluation entspricht das gerundet 1 von 3 Punkten.
+
 
 \begin{table}[ht]
 \centering
-\caption{Bewertung der Bitcoin-Implementierungen}
 \begin{tabular}{p{5cm}cc|cc}
 \hline
 & \multicolumn{2}{c|}{\textbf{Implementierung A}}
@@ -281,8 +302,10 @@ Testdesign \& praktische Prüfbarkeit & 2 & 0,3 & 1 & 0,15 \\
 Härtung / Angriffsflächenreduktion & 2  & 0,2 & 3 & 0,3 \\
 Recovery / Fehlerfälle / Remediation & 1 & 0,1 & 2 & 0,2 \\
 \hline
-\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,45} \\
+\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,75} \\
 \hline
+\caption{Bewertung der Bitcoin-Implementierungen}
+\label{tab:btc-detailbewertung}
 \end{tabular}
 \end{table}
 
@@ -303,11 +326,12 @@ Auch die Simulation des Bitcoin-Netzwerks beschränkte sich auf dateibasierte Du
 Dadurch konnten zentrale Abläufe wie Transaktionserstellung, Signierung, Recovery und Broadcast nicht vollständig überprüft werden. 
 
 Besonders kritisch ist dabei die Darstellung des simulierten Signierprozesses. 
-Im Skript wird ausdrücklich kein echtes Signieren durchgeführt. Stattdessen erzeugt die Funktion \path{create\_dummy\_signed\_artifact} lediglich eine Datei mit der Artefaktklasse \path{dummy-signed-psbt} und dem Marker \path{DUMMY\_SIGNATURE\_MARKER\_ONLY}. Auch der anschließende Broadcast ist nicht real, sondern wird über ein Dummy-Receipt mit \emph{broadcast\_mode = simulated-no-network} und \emph{network\_action = not-performed} abgebildet. 
+Im Skript wird ausdrücklich kein echtes Signieren durchgeführt. 
+Stattdessen erzeugt die Funktion \path{create_dummy_signed_artifact} lediglich eine Datei mit der Artefaktklasse \path{dummy-signed-psbt} und dem Marker \path{DUMMY_SIGNATURE_MARKER_ONLY}. Auch der anschließende Broadcast ist nicht real, sondern wird über ein Dummy-Receipt mit \emph{broadcast\_mode = simulated-no-network} und \emph{network\_action = not-performed} abgebildet. 
 Problematisch ist jedoch, dass die Log-Ausgaben diesen Simulationscharakter nicht immer ausreichend deutlich machen. Meldungen wie \emph{Running service phase 1 unsigned-PSBT validator}, \emph{Creating simulated offline-signed artifact}, \emph{Running service phase 2 import/broadcast validator} und \emph{Section 06 Bitcoin simulation completed successfully} können bei oberflächlicher Prüfung den Eindruck eines erfolgreich durchlaufenen Signier- und Broadcast-Workflows erzeugen. 
 Tatsächlich wurde aber weder eine echte Signatur erzeugt noch eine Signatur kryptographisch geprüft oder eine Transaktion an ein Bitcoin-Netzwerk übertragen. Damit entsteht eine für \ac{KI}-generierte Infrastruktur typische Scheinvalidierung. Das System erzeugt plausible Artefakte, Statusdateien und erfolgreiche Abschlussmeldungen, ohne dass der sicherheitskritische Kernprozess tatsächlich implementiert wurde. 
 Verstärkt wird dieser Effekt dadurch, dass Teile des Nachweises tautologisch aufgebaut sind: Die Statuszeilen \path{wallet_dat=absent}, \path{seed_files=absent} und \path{xprv_files=absent} werden im Validator fest einkodiert ausgegeben, bevor die eigentliche Dateisystemsuche läuft, und die Abschlussprüfung assertiert genau diese fest einkodierten Zeichenketten. Die tatsächliche Suche beschränkt sich zudem auf die Pfade \path{/srv/bitcoin-sim} und \path{/etc/ailab}, sodass verbotene Artefakte an anderen Orten des Gastsystems unentdeckt blieben.
-Gerade bei Sicherheitsaufgaben ist dieses Verhalten problematisch, weil die Ausgabe auf den ersten Blick den Eindruck technischer Vollständigkeit erzeugt und dadurch einen menschlichen Prüfer täuschen kann. Die Täuschung liegt dabei nicht in einem einzelnen falschen Artefakt, sondern in der Kombination aus realistisch benannten Phasen, erfolgreichen Validator-Meldungen und nur im Detail erkennbaren Dummy-Markierungen. Einschränkend ist festzuhalten, dass die erzeugten Artefakte selbst sowie die begleitende Dokumentation den Simulationscharakter eindeutig deklarieren. Unklar bleibt jedoch für einen nutzer, ob wirklich dummy oder Test-Objekte wie \acp{PSBT} eines Testnet gemeint sind.
+Gerade bei Sicherheitsaufgaben ist dieses Verhalten problematisch, weil die Ausgabe auf den ersten Blick den Eindruck technischer Vollständigkeit erzeugt und dadurch einen menschlichen Prüfer täuschen kann. Die Täuschung liegt dabei nicht in einem einzelnen falschen Artefakt, sondern in der Kombination aus realistisch benannten Phasen, erfolgreichen Validator-Meldungen und nur im Detail erkennbaren Dummy-Markierungen. Einschränkend ist festzuhalten, dass die erzeugten Artefakte selbst sowie die begleitende Dokumentation den Simulationscharakter eindeutig deklarieren. Unklar bleibt jedoch für einen Nutzer, ob wirklich Dummy-Objekte oder Test-Objekte wie \acp{PSBT} eines Testnets gemeint sind.
 
 Insgesamt ist die Bitcoin-Architektur fachlich plausibel und sicherheitsorientiert konzipiert. Die wesentlichen Einschränkungen liegen jedoch in der begrenzten praktischen Nachweistiefe der vorgesehenen Prozesse und in der irreführenden Wirkung der erzeugten Validierungs- und Log-Ausgaben. Für eine belastbare Bewertung muss daher klar festgehalten werden, dass Szenario B keinen echten Bitcoin-Signierprozess umgesetzt hat, sondern lediglich einen dateibasierten Simulationsablauf mit Dummy-PSBTs, Dummy-Signaturartefakten und simuliertem Broadcast.
 
@@ -321,6 +345,36 @@ Positiv hervorzuheben ist außerdem die konsequente Vermeidung produktiver Gehei
 Die Analyse der Bitcoin-Komponente zeigt, dass mehrere sicherheitskritische Prozesse lediglich konzeptionell beziehungsweise simulativ abgebildet wurden. Dadurch konnte der vollständige Nachweis zentraler Sicherheitsfunktionen nicht erbracht werden. 
 Für eine belastbare Bewertung sicherheitskritischer Transaktionssysteme reicht die Existenz von Prozessartefakten allein nicht aus. Erforderlich ist zusätzlich die nachvollziehbare Ausführung und Prüfung der zugrunde liegenden Kernfunktionen.
 Zudem wäre ein Nutzer durch eine Simulation von einem Bitcoin-Setup nicht geholfen und seine eigentliche Anforderung bleibe unerfüllt.
+
+\subsubsection{Bewertung des Bitcoin-Konzepts}
+
+Die gewichtete Detailbewertung für Szenario B (Tabelle~\ref{tab:btc-detailbewertung}) ergibt 1{,}75 von 3{,}00 Punkten. Die Einzelwertungen begründen sich wie folgt.
+
+Die Architekturschlüssigkeit erreicht 2 von 3 Punkten. Das Rollen-, Zonen- und Datenklassenmodell ist konsistent dokumentiert und wurde in der Umsetzung eingehalten. 
+Der Abzug ergibt sich, da die im Masterplan vorgesehenen schmalen RPC-Kommunikationspfade zwischen Service- und Node-Rolle in der Umsetzung durch einen rein dateibasierten Ablauf ersetzt wurden.
+
+Die Trennung von Schlüsselmaterial und Rollen erhält 2 von 3 Punkten. Sie wurde nicht nur beschrieben, sondern technisch erzwungen.
+über einen dedizierten Systembenutzer ohne Login-Shell, ein rollenspezifisches Rechtemodell auf den Verarbeitungspfaden und einen root-only-Handoff auf dem Host, jeweils belegt durch Laufzeitprüfungen von Rechten und Prozessen. 
+Die volle Punktzahl scheitert daran, dass Teile des geforderten Nachweises deklarativ bleiben und so mehrere Statuszeilen fest einkodiert sind und sich die Suche nach verbotenen Artefakten auf zwei Verzeichnispfade des Gastsystems beschränkt.
+
+Der PSBT-, Signier- und Handoff-Prozess erhält 1 von 3 Punkten. 
+Der zweiphasige Handoff-Ablauf wurde zwar vollständig durchlaufen und dokumentiert, aber der namensgebende Kern des Kriteriums fehlt.
+Die Artefakte besitzen keine BIP-174-Struktur und die Signatur besteht aus einer Markerzeichenkette. Eine Signaturprüfung für die \ac{TX} findet nicht statt.
+Dementsprechend wird der Broadcast nur als Quittungsdatei abgebildet und findet nicht real statt.
+Ein Service für die Funktionalität wurde nicht gebaut.
+Nach der Skala ist eine fehlende Signier- und Prüffunktion in einem Signier-Kriterium eine relevante Lücke, sodass trotz der sauberen Prozess-Choreografie nur ein Punkt vergeben werden kann.
+
+Das Testdesign erhält 1 von 3 Punkten. 
+Das Validator-Framework ist umfangreich und führt echte Prüfungen von Listenern, Prozessen und Dateirechten durch, wird jedoch durch zwei strukturelle Schwächen entwertet.
+Erstens prüft die Abschlussvalidierung teilweise fest einkodierte Statuszeilen gegen sich selbst und kann in diesen Punkten per Konstruktion nicht fehlschlagen. 
+Zweitens existiert für die eigentlichen Bitcoin-Kernfunktionen keine praktische Prüfbarkeit, obwohl eine Regtest-Umgebung innerhalb des Simulationsrahmens ausdrücklich zulässig gewesen wäre.
+
+Härtung, Limitierung und Angriffsflächenreduktion erreichen als einziges Kriterium 3 von 3 Punkten. 
+Auf beiden Gästen sind keine Bitcoin-Listener offen und keine Bitcoin-Daemons aktiv, was durch reale Laufzeitprüfungen belegt ist. Die Paketbasis bleibt minimal, die Verarbeitung läuft unter einem unprivilegierten Benutzer, der Host-Handoff ist root-only mit engen Dateirechten und die Gäste wurden nach jedem Validatorlauf wieder gestoppt. Die Lösung ist damit eng gefasst und belegt.
+
+Recovery, Fehlerfälle und Remediation erhalten 2 von 3 Punkten. Vor und nach dem Abschnitt wurden Snapshots beider Gäste angelegt, der vorherige Laufzeitbestand wurde gesichert, und ein realer Bootfehler des EFI-Pfads wurde reproduzierbar behoben. Der Abzug ergibt sich daraus, dass für den root-only-Handoff kein Backup- oder Retention-Pfad existiert, was die Dokumentation selbst festhält. Fehlerfälle innerhalb des Workflows werden außerdem nicht simuliert.\cite{masterplanB,finalsummaryB,validatornotesB}
+
+In Summe ergibt sich für Szenario B 1{,}75 von 3{,}00 Punkten, was für die Kategorienwertung der vergleichenden Evaluation gerundet 2 von 3 Punkten entspricht.
 
 
 \section{Vergleichende Bewertung}
