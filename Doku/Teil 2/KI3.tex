@@ -295,6 +295,7 @@ Ebenso blieb offen, welches Verfahren zur sicheren Simulation oder Erprobung ein
 
 Der Self-Audit für \texttt{ailab1} zeigte mehrere strukturelle Schwachstellen. Der Proxmox-Host wurde nur unzureichend überwacht. Außerdem war der interne Datenverkehr zwischen den Diensten noch zu offen geregelt, obwohl das Setup eigentlich auf Tor-Zugriff ausgelegt war. Die Backups lagen ausschließlich lokal auf demselben Host. Bei einem größeren Ausfall oder einer Kompromittierung des Hosts hätten sie daher nur begrenzt Schutz geboten. 
 Auch das Bitcoin-Transaktionssystem war noch nicht für reale Transaktionen bereit. Ergänzend zeigte die Artefaktanalyse, dass die Bitcoin-Core-Installation nur gegen die \texttt{SHA256SUMS}-Datei desselben Download-Servers geprüft wurde; eine Verifikation der zugehörigen Signaturdatei fand nicht statt, womit die Integritätsprüfung bei einem kompromittierten Verteilpfad wirkungslos bliebe.
+Zudem verwendet dieser Ansatz \path{nftables} und \ac{iptables} als Sicherheitsmoelle, was zeigt, dass diese Sicherheitsaspekte evaluiert wurden, sich jedoch nicht für einen Ansatz entschieden wurde. Beide zu verwenden wird als schlechte Praxis angesehen und sollte vermieden werden.
 
 Codex erkannte viele dieser Probleme später selbst, dokumentierte sie im Self-Audit und schlug meist sinnvolle Gegenmaßnahmen vor. Das Grundproblem von Szenario A lag allerdings darin, dass Codex bei schwacher Steuerung zunächst möglichst viel umsetzte und Sicherheitsaspekte erst danach schrittweise nachzog. Vereinfacht gesagt: Es wurde zuerst viel gebaut und erst später gehärtet.
 
@@ -381,6 +382,7 @@ Insgesamt ist die Bitcoin-Architektur fachlich plausibel und sicherheitsorientie
 Szenario B zeichnet sich insgesamt durch eine konsistente und sicherheitsorientierte Umsetzung der vorgegebenen Anforderungen aus. 
 Die Architektur wurde entlang klar definierter Rollen, Kommunikationspfade und Schutzgrenzen aufgebaut. Sicherheitsrelevante Entscheidungen wurden früh dokumentiert und durch technische Maßnahmen wie restriktive Firewall-Regeln, eingeschränkte Administrationspfade, zusätzliche Authentifizierungsschichten sowie einen überprüften Backup- und Restore-Prozess abgesichert. 
 Positiv hervorzuheben ist außerdem die konsequente Vermeidung produktiver Geheimnisse. Während des gesamten Builds wurden keine produktiven Seeds, Wallet-Dateien, Private Keys oder API-Schlüssel erzeugt oder gespeichert. Die Dokumentation der Sicherheitsgrenzen blieb dabei über die einzelnen Artefakte hinweg konsistent.
+Abgesichert soll dieses System über \path{nftables}, wobei dies einen validen Ansatz darstellt
 
 Die Analyse der Bitcoin-Komponente zeigt, dass mehrere sicherheitskritische Prozesse lediglich konzeptionell beziehungsweise simulativ abgebildet wurden. Dadurch konnte der vollständige Nachweis zentraler Sicherheitsfunktionen nicht erbracht werden. 
 Für eine belastbare Bewertung sicherheitskritischer Transaktionssysteme reicht die Existenz von Prozessartefakten allein nicht aus. Erforderlich ist zusätzlich die nachvollziehbare Ausführung und Prüfung der zugrunde liegenden Kernfunktionen.
@@ -483,44 +485,89 @@ In dieser Kategorie wurden für Szenario A 1 von 3 Punkten vergeben. Zwar wurden
 Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}75 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}75 Punkte (gerundet 3). 
 Die Eigenentwicklung wurde nach demselben Schema und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Der folgende Vergleich stellt die drei Implementierungen je Unterkriterium direkt gegenüber und verwendet die ausführlichen Detail-Analysen für A und B der Einzelbewertung.
 
+Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen nur kurz in der Tabelle~\ref{chap:-evaluation} aufgelistet. Diese Tabelle begründet die gegebene Bewertung und liefert Vergleichspunkte für die nächsten Absätze. Die genannten Aspekte können in der vorherigen Ausarbeitung nachgelesen werden \ref{Krypto}.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{} p{4.3cm} c >{\RaggedRight\arraybackslash}X @{}}
+\toprule
+\textbf{Unterkriterium} & \textbf{Score} & \textbf{Details der Eigenentwicklung} \\
+\midrule
+Architekturschlüssigkeit & 3 &
+Drei Vertrauenszonen aus exponiertem Basis-System, WireGuard-isolierter Signierer-\ac{VM} und air-gapped Cold-Zone; explizite \ac{BIP}-174-Rollenzuordnung; dokumentierte Abwägung verworfener Alternativen wie Online-Koordinator und Hash-Freigabeschicht. \\
+\addlinespace
+Trennung Schlüsselmaterial / Rollen & 3 &
+Basis-System nur mit Watch-only-Deskriptoren, Key~A \ac{TPM}-versiegelt hinter WireGuard, Key~B und Key~C air-gapped; Segregation of Duties über reale, per Regtest-Ableitungspfade erzeugte Schlüssel. \\
+\addlinespace
+PSBT-, Signier- \& Handoff-Prozess & 3 &
+Echte \ac{BIP}-174-\acp{PSBT} über \path{walletcreatefundedpsbt}; Strukturprüfung auf \path{witness_utxo} und \ac{BIP}32-Pfade; Signatur über \path{embit} aus der \ac{TPM}-Entsiegelung; 2-aus-3-Multi-Signatur offline; realer Broadcast; Nutzung \ac{BTC}-Core; vollautomatischer Trigger mit Balance-Evaluation und Handoff-Löschlogik. \\
+\addlinespace
+Testdesign \& praktische Prüfbarkeit & 2 &
+Regtest-Umgebung als Validierungsbasis, Simulationsskripte für Spend-, Refill- und Sicherungspfad, gezielter Negativtest der \ac{TPM}-Bindung; keine automatisierte, wiederholbare Testsuite. \\
+\addlinespace
+Härtung / Angriffsflächenreduktion & 3 &
+Container mit \path{cap_drop: [ALL]}, \path{read_only}, \path{no-new-privileges}, non-root-\ac{UID} sowie \path{mem_limit} und \path{pids_limit}; \path{nftables} mit Drop auf Ein- und Ausgang und WireGuard-only; \ac{HMAC} mit Nonce und Deduplizierung; zweistufiger Velocity-Cap; NixOS mit Flake-Pinning. \\
+\addlinespace
+Recovery / Fehlerfälle / Remediation & 3 &
+2-aus-3-Modell als struktureller Recovery-Mechanismus, \ac{TPM}-Reseal als dokumentierter Betriebsschritt, negativ getestete \ac{PCR}-Bindung, Rotationsskripte \path{rotate_secrets.sh} und \path{seed_delete.sh}; nur der rein analoge Seed-Restore ist designbedingt nicht praktisch durchgespielt. \\
+\midrule
+\textbf{Gesamt} & \textbf{2,85} & gerundet 3 von 3 \\
+\bottomrule
+\end{tabularx}
+\caption{Detailbewertung der Eigenentwicklung im Bitcoin-Konzept}
+\label{tab:btc-eigen-details}
+\end{table}
+
 \subsubsection{Architekturschlüssigkeit}
-\textbf{Eigenentwicklung 3, A 2, B 2:} Die Eigenentwicklung definiert drei Vertrauenszonen aus exponiertem Basis-System, WireGuard-isolierter Signierer-\ac{VM} und air-gapped Cold-Zone, ordnet die \ac{BIP}-174-Rollen den Komponenten explizit zu und dokumentiert verworfene Alternativen wie den Online-Koordinator oder die Hash-Freigabeschicht samt Abwägung. Szenario A legt eine ähnlich stimmige Grundstruktur an, ließ aber zentrale Architekturfragen wie Wallet-Auswahl, Seed-Erzeugung und Multi-Signatur-Modell offen.
+\textbf{Eigenentwicklung: 3, A: 2, B: 2.} Die Eigenentwicklung zeichnet sich durch das Entwickeln und Verwerfen verschiedener Ansätze dar und bildet einen durchgehenden finalen Ansatz.
+Szenario A legt eine ähnlich stimmige Grundstruktur an, ließ aber zentrale Architekturfragen wie Wallet-Auswahl, Seed-Erzeugung und Multi-Signatur-Modell offen.
 Szenario B im Gegensatz plant konsistent, ersetzte die vorgesehenen RPC-Pfade aber ohne dokumentierten Abgleich durch einen dateibasierten Ablauf. Der Unterschied liegt somit weniger im Zonenmodell als im Umgang mit Entscheidungen.
-Die Eigenentwicklung löst offene Architekturfragen auf, begründet Abweichungen, statt sie offenzulassen und setzt sie in eine produktive Lösung um.
+Die Eigenentwicklung löst offene Architekturfragen auf, begründet Abweichungen, statt sie offenzulassen und setzt sie in einer produktive Lösung um. Die durchgehende, produktive Umsetzung fehlt in A als auch B
 
 \subsubsection{Trennung von Schlüsselmaterial und Rollen}
-\textbf{Eigenentwicklung 3, A 1, B 2:} In der Eigenentwicklung ist die Trennung dreifach technisch erzwungen und ein aufwändiges Modell für die segregation-of-duty aufgebaut worden.
-Das Basis-System hält ausschließlich Watch-only-Deskriptoren, Key~A liegt \ac{TPM}-versiegelt auf einer nur per WireGuard erreichbaren \ac{VM}, Key~B und Key~C liegen air-gapped ohne Netzwerkpfad. 
+\textbf{Eigenentwicklung: 3, A: 1, B: 2.} In der Eigenentwicklung ist die Trennung dreifach technisch erzwungen und ein aufwändiges Modell für die segregation-of-duty aufgebaut worden.
 Szenario A beschrieb dieselben Rollen lediglich, ohne dass je eine Wallet existierte oder die tatsächlich verwendeten Schutzschichten und Services evaluiert oder festgelegt werden.
 Szenario B erzwang die Trennung zwar technisch über Benutzer- und Rechtemodell, jedoch nur für Dummy-Daten und mit teilweise fest einkodiertem Nachweis. Die Eigenentwicklung ist damit das einzige der drei Systeme, in dem echtes Schlüsselmaterial über Regtest-Ableitungspfade existiert \emph{und} nachweislich getrennt gehalten wird. Die anderen Entwicklungen evaluierten den Aufbau eines Testsystems und die Bildung solch eines Schlüsselmaterials nicht.
 Die Trennung der Eigentwicklung ist nicht nur behauptet oder simuliert, sondern unter realen Bedingungen wirksam und kann mit den vorliegenden Daten reproduziert werden.
 
 
+\subsubsection{PSBT-, Signier- und Handoff-Prozess}
+\textbf{Eigenentwicklung: 3, A: 1, B: 1.} In dieser Unterkategorie liegt der deutlichste Abstand, insbesondere im Signierer.
+Die Eigenentwicklung setzt durchgängige Prozesse produktiv um, während
+Szenario A diese nicht vollständig und relevante Lücken aufweist. Bitcoin Core wird zwar als Node betrieben, jedoch nicht in einem Testmodus, sodass der Node über den Start des Blockchain-Scannings nicht hinauskommt. Ein Refill-Prozess wird in Form einer \path{limits.json} zwar angelegt, bleibt aber bei der reinen Erstellung der Datei stehen. Zum Signieren wird keine automatische Lösung vorgeschlagen, sondern auf einen externen, nicht weiter behandelten Signierer verwiesen, den der Prompter eigenständig evaluieren sollte.
+Szenario B führt eine vollständige Prozess-Choreografie durch, deren Artefakte jedoch aus JSON-Metadaten statt \acp{PSBT} bestehen und deren Signatur nur über eine Markerzeichenkette simuliert wird. Zwar werden einzelne Aspekte evaluiert und etwa Bitcoin Core ausgewählt, umgesetzt wird jedoch keine der Maßnahmen. Die Ansätze verlassen die theoretische Phase nicht und der Prompter wird stattdessen mit statischen Ausgaben getäuscht.
 
-\subsubsection{PSBT-, Signier- und Handoff-Prozess (Eigenentwicklung 3, A 1, B 1):} In dieser Unterkategorie liegt der deutlichste Abstand inbesondere im Signierer vor. Die Eigenentwicklung erzeugt echte \ac{BIP}-174-\acp{PSBT} über \path{walletcreatefundedpsbt}, prüft sie auf der Signierer-\ac{VM} strukturell, signiert kryptographisch, zeichnet im 2-aus-3-Multi-Signatur-Verfahren offline gegen und broadcastet die finalisierte \ac{TX} real über Bitcoin Core. Zusätzlich ist der Wechselmedium-Handoff einschließlich Lebenszyklus- und Löschlogik implementiert und die PSBTs können über einen externen trigger vollautomatisch generiert werden. Eine automatische Evaluation der Geldbestände der Hot-Wallet und eine gerechte Reaktion wurde ebenfalls implementiert.
-Szenario A evaluiert diese Prozesse nicht vollständig und weißt große Lücken auf. Zwar wird Bitcoin Core als Node betrieben, jedoch wird diese nicht in einem testmodus betrieben und kommt so über den Start des Blcokchain scanning nicht hinaus. Evaluiert wird ebenfalls ein refill prozess in Form einer \path{limits.json}, belässt es jedoch bei der Erstellung der Datei.
-Zum Signieren wird keine automatische Lösung vorgeschlagen und es wird auf einen externen nicht weiter behandelten externen Signierer verwiesen, den der Prompter eigenständig evaluieren sollte.
-Szenario B führt eine vollständig Prozess-Choreografie durch. Jedoch bestehen deren Artefakte aus JSON-Metadaten statt \acp{PSBT} und deren Signatur wird durch eine Markerzeichenkette simuliert. Während diese Aspekte evaluiert werden und beispielsweise Bitcoin Core ausgewählt wird, wird keine Maßnahme tatsächlich umgesetzt. Die Ansätze verlassen nicht die theoretische Phase und stattdessen wird der Prompter mit statischen Ausgaben getäuscht.
-Beide \ac{KI}-Szenarien scheitern damit am selben Kernkriterium aus entgegengesetzten Richtungen: A liefert den Unterbau ohne Prozess, B den Prozess ohne Kryptographie.
+Beide \ac{KI}-Szenarien scheitern damit am selben Kernkriterium aus entgegengesetzten Richtungen. A liefert den Unterbau ohne Prozess und B den Prozess ohne Kryptographie. Für den Mandanten bedeutet dies, dass keines der beiden \ac{KI}-Szenarien die eigentliche Kernanforderung erfüllt, eine Zahlung tatsächlich als Bitcoin-Transaktion auszuführen. 
+Szenario A bleibt hinter dieser Anforderung zurück, weil der Nutzer den entscheidenden Signierschritt selbst hätte lösen müssen. 
+Szenario B bleibt in der Wirkung sogar noch weiter zurück, da es einen funktionsfähigen Ablauf lediglich vortäuscht und ein Mandant, der es übernähme, ein System besäße, das Erfolgsmeldungen erzeugt, aber keinen einzigen Satoshi bewegen kann. Da dieses Kriterium mit 20\,\% gewichtet ist und beide Szenarien hier nur einen Punkt erreichen, verfehlen beide den zentralen Nutzen des Auftrags, während allein die Eigenentwicklung den vollständigen Transaktionsweg belastbar bereitstellt.
 
 \subsubsection{Testdesign und praktische Prüfbarkeit}
-\textbf{Eigenentwicklung 2, A 2, B 1:} Die Eigenentwicklung stellt mit der Regtest-Umgebung genau den Validierungsansatz bereit, den die Metrik als Maßstab nennt, ergänzt um Simulationsskripte für Spend-, Refill- und Sicherungspfad sowie einen gezielten Negativtest der \ac{TPM}-Bindung. Negativ fällt auf, dass eine automatisierte, wiederholbare Testsuite fehlt und nur Einzeltest durchgeführten wurden.
-Szenario A prüfte seine Node-Schicht mit einem echten Laufzeit-Prüfskript, kam jedoch nicht über den Blockchain scanning Prozess hinaus. Dementsprechend stellt sich A durch einen sehr viel kleineren Umfang, aber dafür mit einem adäquateres Testing dar und erreicht so eine gleiche Wertung.
+\textbf{Eigenentwicklung: 2, A: 2, B: 1.} Die Eigenentwicklung stellt mit der Regtest-Umgebung genau den Validierungsansatz bereit, den die Metrik als Maßstab nennt. Ergänzt wird dies ergänzt um Simulationsskripte für Spend-, Refill- und Sicherungspfad jedoch werden tatsächliche Laufzeit-Tests vermisst. Diese Ansatz einer Simulation des \ac{BTC}-Netzwerk wird in A und B nicht einmal evaluiert.
+Szenario A prüfte seine Node-Schicht mit einem echten Laufzeit-Prüfskript, kam jedoch nicht über das scanning der mainnet Blockchain hinaus. Dementsprechend stellt sich A durch einen sehr viel kleineren Umfang, aber dafür mit einem adäquateres Testing dar und erreicht so eine gleiche Wertung.
 Szenario B baute das umfangreichste Prüf-Framework, entwertete es jedoch durch tautologische Selbstprüfungen und die fehlende Prüfbarkeit der Kernfunktionen, die nicht praktisch testbar existieren. Es entsteht statt einer tatsächlichen Prüfung eher eine Scheinvalidierung.
-Es zeigt sich ein struktureller Zusammenhang zwischen A und B, wobei Testqualität der Umsetzungstiefe folgt und so mit einem Fortschreiten der allgemeinen Stand mit weiterentwickelt wird. 
+Es zeigt sich ein struktureller Zusammenhang zwischen A und B, wobei Testqualität der Umsetzungstiefe folgt und so mit einem Fortschreiten der allgemeinen Stand mit weiterentwickelt wird.
+A stellt sich im Verlgeich zu B als sehr vieler kleiner, aber dafür ehrlicher heraus.
 
 \subsubsection{Härtung, Limitierung und Angriffsflächenreduktion}
-\textbf{Eigenentwicklung 3, A 2, B 3:} Diese Kategorie stellt das einzige Kriterium, in dem Szenario B die volle Punktzahl mit der Eigenentwicklung teilt. Dies ist jedoch nicht auf ein durchgehendes tiefes Sicherheitskonzept zurückzuführen, sondern stammt aus gegensätzlichen Gründen. B minimiert die Angriffsfläche durch Abwesenheit, da das Fehlen von Daemons, Listener und gestoppten Gästen auch keine Angriffsfläche bedeutet. 
-Die Eigenentwicklung härtet dagegen ein \emph{laufendes} System mit deklarative NixOS-Konfiguration, gepinntem Flake, nftables-Default-Drop, WireGuard-only-Zugang, \ac{HMAC} mit Zeitfenster, Nonce, Deduplizierung und zweistufige Abflussbegrenzung mit unabhängigem Velocity-Cap sowie gehärtete Container. 
-Szenario A härtete seinen Node solide, ließ aber die Signaturprüfung der Installationskette aus und evaluiert so den Sichrheitskritischsten Schritt nicht.
-Die Punktgleichheit von B und Eigenentwicklung ist daher mit Vorsicht zu lesen. Härtung durch Weglassen ist erheblich leichter zu erreichen als Härtung im Betrieb und stellt gleichzeitig die Schwäche einer Bewertung an starren, unabhängigen Metriken dar.
+\textbf{Eigenentwicklung: 3, A: 2, B: 3.} Diese Kategorie ist das einzige Kriterium, in dem Szenario B die volle Punktzahl mit der Eigenentwicklung teilt. Dies beruht jedoch nicht auf einem durchgehend tiefen Sicherheitskonzept, sondern auf gegensätzlichen Gründen. Szenario B minimiert die Angriffsfläche durch Abwesenheit, da ohne laufende Daemons, ohne offene Listener und mit nach dem Validatorlauf gestoppten Gästen schlicht keine Angriffsfläche entsteht.
+Die Eigenentwicklung härtet dagegen ein laufendes System auf mehreren Ebenen. 
+Szenario A härtet seinen Node solide über systemd-Sandboxing wie \path{ProtectSystem=full} und \path{NoNewPrivileges}, betreibt ihn aber nicht containerisiert und lässt zudem die Signaturprüfung der Bitcoin-Core-Installation aus, also den sicherheitskritischsten Schritt der Lieferkette. Die Mischung aus \path{nftables} und \ac{iptables} fällt wie bereits erwähnt ebenfalls negativ auf.
+Daneben verwendet das Szenario für die \ac{BTC}-Core Authentifizierung direkt das Cookie Modell, was sich als eine gute Härtung darstellt und die unauthorisierte \ac{PSBT} Erstellung für registrierte Wallets durch einen Angreifer weiter erschwert.
+Die Punktgleichheit von B und Eigenentwicklung ist mit Vorsicht zu lesen. Härtung durch Weglassen ist erheblich leichter zu erreichen als Härtung im laufenden Betrieb und zeigt zugleich die Schwäche einer Bewertung an starren, voneinander unabhängigen Metriken.
+
+Konkret bedeutet die volle Punktzahl für Szenario B keinen Sicherheitsgewinn, den der Mandant nutzen könnte. Sobald reale Dienste hinzukämen, entfiele die Schutzwirkung der Abwesenheit vollständig und die Härtung müsste erst noch aufgebaut werden, sodass der Punktwert den tatsächlichen Nutzen deutlich überzeichnet. Szenario A liefert dagegen eine echte, aber lückenhafte Härtung und bleibt genau an der kritischsten Stelle zurück, da eine untergeschobene Node-Binärdatei mangels Signaturprüfung unbemerkt bliebe. Allein bei der Eigenentwicklung entspricht die Wertung einem Schutz, der im laufenden Betrieb für den Mandanten tatsächlich wirksam ist.
 
 \subsubsection{Recovery, Fehlerfälle und Remediation}
-\textbf{Eigenentwicklung 2, A 1, B 2:} Die Eigenentwicklung definiert Wiederherstellungspfade für Jede Komponente, nutzt das 2-aus-3-Modell als strukturellen Recovery-Mechanismus bei Schlüsselverlust und implementiert ein Rotationsverfahren für Geheimnisse. Nachteilig ist ein praktisch durchgeführter Wiederherstellungstest aus den Seed-Backups jedoch nicht dokumentiert. Szenario B belegt Snapshots und die Behebung eines realen Bootfehlers, simulierte aber keinen Fehlerfall im Workflow.
-Szenario A sichert lediglich Konfigurationen ohne Restore-Test. 
-Bemerkenswert ist, dass die Eigenentwicklung als einzige ein Konzept für den Verlust von Schlüsselmaterial besitzt. Dies stellt für ein Bitcoin-System mit den kritischsten Fehlerfall dar.
+\textbf{Eigenentwicklung: 3, A: 1, B: 2.} Die Eigenentwicklung definiert Wiederherstellungspfade für jede Komponente und nutzt das 2-aus-3-Modell als strukturellen Recovery-Mechanismus.
+Szenario B belegt Snapshots und die reproduzierbare Behebung eines realen Bootfehlers, simuliert aber keinen Fehlerfall innerhalb des Workflows und hält für den Offline-Handoff keinen Backup-Pfad vor.
+Szenario A sichert lediglich Konfigurationen ohne jeden Restore-Test.
+Bemerkenswert ist, dass allein die Eigenentwicklung ein Konzept für den Verlust von Schlüsselmaterial besitzt, also den für ein Bitcoin-System kritischsten Fehlerfall.
 
-Der Abstand von rund einem Punkt zwischen der Eigenentwicklung und beiden \ac{KI}-Szenarien konzentriert sich damit auf die beiden am stärksten gewichteten Kriterien Schlüsseltrennung und Signierprozess, die zusammen 45\,\% der Bewertung ausmachen und in denen keines der \ac{KI}-Szenarien über 2 Punkte hinauskam. Zugleich verliert auch die Eigenentwicklung an derselben Skala messbar Punkte bei Testautomatisierung und praktisch nachgewiesener Recovery. Einschränkend gilt, dass die Bewertung der Eigenentwicklung durch deren Architekten erfolgte und damit keine unabhängige Fremdbewertung darstellt (siehe Grenzen der Evaluation).\cite{NixOsHot_github,Krypto_Basis_github,NixOsCold_github}
+Dieser Unterschied ist für den Mandanten unmittelbar wertentscheidend. Da Szenario A keinen Restore-Test durchführt, bliebe im Ernstfall offen, ob eine Sicherung überhaupt wiederherstellbar wäre, womit ein realer Verlust droht. Szenario B bleibt trotz nachgewiesener Snapshots ebenfalls hinter einer belastbaren Wiederherstellung zurück, da der eigentliche Transaktionsworkflow im Fehlerfall ungeprüft bleibt. Erst die Eigenentwicklung trennt damit einen wiederherstellbaren von einem im Verlustfall unrettbaren Aufbau, was bei einem System mit realem Gegenwert den entscheidenden Ausschlag gibt.
+
+Der Abstand von rund einem Punkt zwischen der Eigenentwicklung und beiden \ac{KI}-Szenarien konzentriert sich damit auf die beiden am stärksten gewichteten Kriterien Schlüsseltrennung und Signierprozess, die zusammen 45\,\% der Bewertung ausmachen und in denen keines der \ac{KI}-Szenarien über 2 Punkte hinauskam. Zugleich verliert auch die Eigenentwicklung an derselben Skala messbar Punkte bei der fehlenden Testautomatisierung und praktisch nachgewiesener Recovery. Einschränkend gilt, dass die Bewertung der Eigenentwicklung durch deren Architekten erfolgte und damit keine unabhängige Fremdbewertung darstellt (siehe Grenzen der Evaluation).\cite{NixOsHot_github,Krypto_Basis_github,NixOsCold_github}
 
 \subsection{Fehleranalyse}
 In der Fehleranalyse erhielten beide Szenarien 3 von 3 Punkten. Szenario A zeigte nach der Nachschärfung, dass die vier bereitgestellten Fehlerartefakte nicht nur oberflächlich kommentiert, sondern systematisch nach Priorität, Fehlerklasse und Restrisiko analysiert wurden. Die Korrekturfassungen adressierten die zentralen Probleme bei Backup, Bitcoin, Docker Compose und Firewalling nachvollziehbar.\cite{artefaktpruefungA}
