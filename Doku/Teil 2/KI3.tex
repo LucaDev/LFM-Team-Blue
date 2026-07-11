@@ -452,13 +452,13 @@ In Summe ergibt sich für Szenario A 1{,}45 von 3{,}00 Punkten; für die Kategor
 & \textbf{Score} & \textbf{Beitrag} \\
 \hline
 Architekturschlüssigkeit & 2 & 0,4 & 2 & 0,4 & 3 & 0,6 \\
-Trennung Schlüsselmaterial / Rollen & 1 & 0,25 & 2 & 0,5 & 3 & 0,75 \\
+Trennung Schlüsselmaterial / Rollen & 1 & 0,25 & 1 & 0,25 & 3 & 0,75 \\
 PSBT-, Signier- \& Handoff-Prozess & 1 & 0,2 & 1 & 0,2 & 3 & 0,6 \\
 Testdesign \& praktische Prüfbarkeit & 2 & 0,3 & 1 & 0,15 & 2 & 0,3 \\
 Härtung / Angriffsflächenreduktion & 2 & 0,2 & 3 & 0,3 & 3 & 0,3 \\
 Recovery / Fehlerfälle / Remediation & 1 & 0,1 & 2 & 0,2 & 3 & 0,3 \\
 \hline
-\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,75} & & \textbf{2,85} \\
+\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,5} & & \textbf{2,85} \\
 \hline
 \end{tabular}
 \caption{Bewertung der Bitcoin-Implementierungen}
@@ -577,10 +577,7 @@ Die Abdeckung endet jedoch bei den drei laufenden Gästen. Die Dienste sind mang
 I4 (2): Der Alertmanager routet auf das operator-only \texttt{ntfy} (\texttt{listen-http} auf \texttt{10.30.30.103:2586}), wobei eine Zustellung bis zu einem Endgerät des Betreibers nicht durchgetestet wurde.\cite{section5scriptB,finalsummaryB}
 
 \paragraph{Fehleranalyse (3 von 3)}
-I1 (3): Alle vier Artefakte wurden mit tabellarischen Fundlisten (Priorität, Typ, Stelle) analysiert, darunter Befunde über die Analyse aus Szenario A
-hinaus, etwa dass \texttt{table inet} die Freigaben auch für IPv6 wirksam
-macht und dass direkt in finale Archivdateien geschrieben
-wird.\cite{artefaktreviewB}
+I1 (3): Alle vier Artefakte wurden mit tabellarischen Fundlisten (Priorität, Typ, Stelle) analysiert. Darunter finden sich auch strukturelle Befunde wie die IPv6-Wirkung der \texttt{table inet}-Freigaben und das direkte Schreiben in finale Archivdateien.\cite{artefaktreviewB}
 I2 (3): Jede Datei enthält eine Variantenabwägung mit gewählter Korrekturvariante, Alternative und Begründung sowie die sanitisierte, generationierte und \texttt{age}-verschlüsselte Bundle-Variante statt eines Vollbackups mit nachgelagerten Excludes.\cite{artefaktreviewB}
 I3 (3): Die Referenzfassungen beheben die Kernprobleme, sodass die \path{firewall.fixed.nft} \texttt{policy drop} nutzt, die \texttt{define}-Variablen und Sets den Admin-Zugriffe an die Quelladresse \texttt{10.0.2.2} bindet und den Egress auf DNS, NTP und HTTP(S) begrenzt.
 Die Datei \path{backup.fixed.sh} ergänzt \texttt{age}-Verschlüsselung, Generationen-Verzeichnisse und eine \path{EXCLUSIONS.txt}.\cite{artefaktreviewB}
@@ -594,8 +591,7 @@ Die Architekturschlüssigkeit erreicht 2 von 3 Punkten. Das Rollen-, Zonen- und 
 Der Abzug ergibt sich, da die im Masterplan vorgesehenen schmalen RPC-Kommunikationspfade zwischen Service- und Node-Rolle in der Umsetzung durch einen rein dateibasierten Ablauf ersetzt wurden.
 
 
-Die Trennung von Schlüsselmaterial und Rollen erhält 1 von 3 Punkten. Auf Dateiebene wurde die Trennung technisch erzwungen (siehe XXXX), jdoch bleibt der Gegenstand dieser
-Trennung hinter dem Kriterium zurück. Die Watch-only- und Hot-Service-Rollen wurden nicht als Dienste implementiert, sondern existieren nur als Verzeichnis- und Datei-Choreografie mit Dummy-Artefakten. Ein Service für die Rollenfunktionen wurde nicht gebaut. Damit existierte zu keinem
+Die Trennung von Schlüsselmaterial und Rollen erhält 1 von 3 Punkten. Auf Dateiebene wurde die Trennung technisch erzwungen, jedoch bleibt der Gegenstand dieser Trennung hinter dem Kriterium zurück. Die Watch-only- und Hot-Service-Rollen wurden nicht als Dienste implementiert, sondern existieren nur als Verzeichnis- und Datei-Choreografie mit Dummy-Artefakten. Ein Service für die Rollenfunktionen wurde nicht gebaut. Damit existierte zu keinem
 Zeitpunkt Schlüsselmaterial, auch kein im Simulationsrahmen erlaubtes Test-Schlüsselmaterial, dessen Trennung hätte nachgewiesen werden können.
 Verstärkend bleiben Teile des geforderten Nachweises deklarativ, da mehrere Statuszeilen fest einkodiert sind und sich die Suche nach verbotenen Artefakten auf zwei Verzeichnispfade des Gastsystems beschränkt. 
 Nach der Skala ist eine Rollentrennung, die weder implementierte Rollen-Services noch
@@ -623,7 +619,6 @@ Recovery, Fehlerfälle und Remediation erhalten 2 von 3 Punkten. Vor und nach de
 
 In Summe ergibt sich für Szenario B 1{,}75 von 3{,}00 Punkten, was für die Kategorienwertung der vergleichenden Evaluation gerundet 2 von 3 Punkten entspricht.
 
-
 \section{Vergleichende Bewertung}
 
 \begin{table}[h]
@@ -632,15 +627,15 @@ In Summe ergibt sich für Szenario B 1{,}75 von 3{,}00 Punkten, was für die Kat
 \hline
 Bereich & Szenario A & Szenario B & Eigenentwicklung \\
 \hline
-Architekturplanung & 2 & 3 & \\
-Services & 2 & 3 & \\
-Konfiguration & 2 & 3 & \\
-Netzwerk / Tor / Zugriff & 2 & 3 & \\
-Backup / Monitoring & 1 & 3 & \\
+Architekturplanung & 2 & 3 & 3 \\
+Services & 2 & 1 & 3 \\
+Konfiguration & 2 & 3 & 3 \\
+Netzwerk / Tor / Zugriff & 2 & 3 & 3 \\
+Backup / Monitoring & 1 & 2 & 2 \\
 Bitcoin-Konzept & 1 & 2 & 3 \\
-Fehleranalyse & 3 & 3 & \\
+Fehleranalyse & 3 & 3 & -- \\
 \hline
-Gesamt & 13 / 21 & 20 / 21 & \\
+Gesamt & 13 / 21 & 17 / 21 & 17 / 18 \\
 \hline
 \end{tabular}
 \caption{Punktbewertung}
@@ -648,52 +643,108 @@ Gesamt & 13 / 21 & 20 / 21 & \\
 \end{table}
 
 
-Die Tabelle zeigt, dass Szenario A vor allem in den sicherheitskritischen Infrastrukturbereichen zurückfällt, während Szenario B dort eine deutlich höhere Qualität erreicht. 
-Die Differenz bedeutet nicht, dass Codex in Szenario A grundsätzlich unfähig war und in Szenario B plötzlich zuverlässig wurde. Vielmehr zeigt die Evaluation, dass das Modell in beiden Fällen zu erheblicher Eigenleistung fähig war, seine Priorisierung aber stark von der Qualität der menschlichen Steuerung abhing.
+Die Eigenentwicklung wurde nach denselben Prüfindikatoren und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Die Kategorie Fehleranalyse ist auf sie nicht anwendbar, weil diese Kategorie die Validierungsfähigkeit des \ac{LLM} misst und die eigene Ausarbeitung dort Prüfgegenstand statt Prüfer wäre. Ihre Gesamtsumme bezieht sich deshalb auf sechs Kategorien und ist mit den Szenariosummen nur eingeschränkt direkt vergleichbar.
 
-Szenario A konzentrierte sich auf sichtbaren Fortschritt und funktionale Breite. Das führte zu einer laufenden, aus Anwendersicht gut umgesetzten Umgebung, deren Sicherheitsprofil jedoch erst spät und nicht vollständig nachgeschärft wurde. Szenario B optimierte dagegen auf Nachvollziehbarkeit, Segmentierung und klare Scope-Grenzen. Das Ergebnis wirkte weniger fertig, war aber deutlich belastbarer.
+Der Abstand zwischen den beiden Szenarien verteilt sich nicht gleichmäßig.
+Szenario B liegt in den fünf sicherheits- und nachweisorientierten Kategorien jeweils einen Punkt vor Szenario A und fällt bei den Services um einen Punkt zurück. 
+Die vier Punkte Differenz beschreiben deshalb keine durchgehende Überlegenheit, sondern eine andere Optimierung. 
+Ohne fachliche Vorgaben priorisierte das Modell sichtbare Funktion. Mit engem Rahmen priorisierte es belegbare Struktur. 
+In beiden Fällen war Codex zu erheblicher Eigenleistung
+fähig, seine Prioritäten folgten aber der Qualität der menschlichen Steuerung.
 
-Die 20 Punkte bedeuten nicht, dass Szenario B schon ein fertiges Produktivsystem geliefert hat. Sie bedeuten nur, dass die im Versuch festgelegten Anforderungen sehr gut erfüllt wurden. Fragen wie Produktivbetrieb, langfristige Wartung, tatsächlicher Aufwand oder verbleibende Restrisiken flossen nicht in die Bewertung ein.
+Die 17 Punkte für Szenario B bedeuten nicht, dass ein fertiges Produktivsystem entstanden ist. Sie bedeuten, dass die im Versuch festgelegten Anforderungen überwiegend nachweisbar erfüllt wurden. 
+Fragen wie Produktivbetrieb, langfristige Wartung oder verbleibende Restrisiken flossen nicht in die Bewertung ein. 
+Erst der Abgleich mit der Eigenentwicklung zeigt zudem, wie viel Weg zwischen einer gut belegten Testbasis und einem tatsächlich betreibbaren System liegt.
 
-Damit bestätigt die Evaluation auch ein breiteres Human-AI-Muster: Die Stärke des \ac{LLM} liegt nicht primär in autonomer Endverantwortung. Sie liegt eher darin, konkrete Facharbeit unter einem klar vorgegebenen Risikorahmen deutlich zu beschleunigen. Ohne diesen Rahmen produziert die KI viel brauchbares Material. Mit diesem Rahmen produziert sie weniger, aber belastbareres Material.
+In den nächsten Abschnitten werden die Kategorien einzeln verglichen. Die zugehörigen Einzelbefunde sind in Abschnitt~\ref{sec:einzelbewertung} indikatorweise belegt und werden hier nicht wiederholt. Der Vergleich ordnet sie ein und bezieht die Eigenentwicklung als Referenz mit ein.
 
-In den nächsten Abschnitten folgt eine Detailanalyse des Vergleiches. Szenario A und B werden dabei sowohl miteinander als auch mit der eigenen Ausarbeitung verglichen.
+Auf die Details der Eigenentwicklung wird analog zum Bitcoin-Konzept nur kurz eingegangen. Tabelle~\ref{tab:basis-eigen-details} begründet die vergebenen Wertungen und liefert die Vergleichspunkte für die folgenden Absätze. Die genannten Aspekte können in der Ausarbeitung des Basis-Systems nachgelesen
+werden (Abschnitt~\ref{Apphost}).
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{@{} p{4.3cm} c >{\RaggedRight\arraybackslash}X @{}}
+\toprule
+\textbf{Kategorie} & \textbf{Score} & \textbf{Details der Eigenentwicklung} \\
+\midrule
+Architekturplanung & 3 &
+Dokumentierte Erprobung und begründete Verwerfung eines
+Kubernetes-Ansatzes zugunsten eines einzelnen gehärteten Apphosts.
+Getrennte Docker-Netzsegmente je Dienstgruppe. Nachgewiesene Abdeckung des
+vorgegebenen Bedrohungsmodells je Angriffsvektor. \\
+\addlinespace
+Services & 3 &
+Über 18 produktive Dienste aus Medien, Dokumenten, Cloud, Hausautomation
+und Entwicklung. Datenbanken und Caches bleiben ohne Veröffentlichung nur im
+jeweiligen Netz erreichbar. Zentrale Anmeldung über Authelia mit \ac{OIDC}
+und Forward-Auth. \\
+\addlinespace
+Konfiguration & 3 &
+Vollständig deklarativer Systemzustand über NixOS-Module und Compose-Dateien
+im Git. Atomare Updates mit Rollback-Generationen. Secrets außerhalb des
+Repositories mit abgeleiteten Argon2id-Hashes. Kontrollierte Updates über
+RenovateBot und wöchentliche Trivy-Scans. \\
+\addlinespace
+Netzwerk / Tor / Zugriff & 3 &
+Kein nach außen geöffneter Port dank \ac{DNS}-01-Zertifikaten. Default-Deny
+über nftables. Traefik als einziger Web-Einstieg mit \ac{TLS} nach
+\ac{BSI} \ac{TR}-02102-2 und zentralen Security-Headern. Tor-Erreichbarkeit
+pro Dienst explizit zuschaltbar. Mehr-Faktor-Anmeldung und Fail2ban. \\
+\addlinespace
+Backup / Monitoring & 2 &
+Konsistente Proxmox-Snapshots des Gesamtzustands mit optionaler
+Verschlüsselung. Vollständiges Monitoring von Host und Containern.
+Alarmkette über selbst gehostetes ntfy bis auf das GrapheneOS-Endgerät.
+Kein dokumentierter Restore-Test und kein umgesetztes Off-Host-Ziel. \\
+\midrule
+\textbf{Gesamt} & \textbf{14 / 15} & Basis-Kategorien ohne Fehleranalyse \\
+\bottomrule
+\end{tabularx}
+\caption{Detailbewertung der Eigenentwicklung in den Basis-Kategorien}
+\label{tab:basis-eigen-details}
+\end{table}
 
 \subsection{Architekturplanung}
-In der Kategorie Architekturplanung erhielt Szenario A 2 von 3 Punkten. Codex legte eine nachvollziehbare Grundstruktur an. Dazu gehörten getrennte Rollen für \texttt{tor-edge}, \texttt{app-core}, \texttt{ops} und \texttt{btc-node} sowie zwei interne Bridges für Service- und Monitoring-Verkehr. Damit war die Trennung zwischen Host, Anwendungsdiensten, Monitoring und Bitcoin bereits grundsätzlich vorgesehen. Für die volle Punktzahl fehlte jedoch eine konsequente Segmentierung. Vor allem der interne Datenverkehr zwischen den Diensten und der Management-Zugriff auf den Host blieben zu offen.\cite{runbookA,selfauditA}
-
-Szenario B erhielt in dieser Kategorie 3 von 3 Punkten. Dort wurde die Zielarchitektur von Beginn an über Zonen, Schutzbedarfe, Zugriffspfade sowie Backup- und Secret-Klassen strukturiert. Diese Planung wurde durch eine Kommunikationsmatrix, eingeschränkte Admin-Pfade und die Validierung der wichtigsten Grenzen technisch gestützt.\cite{masterplanB,finalsummaryB}
+\textbf{Eigenentwicklung: 3, A: 2, B: 3.} Alle drei Systeme beruhen auf einem nachvollziehbaren Zonen- und Rollenmodell. Der einzige Unterschied liegt im Umgang mit der eigenen Planung. 
+Szenario A ließ die Architektur während des Aufbaus entstehen und erzwang sie nur teilweise, sodass Anspruch und tatsächlicher Netzzustand auseinanderliefen. 
+Szenario B legte die Zielstruktur vor der ersten Umsetzung verbindlich fest und validierte die Grenzen anschließend fortlaufend. 
+Die Eigenentwicklung geht darüber hinaus, weil sie konkurrierende Ansätze zunächst ernsthaft erprobt und begründet verworfen hat. Ihre Entscheidung für einen einzelnen gehärteten Host entstand aus einem echten
+Abwägungsprozess und wurde bis in ein produktives System getragen. 
+Szenario B plant insofern auf Augenhöhe, belegt seine Grenzen aber nur an einer leeren Basis. 
+Szenario A bleibt hinter beiden zurück, weil sein Modell zwar vergleichbar sinnvoll war, seine Durchsetzung aber nicht nachgewiesen wurde.\cite{runbookA,selfauditA,masterplanB,validatornotesB}
 
 \subsection{Services}
-Für die Dienste erhielt Szenario A 2 von 3 Punkten. Der Run konfigurierte deutlich mehr als die geforderten 15 Services und deckte mit Passwortverwaltung, Dokumentenablage, RSS, Bookmarks, Dashboard, Monitoring und Bitcoin eine alltagstaugliche Struktur ab. Gleichzeitig wurden viele Dienste auf \texttt{app-core} gebündelt. Abhängigkeiten und Härtungen wurden teilweise erst später ergänzt. Der Stack war damit breit, aber nicht eng genug.\cite{runbookA}
-
-Szenario B erhielt hier 1 von 3 Punkten. Zwar orientierte sich die geplante Rollenverteilung konsequent am Schutzbedarf und an der Zonentrennung, der Ziel-Servicekatalog verblieb jedoch vollständig auf Planungsebene. Es zeigt sich die Kehrseite einer engen Steuerung, sodass das Modell die vorgegebenen Sicherheits- und Nachweisziele so stark priorisierte, dass
-die eigentliche fachliche Kernleistung des Servicekatalogs nicht mehr
-umgesetzt wurde.\cite{masterplanB,finalsummaryB}
+\textbf{Eigenentwicklung: 3, A: 2, B: 1.} Funktional steht Szenario A der Eigenentwicklung am nächsten. Beide übertreffen die geforderte Dienstzahl deutlich und decken einen alltagstauglichen Katalog ab. Der Abstand zwischen ihnen ist struktureller Natur. 
+Die Eigenentwicklung trennt jede Dienstgruppe in ein eigenes Netzsegment und hält ihre Datenbanken von außen vollständig unerreichbar, während Szenario A Dienste unterschiedlichen Schutzbedarfs auf
+einer Rolle bündelt. 
+Der Abstand zu Szenario B ist dagegen eine Existenzfrage, denn dort wurde kein einziger fachlicher Dienst ausgerollt. 
+Für den Mandanten wiegt dieser Unterschied schwer. Die Struktur von A ließe sich nachträglich
+härten, das leere Grundgerüst von B müsste die Kernleistung erst noch erbringen. Dass ausgerechnet der stärker gesteuerte Lauf hier am weitesten zurückfällt, ist zugleich der deutlichste Beleg für den Zielkonflikt zwischen funktionaler Umsetzung und Nachweisorientierung.\cite{runbookA,masterplanB,finalsummaryB}
 
 \subsection{Konfiguration}
-In der Kategorie Konfiguration erhielt Szenario A 2 von 3 Punkten. Positiv waren mehrere nachgezogene Härtungen, zum Beispiel das Schließen offener Registrierungen, die Umstellung auf Onion-Basis-URLs, restriktivere Inbound-Regeln für veröffentlichte Dienste und die wiederholte Prüfung einzelner Container. Der Verlauf zeigt aber auch, dass viele dieser Schutzmaßnahmen erst nach dem eigentlichen Rollout ergänzt wurden. Die Konfiguration war am Ende größtenteils brauchbar, entstand aber eher schrittweise.\cite{runbookA,selfauditA}
-
-Szenario B erhielt hier 3 von 3 Punkten. Dort wurde für die Gäste zunächst nur eine kontrollierte Minimalbasis mit Paketupdates, festen Basisartefakten, Journald-Limits, Rollenpfaden, Platzhaltern für Secrets und nur den wirklich benötigten Zusatzpaketen eingerichtet. Dieser Zustand wurde anschließend geprüft, in den Sollzustand \texttt{stopped} zurückgeführt und über den Snapshot \texttt{post-config-base} reproduzierbar gemacht.\cite{implementationlogB,validatornotesB}
+\textbf{Eigenentwicklung: 3, A: 2, B: 3.} Die Eigenentwicklung und Szenario B erreichen dieselbe Wertung auf unterschiedlichen Wegen. 
+Die Eigenentwicklung beschreibt den kompletten Systemzustand deklarativ im Repository und macht
+jede Änderung über Generationen umkehrbar. Ihre Reproduzierbarkeit ist damit an einem voll ausgebauten System belegt.
+Szenario B erbringt denselben Nachweis über Snapshots und Validatorläufe, jedoch nur für eine dienstlose
+Minimalbasis. Ob diese Disziplin auch unter der Last von zwanzig realen Diensten gehalten worden wäre, bleibt offen. 
+Szenario A fällt gegenüber beiden ab, weil seine Härtung nachträglich entstand und mit Klartext-Ablagen sowie unfixierten Image-Ständen genau die Driftquellen enthält, die die anderen beiden Systeme per Konstruktion vermeiden.\cite{runbookA,selfauditA,implementationlogB,validatornotesB}
 
 \subsection{Netzwerk, Tor und Zugriff}
-Szenario A erhielt in dieser Kategorie 2 von 3 Punkten. Positiv war, dass der Tor-Zugriff nicht nur konzeptionell vorgesehen, sondern auch praktisch umgesetzt wurde. Die Dienste waren über Hidden Services erreichbar, Caddy lauschte nur noch auf Loopback, und einige direkte Verbindungen zwischen \texttt{app-core}, \texttt{ops} und \texttt{tor-edge} waren eingeschränkt.
-
-Für die volle Punktzahl war die Umsetzung jedoch nicht eng genug. Später wurden Lücken beim Host-Zugriff und beim internen Datenverkehr zwischen den Diensten sichtbar. Dadurch war zwar erkennbar, dass der Zugriff grundsätzlich über Tor erfolgen sollte. Es ließ sich aber nicht überall nachweisen, dass andere Zugriffswege technisch ausgeschlossen waren.\cite{runbookA,selfauditA}
-
-Szenario B erhielt hier 3 von 3 Punkten. Entscheidend waren das Default-Deny-Regelwerk auf Basis von \texttt{nftables}, die hostseitig eingeschränkten Admin-Pfade, der später zusätzlich per v3-Client-Autorisierung abgesicherte Admin-Onion und die ausdrücklich geprüfte Blockierung nicht benötigter Host-Management-Pfade.\cite{finalsummaryB,masterplanB,validatornotesB}
+\textbf{Eigenentwicklung: 3, A: 2, B: 3.} In dieser Kategorie verbindet die Eigenentwicklung die Stärken der beiden Szenarien. Sie erreicht die Zugriffshärte von Szenario B, weil kein Port nach außen geöffnet wird und eingehender Verkehr standardmäßig verworfen wird. Zugleich bietet sie die Breite von Szenario A, da sämtliche Dienste über einen zentralen, mehrfaktorgeschützten Einstiegspunkt und wahlweise über Tor erreichbar sind.
+Szenario B belegt seine Strenge dagegen nur für den einzigen vorhandenen Admin-Pfad. 
+Szenario A publizierte umgekehrt viele Pfade, ohne die Grenzen dahinter technisch zu erzwingen. Der Vergleich zeigt damit, dass Erreichbarkeit und Durchsetzung kein Widerspruch sind. 
+Jedes der beiden \ac{KI}-Szenarien hat nur eine der beiden Hälften eingelöst, die Eigenentwicklung beide gleichzeitig.\cite{runbookA,selfauditA,finalsummaryB,validatornotesB}
 
 \subsection{Backup und Monitoring}
-In dieser Kategorie wurden für Szenario A 1 von 3 Punkten vergeben. Zwar wurden mit Uptime Kuma, Prometheus, Alerting-Komponenten und lokalen Backups wesentliche Grundlagen eingerichtet. Im Self-Audit wurden jedoch mehrere zentrale Schwächen festgestellt: Der Host selbst wurde nicht ausreichend überwacht, die Backups wurden ausschließlich lokal auf demselben Proxmox-Host abgelegt, ein praktischer Restore-Test wurde nicht durchgeführt, und die Alarmkette konnte für den Betreiber noch nicht als hinreichend belastbar nachgewiesen werden. Hinzu kam, dass die regulären Sicherungen lediglich als komprimierte Archivdateien erzeugt wurden, ohne dass für diese Routine-Backups eine eigenständige Verschlüsselung vorgesehen war. Damit waren wichtige Bausteine vorhanden, die zentrale Frage nach Wiederherstellbarkeit, Vertraulichkeit der Sicherungen und Beobachtbarkeit blieb jedoch offen.\cite{runbookA,selfauditA,backupscriptA}
-
-Szenario B erhielt hier 2 von 3 Punkten. Positiv sind der Borg-basierte Backup-Pfad mit \texttt{repokey-blake2}-Verschlüsselung und \texttt{--restrict-to-path}-verengtem Repository-Zugang, ein durchgeführter Smoke-Restore, die bewusste Aussonderung der Hidden-Service-Schlüssel aus dem Backup sowie die operator-only Monitoring-Basis mit Host-Exporter. 
-Für die volle Punktzahl fehlen drei Nachweise: Das Backupziel liegt weiterhin auf
-demselben Testhost, was die Dokumentation selbst als offenes Architektur-Risiko ausweist, und die Borg-Passphrase liegt im Klartext auf ebendiesem Host. Der Restore wurde nur für drei Einzeldateien, nicht für eine vollständige Rolle nachgewiesen. Eine Alarmzustellung bis zum Betreiber wurde nicht durchgetestet. Damit erfüllt auch Szenario B den Indikator \glqq nicht
-ausschließlich lokal\grqq{} nicht, wenngleich die Sicherung im Unterschied zu Szenario A erschlüsselt und der Zugriffspfad technisch verengt
-ist.\cite{finalsummaryB,validatornotesB}
+\textbf{Eigenentwicklung: 2, A: 1, B: 2.} Auffällig ist zunächst eine gemeinsame Schwäche aller drei Systeme, denn keines setzt ein Sicherungsziel außerhalb des eigenen Hosts um. Innerhalb dieser Grenze unterscheiden sich die Profile deutlich. 
+Die Eigenentwicklung sichert den Gesamtzustand als konsistente Snapshots und ist das einzige System, dessen Alarmkette nachweislich bis auf das Endgerät des Mandanten reicht. Ein geübter Restore ist jedoch auch dort nicht dokumentiert, weshalb nach demselben Maßstab wie bei den Szenarien nur zwei Punkte vergeben werden können. 
+Szenario B erreicht die gleiche Wertung mit umgekehrtem Profil. Es belegt Verschlüsselung und einen kleinen Restore, besitzt aber keine durchgehende Alarmkette und überwacht nur eine leere Basis. 
+Szenario A bleibt hinter beiden zurück, wobei weder die Vertraulichkeit noch die Wiederherstellbarkeit seiner Sicherungen belegt sind. Die Punktgleichheit von B und Eigenentwicklung ist deshalb kein Gleichstand der Reife, sondern das Ergebnis komplementärer Lücken.\cite{runbookA,selfauditA,backupscriptA,finalsummaryB,validatornotesB}
 
 \subsection{Bitcoin-Konzept}
-Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}75 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}85 Punkte (gerundet 3). 
+Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}5 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}85 Punkte (gerundet 3). 
 Die Eigenentwicklung wurde nach demselben Schema und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Der folgende Vergleich stellt die drei Implementierungen je Unterkriterium direkt gegenüber und verwendet die ausführlichen Detail-Analysen für A und B der Einzelbewertung.
 Die Rundung auf ganze Punkte überzeichnet dabei den Abstand der beiden \ac{KI}-Szenarien. Ungerundet trennen Szenario A und B lediglich 0{,}30 Punkte, während die gerundete Darstellung einen vollen Punkt suggeriert. Für die Interpretation sind deshalb die ungerundeten Werte aus Tabelle~\ref{tab:btc-detailbewertung} maßgeblich.
 
@@ -804,9 +855,11 @@ Dieser Unterschied ist für den Mandanten unmittelbar wertentscheidend. Da Szena
 Der Abstand von rund einem Punkt zwischen der Eigenentwicklung und beiden \ac{KI}-Szenarien konzentriert sich damit auf die beiden am stärksten gewichteten Kriterien Schlüsseltrennung und Signierprozess, die zusammen 45\,\% der Bewertung ausmachen und in denen keines der \ac{KI}-Szenarien über 2 Punkte hinauskam. Zugleich verliert auch die Eigenentwicklung an derselben Skala messbar Punkte bei der fehlenden Testautomatisierung. Einschränkend gilt, dass die Bewertung der Eigenentwicklung durch deren Architekten erfolgte und damit keine unabhängige Fremdbewertung darstellt (siehe \ref{sec:grenzen_eval}).\cite{NixOsHot_github,Krypto_Basis_github,NixOsCold_github}
 
 \subsection{Fehleranalyse}
-In der Fehleranalyse erhielten beide Szenarien 3 von 3 Punkten. Szenario A zeigte nach der Nachschärfung, dass die vier bereitgestellten Fehlerartefakte nicht nur oberflächlich kommentiert, sondern systematisch nach Priorität, Fehlerklasse und Restrisiko analysiert wurden. Die Korrekturfassungen adressierten die zentralen Probleme bei Backup, Bitcoin, Docker Compose und Firewalling nachvollziehbar.\cite{artefaktpruefungA}
+In der Fehleranalyse erhielten beide Szenarien die volle Punktzahl. Die Eigenentwicklung wird hier nicht bewertet, weil die Kategorie die Validierungsfähigkeit des \ac{LLM} misst und die eigene Ausarbeitung dabei Prüfgegenstand statt Prüfer wäre. 
+Da die Prüfaufträge wortgleich gestellt wurden, wirkt die Kategorie als kontrolliertes Testinstrument, und die Parität ist selbst ein Ergebnis. Die analytische Kompetenz des Modells erwies sich als weitgehend unabhängig von der vorangegangenen Steuerungsqualität, sobald die Aufgabe präzise spezifiziert war. 
 
-Szenario B erreichte dieselbe Punktzahl, weil auch dort die Fehler nicht nur gefunden, sondern mit klarer Begründung und strengeren Referenzfassungen korrigiert wurden. Besonders auffällig ist, dass der Review nicht bei Syntaxfragen stehen blieb. Im Mittelpunkt standen vor allem strukturelle Sicherheitsprobleme: unzureichende Segmentierung, fehlende Hot-/Cold-Trennung, zu weite Exponierung und eine nicht ausreichend belastbare Restore-Logik.\cite{artefaktreviewB,finalsummaryB}
+Innerhalb der vollen Punktzahl arbeitete Szenario B gleichwohl tiefer als Szenario A. Sein Review fand Befunde, die A nicht benannte, etwa die IPv6-Wirkung der \texttt{inet}-Tabelle und das direkte Schreiben in finale Archivdateien, und wog für jede Datei Korrekturvarianten systematisch gegeneinander ab. 
+Die Skala bildet diesen Unterschied nicht mehr ab.\cite{artefaktpruefungA,artefaktreviewB}
 
 \section{Grenzen der Evaluation} \label{sec:grenzen_eval}
 Trotz der vielen ausgewerteten Nachweise hat die Untersuchung mehrere Grenzen:
