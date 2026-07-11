@@ -331,17 +331,90 @@ Fehleranalyse             & 3 & 3 & 3 & 3 & 3{,}00 & 3 \\
 \label{tab:indikatoren-a}
 \end{table}
 
-Die wertungsbestimmenden Einzelbefunde sind:
-\begin{itemize}
-\item \textbf{Architekturplanung, I3 (1):} Erlaubte Kommunikationspfade wurden nicht als dokumentiertes Regelwerk festgelegt und der Ost-West-Verkehr zwischen den Containern blieb weitgehend offen.\cite{selfauditA}
-\item \textbf{Services, I1 (3) und I2 (1):} 20 Container-Services waren lauffähig und validiert, jedoch wurden elf davon auf einer einzigen Rolle (\texttt{app-core}) gebündelt statt nach Schutzbedarf verteilt.\cite{runbookA}
-\item \textbf{Konfiguration, I2 (1):} Zahlreiche Secrets lagen konzentriert im
-Klartext unter \path{/root/homelab-secrets} und werden zusätzlich durch den Backup-Job die Hidden-Service-Secret-Keys unverschlüsselt in ein lokales Archiv exportiert.\cite{selfauditA,backupscriptA}
-\item \textbf{Netzwerk, I1 (1) und I3 (1):} Ein durchgehendes Default-Deny war
-nicht nachweisbar. Im Detail besaß der Host zunächst keine Input-Filter, und die
-Container-Firewalls schützen nur die \texttt{DOCKER-USER}-Chain. Die publizierten Admin-Onions für Grafana und Uptime Kuma besaßen keine zusätzliche Zugriffsbeschränkung wie v3-Client-Auth.\cite{selfauditA,runbookA}
-\item \textbf{Backup und Monitoring, I1 (0), I2 (0), I4 (1):} Die Routine-Backups waren unverschlüsselt und lagen ausschließlich lokal auf demselben Host. Dabei fank kein Restore-Test statt und eine Alarmzustellung bis zum Betreiber war nicht nachweisbar.\cite{selfauditA,backupscriptA}
-\end{itemize}
+Die Einzelwertungen der Indikatoren begründen sich wie folgt aus den erzeugten
+Dateien und dem geprüften Laufzeitzustand.
+
+\paragraph{Architekturplanung (2 von 3)}
+I1 (2): Die Punktzahl begründet sich daraus, dass ein Rollen- und Zonenmodell ist vorhanden.
+Dabei existieren vier getrennte LXC-Rollen bestehend aus (\texttt{201 tor-edge}, \texttt{202 app-core}, \texttt{203 ops} und \texttt{204 btc-node}), welche sich die zwei bridges \texttt{vmbr1} für Service- und \texttt{vmbr2} für Monitoring-Verkehr, definiert über \path{/etc/network/interfaces.d/homelab-bridges.cfg}, teilen. 
+Explizite
+Schutzbedarfsklassen je Rolle fehlen jedoch, wobei die Zuordnung primär an den
+verfügbaren Ressourcen ausgerichtet wurde.\cite{runbookA}
+I2 (2): Die Platzierung ist grundsätzlich begründet (Host bleibt frei von Workloads, Bitcoin als eigene Rolle). 
+Der Abzug ergibt sich daraus, dass \texttt{202} und \texttt{204} dual-homed an beiden Bridges 
+(\texttt{10.10.10.10}/\texttt{10.10.20.10} beziehungsweise
+\texttt{10.10.10.30}/\texttt{10.10.20.30}) hängen und die Zonengrenze zwischen Service- und Monitoring-Segment damit aufweichen.\cite{runbookA}
+I3 (1): Ein dokumentiertes Regelwerk erlaubter Kommunikationspfade existiert nicht und  die Laufzeit-Scans des Self-Audits zeigen, dass \texttt{sshd} (22) und \texttt{node-exporter} (9100) zwischen nahezu allen Containern erreichbar waren. Zudem ist \texttt{tor-edge} durch fast alle App- und Ops-Ports direkt ansprechbar.\cite{selfauditA}
+I4 (2): Der Bitcoin-Bereich ist sauber getrennt mit eigener Rolle, RPC und P2P nur
+auf Loopback und einer eigenen Firewallkette. 
+Der Admin-Bereich bildet dagegen keine eigene Zone, sodass die Host-Managementports (22, 8006, 3128, 111) erst in der Findings-Remediation nachträglich gegenüber den Container-Bridges gefiltert werden.\cite{runbookA,selfauditA}
+
+\paragraph{Services (2 von 3)}
+I1 (3): Szenario A verwendet 20 Container-Dienste in zwei Compose-Stacks. Dabei entfallen elf auf \texttt{app-core} und neun auf \texttt{ops}. Zudem wurde ein Tor/Caddy auf \texttt{tor-edge} und
+\texttt{bitcoind} auf \texttt{btc-node} eingerichtet. Alle Dienste wurden per
+HTTP-Statuscheck validiert, etwa Vaultwarden mit 200, Paperless-ngx mit 302 und
+Stirling-PDF mit 401.\cite{runbookA,composeA}
+I2 (1): Elf Dienste unterschiedlichen Schutzbedarfs wurden auf einer einzigen
+Rolle gebündelt, was sich als problematisch herausstellt. Der Passwortmanager Vaultwarden teilt sich Container und Postgres-/Redis-Unterbau mit Alltagsdiensten wie Stirling-PDF und
+Filebrowser, wodurch ebenfalls keine korrekte Trennung stattfindet.\cite{composeA,runbookA}
+I3 (2): Punktuelle Härtungen sind belegt, etwa der entfernte Docker-Socket-Mount bei \texttt{homepage}, \path{PAPERLESS_ACCOUNT_ALLOW_SIGNUPS=false} und die Grafana-Flags (\path{GF_AUTH_ANONYMOUS_ENABLED=false} und \path{GF_USERS_ALLOW_SIGN_UP=false}).
+Kein einziger Dienst nutzt jedoch \path{cap_drop}, \path{no-new-privileges} oder \path{read_only}, und alle Compose-Ports sind unbeschränkt auf allen Interfaces publiziert.\cite{composeA,runbookA}
+I4 (2): Der Stack folgt dem geforderten Katalog, jedoch entstanden  zusätzlich ein redundanter zweiter Monitoring-Pfad (Uptime Kuma parallel zu Prometheus/Blackbox/Alertmanager) sowie der selbstgebaute \texttt{alert-forwarder} auf Basis eines generischen \texttt{python:3.12-alpine}-Images mit eingehängtem Skript.\cite{composeA}
+
+\paragraph{Konfiguration (2 von 3)}
+I1 (2): Registrierungen wurden geschlossen (\path{SIGNUPS_ALLOWED=false},
+in Gitea \path{DISABLE_REGISTRATION=true} plus \path{REQUIRE_SIGNIN_VIEW=true}), Log-Rotation und \texttt{admin off} für Caddy sind gesetzt. Dem stehen durchgängige \texttt{:latest}-Image-Tags und
+vorhersehbare Admin-Namen wie \texttt{admin} und \texttt{gitadmin} gegenüber.\cite{composeA,deployscriptA,selfauditA}
+I2 (1): Sämtliche Secrets werden im Klartext unter \path{/root/homelab-secrets} erzeugt und in \path{service-credentials.txt} inklusive Benutzer/Passwort-Paaren aggregiert. 
+Zudem werden Datenbankpasswörter per \texttt{sed} in \path{initdb/01-init.sql} eingesetzt. 
+Zusätzlich exportiert der Backup-Job die privaten \path{hs_ed25519_secret_key}-Dateien der Hidden
+Services in ein unverschlüsseltes lokales Archiv. 
+Die restriktiven Dateirechte (0600/0700, \texttt{umask 077}) ändern am Klartextbefund nichts und stellen keine Sicherheitsmaßnahme dar.\cite{deployscriptA,backupscriptA,selfauditA}
+I3 (2): Runbook, Staging-Kopien unter \path{/root/homelab-staging} und Live-Zustand wurden aktiv synchron gehalten und nach jedem Abschnitt verifiziert. Kleinere Zählabweichungen bleiben, etwa listet das Runbook zwölf publizierte Onions, während der Self-Test nur elf Serien erfasst.\cite{runbookA}
+I4 (2): Je Arbeitsabschnitt existieren \texttt{apply-}/\texttt{verify-}Skriptpaare (wie \path{apply-config-hardening.sh} mit \path{verify-config-hardening.sh}). 
+Ein deterministischer Neuaufbau scheitert jedoch an den \texttt{:latest}-Tags und fehlenden
+Snapshot-Ständen.\cite{runbookA,composeA}
+
+\paragraph{Netzwerk, Tor und Zugriff (2 von 3)}
+I1 (1): Die Host-Input-Chain besitzt keine Drop-Policy, da \path{nftables.conf} nur
+\texttt{type filter hook input priority filter} ohne
+\texttt{policy drop} deklariert. Dies blockt lediglich die vier Managementports 22, 111,
+3128 und 8006 aus \texttt{vmbr1}/\texttt{vmbr2}.
+Zudem ist die Forward-Chain leer und akzeptiert implizit alles. 
+Containerseitig endet die \path{HOMELAB-DOCKER-ACCESS}-Kette zwar mit \texttt{DROP}, hängt aber nur in \path{DOCKER-USER} und schützt damit ausschließlich Docker-publizierte Ports.
+CT-eigene Dienste wie \texttt{sshd} oder \texttt{node-exporter} werden von diesen policies nicht addressiert.\cite{hostnftablesA,dockerfirewallA,selfauditA}
+I2 (2): Zwölf v3-Onions sind publiziert und Caddy bindet alle Reverse-Proxy-Listener per \texttt{bind 127.0.0.1}, sodass die Proxyports aus dem Labornetz nicht direkt erreichbar sind.
+Validiert wurde aber nur lokal mit Onion-Host-Headern.
+Ein externer End-to-End-Zugriff über einen zweiten Tor-Client fehlt, und die Backends bleiben intern direkt ansprechbar.\cite{caddyfileA,runbookA,selfauditA}
+I3 (1): Die Admin-Oberflächen Grafana und Uptime Kuma sowie der Alerts-Feed wurden als normale Onions ohne v3-Client-Auth publiziert. Parallel blieb Host-SSH auf \texttt{permitrootlogin yes} und \texttt{passwordauthentication yes}.\cite{runbookA,selfauditA}
+I4 (2): Wirksam begrenzt ist der Docker-Pfad, wobei \texttt{app-core} neue Verbindungen nur von \texttt{10.10.10.2} (\texttt{tor-edge}) und \texttt{10.10.20.20} (\texttt{ops}) akzeptiert.
+\texttt{ops} empfängt zudem nur von \texttt{tor-edge}.
+Die Gegenprobe \texttt{app-core} nach \texttt{ops} scheitert nachweislich.
+Offen blieben \texttt{sshd} und \texttt{node-exporter} zwischen den Containern.\cite{dockerfirewallA,runbookA,selfauditA}
+
+\paragraph{Backup und Monitoring (1 von 3)}
+I1 (0): Alle Sicherungen liegen unter \path{/var/lib/homelab-backups} auf demselben Host. Weder die \texttt{vzdump}-Archive noch die \texttt{tar.gz}-Exporte sind verschlüsselt, und das Identitätsarchiv enthält die privaten Hidden-Service-Schlüssel.\cite{backupscriptA,selfauditA}
+I2 (0): Ein Restore fand nicht statt, sodass ausschließlich die Archivlesbarkeit über \texttt{zstd -t}, \texttt{tar -tzf} und ein \texttt{sha256}-Manifest geprüft wurde.
+Das Runbook weist den fehlenden Restore-Drill selbst als offenen Punkt aus.\cite{backupscriptA,runbookA}
+I3 (2): Die Container sind mit vier \texttt{node-exporter}-Targets,
+drei Blackbox-Probenklassen, Loki/Promtail und 15 Uptime-Kuma-Monitore gut abgedeckt.
+Der Proxmox-Host selbst fehlt jedoch vollständig in der Target-Liste der
+\path{prometheus.yml}, obwohl das Backup-Log bereits Thin-Pool-Warnungen protokollierte.\cite{prometheusconfigA,selfauditA,runbookA}
+I4 (1): Die Kette Alertmanager, \texttt{alert-forwarder}, \texttt{ntfy} und Alerts-Onion existiert und verarbeitet nachweislich Meldungen. 
+Uptime Kuma hat aber null Notification-Definitionen, und eine Zustellung bis zu einem Endgerät
+des Betreibers wurde nie ausgelöst.\cite{selfauditA,runbookA}
+
+\paragraph{Fehleranalyse (3 von 3)}
+I1 (3): Alle vier Artefakte wurden mit priorisierten, zeilengenauen Fundlisten (P1 bis P3) analysiert. Darunter allein 14 Einzelbefunde für \path{backup.bad.sh}.\cite{artefaktpruefungA}
+I2 (3): Die Befunde sind fachlich eingeordnet mti einer Klassifizierung der Mitsicherung von
+\path{var/lib/tor} als Hidden-Service-Key-Leak, der RPC-Zugang über eine Onion-Adresse als Remote-Signierfläche und \texttt{policy accept} als Bruch des Default-Deny-Prinzips.
+Je Artefakt werden Lösungsvarianten abgewogen und die Wahl begründet.\cite{artefaktpruefungA}
+I3 (3): Die Korrekturfassungen beheben die Kernprobleme nachweisbar. Dies ist nachvollziehbar, da
+\path{firewall.fixed.nft} \texttt{policy drop} auf \texttt{input} und
+\texttt{forward} setzt und so das Management auf \texttt{vmbr0} mit den Ports 22
+und 8006 begrenzt.
+\path{docker-compose.fixed.yml} entfernt \texttt{privileged} und den Docker-Socket, bindet alle Ports auf \texttt{127.0.0.1} und erzwingt Secretssowie Image-Tags über Fail-fast-Variablen (\texttt{\$\{VAR:?\}}).\cite{artefaktpruefungA}
+I4 (3): Die Korrekturen führen keine neuen Risiken ein, sondern zusätzliche Schutzschichten (\texttt{ct state invalid drop}, \texttt{flock}, \texttt{umask 077}, optional \texttt{age}-verschlüsselter Sensitive-Export) und dokumentieren die Restrisiken je Datei explizit.\cite{artefaktpruefungA}
 
 \subsubsection{Bewertung des Bitcoin-Konzepts}
 
@@ -454,19 +527,64 @@ Fehleranalyse             & 3 & 3 & 3 & 3 & 3{,}00 & 3 \\
 \label{tab:indikatoren-b}
 \end{table}
 
-Die wertungsbestimmenden Einzelbefunde lauten:
-\begin{itemize}
-\item \textbf{Services, I1 (0):} Der geforderte Servicekatalog von mindestens 15 Diensten verblieb vollständig auf Planungsebene, da bis zum Ende des Runs keine App-Rollouts erfolgten.
-Als Zusatzpakete wurden ausschließlich \texttt{qemu-guest-agent} und \texttt{cloud-guest-utils} installiert. Fünf der acht Gäste verblieben im Sollzustand \texttt{stopped}. 
-Dementsprechend verbleiben I2 und I3 bei einem Punkt, da Verteilung und Rechtemodell nur für die dienstlose Minimalbasis nachweisbar sind.\cite{masterplanB,finalsummaryB}
-\item \textbf{Netzwerk, I2 (2):} Mangels ausgerollter Dienste existiert nur der Admin-Onion als nachweisbarer Tor-Pfad, sodass allgemeine Service-Onions nicht eingerichtet wurden. Dadurch ist nur der Indikator für den Admin-Pfad belegt.
-ist.\cite{finalsummaryB}
-\item \textbf{Backup und Monitoring, I1 (1):} Das Borg-Repository wird mit \texttt{repokey-blake2} verschlüsselt, liegt aber ausschließlich auf demselben Testhost, was die Dokumentation selbst als offenes Architektur-Risiko ausweist. Die Passphrase selbst liegt im Klartext auf dem gesicherten Host.  
-I2 (2): Der Restore wurde nur als Smoke-Restore dreier Einzeldateien nachgewiesen,
-nicht als Wiederherstellung einer Rolle. 
-I4 (2): \texttt{ntfy} ist nur intern erreichbar, eine Zustellung bis zum Betreiber wurde nicht
-durchgetestet.\cite{finalsummaryB,validatornotesB}
-\end{itemize}
+Die Einzelwertungen der Indikatoren begründen sich wie folgt.
+
+\paragraph{Architekturplanung (3 von 3)}
+I1 (3): Der Masterplan definiert sechs Sicherheitszonen und weist jeder Zone einen Schutzbedarf, erlaubte Zugriffspfade sowie eine eigene Secrets-Klasse mit expliziter Positiv- und Negativliste und eine Backup-/Restore-Klasse zu.\cite{masterplanB}
+I2 (3): Die Provisionierungsmatrix begründet je Gast Typ, Zone, Bridge und Isolationsprofil. Dabei führt hoher Schutzbedarf zu \acp{VM} aus einem gepinnten Debian-Cloud-Image, Infrastrukturrollen zu unprivilegierten LXCs ohne \texttt{nesting}, \texttt{keyctl}, \texttt{fuse} oder \texttt{mknod}.
+Zudem ist auch die Zurückstellung von Collabora und Electrs einzeln begründet.\cite{masterplanB}
+I3 (3): Die Deny-by-default-Kommunikationsmatrix dokumentiert jeden erlaubten Pfad mit Quelle, Ziel, Port und Zweck. Dies äußert sich dadurch, dass \texttt{vm-bitcoin-service} nach \texttt{vm-bitcoin-node} nur über \texttt{TCP 8332} kommunizieren darf.
+Außerdem untersagen Querschnittsregeln Rückverbindungen in die Management-Zone.\cite{masterplanB}
+I4 (3): Admin-, Anwendungs- und Bitcoin-Bereich sind strikt getrennt. Der Admin-Pfad führt ausschließlich über Tor mit v3-Client-Auth auf den Admin-Onion beziehungsweise für die Proxmox-Web-UI über einen lokalen SSH-Tunnel.
+Bitcoin bildet eine eigene Dummy-only-Zone auf \texttt{vmbr50} mit eigener Verbotsliste.\cite{masterplanB,finalsummaryB}
+
+\paragraph{Services (1 von 3)}
+I1 (0): Der geplante Katalog aus 20 Diensten verblieb vollständig auf Planungsebene, sodass bis zum Ende des Runs keine App-Rollouts erfolgten. Als Zusatzpakete wurden ausschließlich \texttt{qemu-guest-agent} und \texttt{cloud-guest-utils} installiert und fünf der acht Gäste verblieben im Sollzustand \texttt{stopped}.\cite{finalsummaryB,masterplanB}
+I2 (1): Die schutzbedarfsgerechte Verteilung existiert nur als Matrix. Dementsprechend sind lediglich der Monitoring-Stack auf \texttt{103} und der
+Borg-Endpunkt auf \texttt{104} real verteilt.\cite{masterplanB,finalsummaryB}
+I3 (1): Minimale Berechtigungen sind nur für die dienstlose Minimalbasis belegt wie der Account \texttt{borgrepo} mit \texttt{ForceCommand}-Verengung.
+Für den eigentlichen Servicekatalog existiert kein in Dateien nachweisbares Rechtemodell.\cite{section5scriptB,finalsummaryB}
+I4 (2): Unnötige Zusatzdienste wurden konsequent vermieden und der temporäre Paketpfad (\texttt{vmbr90}, \texttt{apt-cacher-ng}) nach der Validierung vollständig zurückgebaut. 
+Der Abzug ergibt sich daraus, dass fünf provisionierte Gäste als funktionslose Hüllen verbleiben.\cite{finalsummaryB,implementationlogB}
+
+\paragraph{Konfiguration (3 von 3)}
+I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte OS-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \path{SystemMaxUse=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \path{policy-rc.d} gegen ungewollte Dienststarts bereit. 
+Die VM-Basis wurde gegen \texttt{SHA512SUMS} samt Signaturdatei verifiziert.\cite{section3scriptB,validatornotesB,masterplanB}
+I2 (3): In IaC- und Doku-Pfaden liegen keine Klartext-Secrets. Dabei enthält \path{/etc/ailab/secrets} nur ein README mit dem expliziten Verbot echter Geheimnisse. 
+Laufzeitnahe Artefakte wie der Operator-Auth-Key liegen root-only unter \path{/root/ailab-runtime} außerhalb von \texttt{outputs} und IaC.\cite{section3scriptB,implementationlogB}
+I3 (3): Jeder Abschnitt endet mit einem Validator-Lauf, der Datei- und Live-Zustand abgleicht (Paketmanifest und Port-Check je Gast). Abweichungen wie die DHCP-Instabilität von \texttt{101} sind samt Korrektur dokumentiert.\cite{validatornotesB,implementationlogB}
+I4 (3): Reproduzierbarkeit ist über durchgängige Snapshots wie beispielsweise \texttt{post-provision-base}, \texttt{post-config-base} und \texttt{post-network-tor-base} für alle acht Gäste gegeben. Zudem belegen definierte Soll-Zustände und der nachgewiese Rückbau des Temp-Pfads
+diesen Zustand.\cite{finalsummaryB,validatornotesB}
+
+\paragraph{Netzwerk, Tor und Zugriff (3 von 3)}
+I1 (3): Die Tabelle \texttt{inet ailab} setzt \texttt{policy drop} auf \texttt{input} und \texttt{forward}. Dadurch werden werden nur Loopback, \texttt{established/related} sowie zwei quellgebundene Pfade (\texttt{vmbr0} mit \texttt{ip saddr @operator\_v4} auf die Ports 22 und 8006
+sowie \texttt{vmbr10} mit der Adresse des Tor-Relays auf Port 22) akzeptiert.
+Da \texttt{pve-firewall} deaktiviert wurde, ist genau ein Regelwerk wirksam.\cite{section4scriptB,finalsummaryB}
+I2 (2): Der einzige Tor-Pfad ist der Admin-Onion (\texttt{HiddenServicePort 22 10.10.10.1:22}). Service-Onions existieren mangels ausgerollter Dienste nicht, sodass der Indikator nur für den
+Admin-Pfad belegt ist, was eine größere Lücke darstellt.\cite{section4scriptB,finalsummaryB}
+I3 (3): Der Admin-Onion ist auf genau einen autorisierten Client verengt, sodass service-seitig eine einzige Datei \path{operator-1.auth} (Rechte 0600, \texttt{debian-tor}) unter \path{authorized_clients} und host-seitig ein einziges root-only \path{operator-1.auth_private} außerhalb des IaC-Pfads existieren.
+Der Negativtest mit einem unautorisierten Tor-Client nach vollständigem Bootstrap blockierte nachweislich.\cite{implementationlogB,validatornotesB,torprojectClientAuth}
+I4 (3): Interne Pfade sind quell- und zielgebunden freigeschaltet, wie etwa \texttt{ip saddr 10.30.30.103 ip daddr 10.30.30.1 tcp dport 9100 accept} für den Monitoring-Pull.
+Für alle sieben Zielgäste ist die Blockade der Host-Gateway-Ports 22, 111, 8006 und 3128 einzeln validiert.\cite{section5scriptB,implementationlogB,finalsummaryB}
+
+\paragraph{Backup und Monitoring (2 von 3)}
+I1 (1): Das Borg-Repository ist mit \texttt{repokey-blake2} verschlüsselt und der Zugriff über den dedizierten Nutzer \texttt{borgrepo} mit \texttt{restrict}, \texttt{ForceCommand borg serve --restrict-to-path}, \texttt{PermitTTY no} und deaktiviertem Forwarding verengt.
+Das Repository liegt jedoch auf demselben Testhost, und die Passphrase wird per \texttt{openssl rand -hex 32} im Klartext unter \path{/root/ailab-runtime/borg-host-to-104/passphrase} abgelegt.\cite{section5scriptB,finalsummaryB}
+I2 (2): Der Restore wurde als Smoke-Restore des Archivs \path{ailab2-20260707T212412Z} mit  \path{host/configs.tgz}, \path{ct-101/sanitized-configs.tgz}, \path{EXCLUSIONS.txt}) nachgewiesen.
+Die Wiederherstellung einer vollständigen Rolle fehlt.\cite{finalsummaryB,validatornotesB}
+I3 (2): Der Host wird erstmals mitüberwacht (\texttt{node-exporter} auf \texttt{10.30.30.1:9100} plus SSH-Auth-Textfile-Metriken), wobei alle sechs Prometheus-Targets \texttt{health=up} melden. 
+Die Abdeckung endet jedoch bei den drei laufenden Gästen. Die Dienste sind mangels Rollout nicht überwachbar und die Blackbox-Probe prüft nur den \texttt{ntfy}-Endpunkt.\cite{section5scriptB,finalsummaryB,implementationlogB}
+I4 (2): Der Alertmanager routet auf das operator-only \texttt{ntfy} (\texttt{listen-http} auf \texttt{10.30.30.103:2586}), wobei eine Zustellung bis zu einem Endgerät des Betreibers nicht durchgetestet wurde.\cite{section5scriptB,finalsummaryB}
+
+\paragraph{Fehleranalyse (3 von 3)}
+I1 (3): Alle vier Artefakte wurden mit tabellarischen Fundlisten (Priorität, Typ, Stelle) analysiert, darunter Befunde über die Analyse aus Szenario A
+hinaus, etwa dass \texttt{table inet} die Freigaben auch für IPv6 wirksam
+macht und dass direkt in finale Archivdateien geschrieben
+wird.\cite{artefaktreviewB}
+I2 (3): Jede Datei enthält eine Variantenabwägung mit gewählter Korrekturvariante, Alternative und Begründung sowie die sanitisierte, generationierte und \texttt{age}-verschlüsselte Bundle-Variante statt eines Vollbackups mit nachgelagerten Excludes.\cite{artefaktreviewB}
+I3 (3): Die Referenzfassungen beheben die Kernprobleme, sodass die \path{firewall.fixed.nft} \texttt{policy drop} nutzt, die \texttt{define}-Variablen und Sets den Admin-Zugriffe an die Quelladresse \texttt{10.0.2.2} bindet und den Egress auf DNS, NTP und HTTP(S) begrenzt.
+Die Datei \path{backup.fixed.sh} ergänzt \texttt{age}-Verschlüsselung, Generationen-Verzeichnisse und eine \path{EXCLUSIONS.txt}.\cite{artefaktreviewB}
+I4 (3): Statt neuer Risiken führen die Korrekturen zusätzliche Härtung ein wie \path{cap_drop: [ALL]}, \path{read_only}, \texttt{tmpfs} und Grafana als unprivilegierter Nutzer \texttt{472:472}. Zudem werden die Restrisiken je Datei schlüssig dokumentiert.\cite{artefaktreviewB}
 
 \subsubsection{Bewertung des Bitcoin-Konzepts}
 
@@ -476,10 +594,12 @@ Die Architekturschlüssigkeit erreicht 2 von 3 Punkten. Das Rollen-, Zonen- und 
 Der Abzug ergibt sich, da die im Masterplan vorgesehenen schmalen RPC-Kommunikationspfade zwischen Service- und Node-Rolle in der Umsetzung durch einen rein dateibasierten Ablauf ersetzt wurden.
 
 
-XXXXXservices nicht richtig umgesetzt, nur 1 unktxxx
-Die Trennung von Schlüsselmaterial und Rollen erhält 2 von 3 Punkten. Sie wurde nicht nur beschrieben, sondern technisch erzwungen.
-Über einen dedizierten Systembenutzer ohne Login-Shell, ein rollenspezifisches Rechtemodell auf den Verarbeitungspfaden und einen root-only-Handoff auf dem Host, jeweils belegt durch Laufzeitprüfungen von Rechten und Prozessen. 
-Die volle Punktzahl scheitert daran, dass Teile des geforderten Nachweises deklarativ bleiben und so mehrere Statuszeilen fest einkodiert sind und sich die Suche nach verbotenen Artefakten auf zwei Verzeichnispfade des Gastsystems beschränkt.
+Die Trennung von Schlüsselmaterial und Rollen erhält 1 von 3 Punkten. Auf Dateiebene wurde die Trennung technisch erzwungen (siehe XXXX), jdoch bleibt der Gegenstand dieser
+Trennung hinter dem Kriterium zurück. Die Watch-only- und Hot-Service-Rollen wurden nicht als Dienste implementiert, sondern existieren nur als Verzeichnis- und Datei-Choreografie mit Dummy-Artefakten. Ein Service für die Rollenfunktionen wurde nicht gebaut. Damit existierte zu keinem
+Zeitpunkt Schlüsselmaterial, auch kein im Simulationsrahmen erlaubtes Test-Schlüsselmaterial, dessen Trennung hätte nachgewiesen werden können.
+Verstärkend bleiben Teile des geforderten Nachweises deklarativ, da mehrere Statuszeilen fest einkodiert sind und sich die Suche nach verbotenen Artefakten auf zwei Verzeichnispfade des Gastsystems beschränkt. 
+Nach der Skala ist eine Rollentrennung, die weder implementierte Rollen-Services noch
+Schlüsselmaterial schützt, eine relevante Lücke, sodass trotz des sauberen Rechtemodells nur ein Punkt vergeben werden kann.
 
 Der PSBT-, Signier- und Handoff-Prozess erhält 1 von 3 Punkten. 
 Der zweiphasige Handoff-Ablauf wurde zwar vollständig durchlaufen und dokumentiert, aber der namensgebende Kern des Kriteriums fehlt.
