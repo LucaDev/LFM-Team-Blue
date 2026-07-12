@@ -80,7 +80,7 @@
 - **Alertmanager**: <https://prometheus.io/docs/alerting/latest/alertmanager/>.
 - **node_exporter**: <https://github.com/prometheus/node_exporter>.
 - **cAdvisor**: <https://github.com/google/cadvisor>.
-- **Promtail**: <https://grafana.com/docs/loki/latest/send-data/promtail/> - Hinweis: Promtail ist seit März 2026 EOL; Grafana empfiehlt **Grafana Alloy** als Nachfolger (<https://grafana.com/docs/alloy/latest/>).
+- **Grafana Alloy**: <https://grafana.com/docs/alloy/latest/> - Log-Collector (Promtail-Nachfolger, Promtail ist seit März 2026 EOL).
 - **ntfy (Self-hosted Push)**: <https://docs.ntfy.sh/> - offizielle Doku.
 
 ## 7. Speicher & Cache
