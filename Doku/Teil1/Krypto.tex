@@ -58,7 +58,7 @@ Input Finalizer & Bitcoin Core (\texttt{finalizepsbt}) & Sparrow Wallet \\
 Transaction Extractor & Bitcoin Core (Basis-System) & Sparrow (\path{.txn}-Export), Broadcast über das Basis-System \\
 \bottomrule
 \end{tabularx}
-\caption{Zuordnung der \ac{BIP}-174-Rollen zu den Systemkomponenten}
+\caption{Zuordnung der \acs{BIP}-174-Rollen zu den Systemkomponenten}
 \label{tab:psbt_roles}
 \end{table}
 
@@ -365,7 +365,7 @@ Neben der Freigabe einzelner \acp{TX} evaluiert \ac{OPA} nach jedem Broadcast de
   \node at (2.25,0.55) {\scriptsize\texttt{hot\_to\_cold}};
   \draw[dashed] (1.25,0) -- (1.25,0.4) node[above=14pt] {\scriptsize Zielwert};
 \end{tikzpicture}
-\caption{Balance-Zonen des Hot-Wallets und resultierende \ac{OPA}-Aktionen.\\Quelle: Eigene Darstellung.}
+\caption{Balance-Zonen des Hot-Wallets und resultierende \acs{OPA}-Aktionen.\\Quelle: Eigene Darstellung.}
 \label{fig:balance_zonen}
 \end{figure}
 
@@ -384,7 +384,7 @@ Confirmation Blocks & 6 & 3 & 1 \\
 Estimate Mode & economical & conservative & conservative \\
 \bottomrule
 \end{tabular}
-\caption{\ac{OPA}-Kontostand-Evaluation (Parameter nach Risk Score)}
+\caption{\acs{OPA}-Kontostand-Evaluation (Parameter nach Risk Score)}
 \label{tab:OPA_fundSwitch}
 \end{table}
 
@@ -704,7 +704,7 @@ Danach kann das \ac{USB}-Medium wieder in den \ac{PC} des Mandanten eingesteckt,
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.8\textwidth]{Doku/Abbildungen/sparrow/sparrow_broadcast.png}
-    \caption{Sparrow Wallet Broadcast und Final \ac{TX} Export Funktion nach Signatur. \\Quelle: Eigenes Bildschirm-Foto aus Sparrow.}
+    \caption{Sparrow Wallet Broadcast und Final \acs{TX} Export Funktion nach Signatur. \\Quelle: Eigenes Bildschirm-Foto aus Sparrow.}
     \label{fig6:sparrow_broadcast}
 \end{figure}
 
@@ -988,7 +988,7 @@ Eine Härtung der \ac{TPM}-Bindung durch Secure Boot (unter NixOS über \texttt{
 Zuletzt soll noch die Möglichkeit einer Retry-Queue für fehlgeschlagene Zahlungsaufträge erwähnt werden, deren Ausgestaltung jedoch stark von den Prozessen des Mandanten und seiner Partner abhängt. 
 Die Architektur ist so ausgelegt, dass jede dieser Erweiterungen additiv möglich ist, ohne das Grundmodell zu verändern.
 
-Eine abschließende Übersicht für den Krypto-Aspeckt dieser Ausarbeitung kann in Tabelle~\ref{tab:threat_matrix} gefunden werden.
+Eine abschließende Übersicht für den Krypto-Aspeckt dieser Ausarbeitung kann in Tabelle~\ref{tab:threat_matrix} gefunden werden. Das zugrundeliegende bedrohungsmuster wurde in~\ref{sec:gefahrenmodell} zuvor diskutiert.
 
 \begin{table}[htbp]
 \centering
@@ -1009,6 +1009,6 @@ Verfügbarkeit des Hot-Wallets (Mittelmangel/\ac{DoS}) & Hot & automatischer \te
 Böswilliger oder genötigter Operator & Cold & 2-aus-3 erfordert zweite Signatur; Vier-Augen-Prinzip als Ausblick & im Ein-Operator-Betrieb nicht abgedeckt & \ref{sec:sparrow_signierung} \\
 \bottomrule
 \end{tabular}
-\caption{Bedrohungs- und Maßnahmenübersicht des Krypto-Systems (Bedrohungsmodell siehe \ref{sec:gefahrenmodell})}
+\caption{Bedrohungs- und Maßnahmenübersicht des Krypto-Systems}
 \label{tab:threat_matrix}
 \end{table}

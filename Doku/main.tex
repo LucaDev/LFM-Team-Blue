@@ -7,6 +7,9 @@
 \usepackage[utf8]{inputenc} % Zeichenkodierung
 \usepackage[ngerman]{babel} % neue deutsche Rechtschreibung
 
+\usepackage[utf8]{inputenc}  % Erlaubt die direkte Eingabe von Umlauten
+\usepackage[T1]{fontenc} 
+
 \usepackage{geometry} % Papierformat und Seitenabstände
 \geometry{a4paper, left=2.8cm, right=2.8cm, top=3cm, bottom=4cm} % Papierformat und Seitenabstände
 \linespread {1.2}\selectfont % Zeilenabstand
@@ -18,6 +21,7 @@
 \usepackage{float}
 
 \usepackage{makeidx} % Index
+
 \makeindex % nur, wenn Index benutzt wird!
 \usepackage{microtype} % optischer Randausgleich
 \usepackage{ragged2e} % Für \RaggedRight in Tabellen
@@ -118,11 +122,14 @@
 \tableofcontents
 \fussy
 
+\setcounter{tocdepth}{2}
 %Abbildungsverzeichnis
 \listoffigures
 
 %Tabellenverzeichnis
 \listoftables
+
+\cleardoublepage
 
 %%%%%%%%%%%%%% Anzahl römisch nummerierte Seiten merken
 \setcounter{SeitenzahlSpeicher}{\value{page}}
@@ -180,7 +187,7 @@
 \include{Doku/Apphost/Anhang-Security}
 \include{Doku/Teil1/Anhang-Krypto}
 
-% Danach ToC-Tiefe wiederherstellen, falls danach noch etwas kommt
+% ToC-Tiefe wiederherstellen
 \addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
 
 \end{document}

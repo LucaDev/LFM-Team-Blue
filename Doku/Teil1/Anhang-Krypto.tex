@@ -38,7 +38,7 @@ Reproduzierbarkeit
   & Konfigurationsdrift, Klartext-Credentials in der Versionskontrolle. \\
 \bottomrule
 \end{tabularx}
-\caption{Deklarative NixOS-Härtung der Schlüsselhalter-\acp{VM}}
+\caption{Deklarative NixOS-Härtung der Schlüsselhalter-\acs{VM}s}
 \label{tab:nixos_hardening}
 \end{table}
 
@@ -72,7 +72,7 @@ COLD\_STOPPED & Eine wartende, veraltete Nachbefüllungs-\ac{PSBT} (WAITING\_HUM
 BROADCASTED/BROADCAST\_FAILED & Erfolgreiches bzw.\ fehlgeschlagenes Broadcasting der \ac{TX} über Bitcoin Core (\texttt{sendrawtransaction}). \\
 \bottomrule
 \end{tabularx}
-\caption{PSBT-Lebenszyklus und Statusübergänge}
+\caption{\acs{PSBT}-Lebenszyklus und Statusübergänge}
 \label{tab:psbt_states}
 \end{table}
 
@@ -98,7 +98,7 @@ BROADCASTED/BROADCAST\_FAILED & Erfolgreiches bzw.\ fehlgeschlagenes Broadcastin
       & $\le 30\,000\,000$ pro Tag (\texttt{\seqsplit{max\_daily\_sats}}, nur Zahlungen, ohne interne Swaps) \\
     \bottomrule
   \end{tabular}
-  \caption{\ac{OPA}-Policy zur \ac{PSBT}-Bestätigung (Hot-Wallet)}
+  \caption{\acs{OPA}-Policy zur \acs{PSBT}-Bestätigung (Hot-Wallet)}
   \label{tab:opa_hot}
 \end{table}
 
@@ -108,7 +108,7 @@ BROADCASTED/BROADCAST\_FAILED & Erfolgreiches bzw.\ fehlgeschlagenes Broadcastin
 \begin{figure}[htbp] 
     \centering
     \includegraphics[width=1.0\textwidth]{Doku/Abbildungen/PCR_check.png}
-    \caption{Log aus der \ac{PCR}-Abfrage. Quelle: Eigene Bildschirmaufnahme in NixOS.}
+    \caption{Log aus der \acs{PCR}-Abfrage. Quelle: Eigene Bildschirmaufnahme in NixOS.}
     \label{fig:PCR_belegung}
 \end{figure}
 
