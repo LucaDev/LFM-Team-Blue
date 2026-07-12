@@ -1,0 +1,588 @@
+# Installations- und Betriebsanleitung
+
+## Inhaltsverzeichnis
+
+**Teil 1 – Installation**
+
+1. [Voraussetzungen](#1-voraussetzungen)
+2. [Absicherung der Proxmox-Node](#2-absicherung-der-proxmox-node)
+3. [NixOS-ISO in Proxmox bereitstellen](#3-nixos-iso-in-proxmox-bereitstellen)
+4. [Virtuelle Maschine erstellen](#4-virtuelle-maschine-erstellen)
+5. [Initiale NixOS-Konfiguration](#5-initiale-nixos-konfiguration)
+6. [Installation](#6-installation)
+7. [Secure Boot einrichten](#7-secure-boot-einrichten)
+8. [Cloudflare API-Token erstellen](#8-cloudflare-api-token-erstellen)
+9. [Stack starten](#9-stack-starten)
+10. [AIDE initialisieren](#10-aide-initialisieren)
+
+**Teil 2 – Betrieb und Wartung**
+
+11. [Verwaltungs-Aliase](#11-verwaltungs-aliase)
+12. [Passwörter ändern](#12-passwörter-ändern)
+13. [AIDE Integritätsprüfung](#13-aide-integritätsprüfung)
+14. [Container-Sicherheitsbericht](#14-container-sicherheitsbericht)
+15. [Tor-Onion-Adresse anzeigen](#15-tor-onion-adresse-anzeigen)
+16. [Automatische Container-Updates mit RenovateBot](#16-automatische-container-updates-mit-renovatebot)
+17. [Proxmox-Backups einrichten](#17-proxmox-backups-einrichten)
+18. [Hot-Wallet Bitcoin-Custody-Stack](#18-hot-wallet-bitcoin-custody-stack)
+
+**Teil 3 – Referenz und Hintergrund**
+
+19. [Sicherheitshärtungen des Systems](#19-sicherheitshärtungen-des-systems)
+20. [Installierte Applikationen](#20-installierte-applikationen)
+21. [Architektonische Hinweise](#21-architektonische-hinweise)
+22. [Zusammenfassung der Mindestanforderungen](#22-zusammenfassung-der-mindestanforderungen)
+
+---
+
+# Teil 1 – Installation
+
+## 1. Voraussetzungen
+
+Vor Beginn der Installation müssen folgende Bedingungen erfüllt sein:
+
+- Eine installierte und erreichbare Proxmox-Node.
+- Netzwerkzugang zur Proxmox-Weboberfläche und per SSH.
+- Eine eigene Domain mit der Möglichkeit, DNS-Einträge zu verwalten.
+- Zugang zum Router, um statische DHCP-Vergabe einzurichten.
+- Ein Cloudflare-Konto für die DNS-01-ACME-Challenge (kostenlos). Details siehe [Abschnitt 8](#8-cloudflare-api-token-erstellen).
+- Ein SSH-Schlüsselpaar auf dem lokalen Rechner (Admin-Client). Falls noch keines existiert, siehe [Abschnitt 6, SSH-Key für den Admin-Nutzer](#6-installation).
+
+> [!NOTE]
+> Domain und Cloudflare API-Token können auf Anfrage von uns bereitgestellt werden. In diesem Fall entfallen die Schritte zur eigenen Domain-Registrierung und Token-Erstellung.
+
+---
+
+## 2. Absicherung der Proxmox-Node
+
+> [!WARNING]
+> Dieser Schritt ist durchzuführen, sofern die Proxmox-Node noch nicht gehärtet wurde.
+
+Das Repository enthält das Skript `scripts/proxmox-harden.sh`, das die folgenden Punkte automatisiert:
+
+- SSH-Passwort-Authentifizierung deaktivieren, nur noch Key-Login erlaubt
+- Moderne Cipher-Suites und SSH-Session-Härtung
+- Alle USB-Inputs deaktivieren (usb-storage, uas, usbhid)
+- UEFI- und Secure-Boot-Status prüfen und reporten
+
+### Voraussetzung: SSH-Key hinterlegen
+
+> [!WARNING]
+> Das Skript prüft, ob ein SSH Public Key in `/root/.ssh/authorized_keys` hinterlegt ist. Falls nicht, bricht es mit einer Anleitung ab. Ohne Key würde die Passwort-Deaktivierung den Remote-Zugriff dauerhaft sperren.
+
+Falls noch kein Key hinterlegt ist, zunächst vom lokalen Rechner:
+
+```bash
+ssh-copy-id root@<PROXMOX-IP>
+```
+
+Danach den Key-Login in einem **neuen Terminal** testen (bestehende Session offen lassen!):
+
+```bash
+ssh -i <pfad-zum-private-key> root@<PROXMOX-IP>
+```
+
+### Skript ausführen
+
+Das Skript kann direkt vom Proxmox-Host aus dem Repository geladen und ausgeführt werden, ein vorheriges Klonen ist nicht nötig:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/<TODO>/main/scripts/proxmox-harden.sh | sudo bash
+```
+
+> [!NOTE]
+> Wer den Skriptinhalt vor der Ausführung prüfen möchte, kann ihn zunächst herunterladen:
+>
+> ```bash
+> curl -fsSL <URL> -o proxmox-harden.sh
+> less proxmox-harden.sh
+> sudo bash proxmox-harden.sh
+> ```
+
+Das Skript gibt am Ende eine Zusammenfassung mit allen Warnungen aus. Anschließend:
+
+1. SSH-Login in neuem Terminal erneut testen.
+2. Neustart durchführen, die USB-Blacklist greift erst nach einem Reboot vollständig:
+   ```bash
+   reboot
+   ```
+3. Nach dem Neustart Secure Boot im Proxmox-UI kontrollieren:
+   _Host → Summary → Boot Mode_
+
+### Manuelle Maßnahmen (nicht scriptbar)
+
+- **Updates:** Regelmäßig auf Updates prüfen und einspielen (`apt update && apt upgrade`).
+- **UEFI-Passwort:** Muss im Mainboard-BIOS gesetzt werden, die Vorgehensweise ist herstellerspezifisch.
+
+---
+
+## 3. NixOS-ISO in Proxmox bereitstellen
+
+1. In der Proxmox-Weboberfläche den gewünschten **Speicher** auswählen (z.B. `local`).
+2. Auf **ISO Images → Download from URL** klicken.
+3. Folgende URL eingeben:
+   ```
+   https://channels.nixos.org/nixos-26.05/latest-nixos-minimal-x86_64-linux.iso
+   ```
+4. Auf **Query URL** klicken, danach auf **Download**.
+5. Warten, bis der Download abgeschlossen ist.
+
+---
+
+## 4. Virtuelle Maschine erstellen
+
+### Grundkonfiguration
+
+1. In Proxmox auf **Create VM** klicken und **Advanced Options** aktivieren.
+2. **Name:** `apphost`
+3. **OS – ISO Image:** Zuvor heruntergeladenes NixOS-Minimal-ISO auswählen.
+4. **System:**
+   - Machine: `q35`
+   - BIOS: `OVMF`
+   - EFI Storage: lokalen Speicher wählen (z.B. `local`)
+   - **Haken bei „Pre-Enroll keys" entfernen**
+   - TPM aktivieren, TPM Storage: `local`
+
+### Datenträger
+
+- Falls der Host eine SSD verwendet: Haken bei **SSD Emulation** setzen.
+- **Größe:** Mindestens **50 GB**, empfohlen mehr.
+
+### CPU
+
+- Sockets: `1`
+- Kerne: Anzahl der physischen Kerne des Hostsystems (abzüglich reservierter Kerne für andere Systeme).
+- Typ: `host` (empfohlen, beste Performance). Alternativ: Standard belassen, das bedeutet schlechtere Performance bei minimalem Sicherheitsgewinn durch Security by Obscurity.
+- **Nested Virtualisierung:** Wird in der Standardkonfiguration nicht benötigt und kann deaktiviert bleiben. Nur erforderlich, falls die optionalen Sandbox-Runtimes (Kata/gVisor) genutzt werden sollen. Hintergrund dazu siehe Projektdokumentation.
+
+### Arbeitsspeicher
+
+- **Mindestens 16 GB**, empfohlen **32 GB**.
+- Auf den maximal vertretbaren Wert setzen.
+
+### Netzwerk
+
+Standardeinstellungen beibehalten. Auf **Finish** klicken.
+
+---
+
+## 5. Initiale NixOS-Konfiguration
+
+### VM starten und IP ermitteln
+
+1. Die VM `apphost` starten.
+2. Auf den Reiter **Console** klicken.
+3. IP-Adresse ermitteln:
+   ```bash
+   ip a s
+   ```
+   Die IP-Adresse ist magenta eingefärbt, es ist die erste Adresse beim Interface `ens18` (bzw. dem Interface, das nicht `lo` ist). Beispielausgabe:
+   ```
+   1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 ...
+       inet 127.0.0.1/8 scope host lo
+   2: ens18: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 ...
+       link/ether bc:24:11:d1:34:dd brd ff:ff:ff:ff:ff:ff
+       inet 192.168.99.145/24 brd 192.168.99.255 scope global dynamic noprefixroute ens18
+          valid_lft 72378sec preferred_lft 61578sec
+       inet6 fe80::be24:11ff:fed1:34dd/64 scope link
+   ```
+   In diesem Beispiel lautet die IP-Adresse `192.168.99.145`.
+4. Temporäres Passwort setzen:
+   ```bash
+   passwd
+   ```
+
+> [!WARNING]
+> Die Konsole verwendet ein **US-Tastaturlayout**: keine Umlaute, Z und Y sind vertauscht. Das Passwort darf einfach sein, es dient nur der initialen Verbindung und wird anschließend geändert.
+
+### DNS und DHCP konfigurieren
+
+1. Einen **Wildcard-A-Eintrag** in der eigenen Domain anlegen:
+   - Name: `*`
+   - Adresse: ermittelte IP des Servers
+   - TTL: 2 Minuten
+2. Im Router die IP-Adresse **statisch per DHCP** vergeben.
+
+---
+
+## 6. Installation
+
+### Per SSH verbinden
+
+```bash
+ssh nixos@<IP-ADRESSE>
+```
+
+Der Prompt sollte lauten:
+
+```
+[nixos@nixos:~]$
+```
+
+### Repository klonen und Installation starten
+
+1. Repository klonen:
+   ```bash
+   git clone <TODO: URL>
+   ```
+2. Installationsskript ausführen:
+   ```bash
+   sudo ./apphost/nixos/install.sh
+   ```
+
+Das Skript partitioniert die Festplatte, installiert NixOS, generiert die Secure-Boot-Schlüssel und startet das System anschließend automatisch neu.
+
+### SSH-Key für den Admin-Nutzer
+
+Während der Installation fragt das Skript nach einem **SSH Public Key**, der für den Login als `apphost`-Nutzer hinterlegt wird:
+
+```
+SSH Public Key:
+```
+
+> [!WARNING]
+> Passwort-Login ist deaktiviert, der hier hinterlegte SSH-Key ist der einzige Anmeldeweg zum Server. Das anfangs gesetzte Passwort wird ausschließlich für `sudo` als zweiter Faktor benötigt.
+
+Falls auf dem **lokalen Rechner** (nicht auf dem Server!) noch kein SSH-Schlüsselpaar existiert, zunächst dort eines erzeugen:
+
+```bash
+ssh-keygen -t ed25519 -C "<name>@<rechner>"
+```
+
+Die Standardpfade (`~/.ssh/id_ed25519` bzw. `~/.ssh/id_ed25519.pub`) können mit Enter übernommen werden, am besten mit Passphrase für eine weitere Schutzschicht.
+
+Anschließend den Public Key anzeigen und beim Prompt einfügen:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Der Key wird nach `nixos/ssh-key.nix` geschrieben und kann dort jederzeit nachträglich angepasst werden (z.B. um weitere Keys zu ergänzen). Änderungen an dieser Datei werden erst nach einem `sudo nixos-rebuild switch --flake /opt/apphost#apphost` wirksam.
+
+### Optionale Festplattenverschlüsselung
+
+Während der Partitionierung fragt das Skript, ob die Root-Partition zusätzlich mit LUKS2 verschlüsselt werden soll:
+
+```
+Festplattenverschlüsselung aktivieren? [j/N]:
+```
+
+Standardmäßig ist die Verschlüsselung **aus** (Antwort einfach mit Enter überspringen). Bei `j`/`ja` wird direkt im Anschluss eine Passphrase für die Formatierung festgelegt.
+
+> [!WARNING]
+> Eine verschlüsselte Root-Partition muss bei **jedem** Boot mit dieser Passphrase über die Server-Konsole (z.B. die Proxmox-Konsole) entsperrt werden. Automatische Neustarts, etwa nach Kernel-Updates, bleiben dann so lange stehen, bis die Passphrase eingegeben wurde. Wer keinen regelmäßigen Konsolenzugriff hat, sollte die Verschlüsselung deaktiviert lassen.
+
+Die Einstellung lässt sich auch ohne den interaktiven Dialog umschalten, indem `nixos/disk-encryption.nix` vor der Installation manuell auf `true`/`false` gesetzt wird. Ein nachträgliches Umschalten auf einem bereits installierten System ist nicht möglich, da dafür die Festplatte neu partitioniert werden muss.
+
+### Erneut per SSH verbinden
+
+Alten SSH-Fingerprint entfernen und neu verbinden:
+
+```bash
+ssh-keygen -R <IP-ADRESSE>
+ssh apphost@<IP-ADRESSE>
+```
+
+---
+
+## 7. Secure Boot einrichten
+
+1. Secure-Boot-Schlüssel eintragen:
+   ```bash
+   sudo sbctl enroll-keys --tpm-eventlog
+   ```
+2. System neu starten:
+   ```bash
+   sudo reboot now
+   ```
+3. Secure-Boot-Status prüfen:
+   ```bash
+   sudo sbctl status
+   ```
+   Die Ausgabe sollte wie folgt aussehen:
+   ```
+   Installed:  [OK] sbctl is installed
+   Owner GUID: <...>
+   Setup Mode: [OK] Disabled
+   Secure Boot:[OK] Enabled
+   Vendor Keys: tpm-eventlog
+   ```
+
+---
+
+## 8. Cloudflare API-Token erstellen
+
+### Warum Cloudflare?
+
+Für gültige TLS-Zertifikate (Let's Encrypt) wird die **ACME DNS-01-Challenge** verwendet. Bei dieser Methode beweist der Server den Besitz einer Domain, indem er einen temporären TXT-Eintrag in der DNS-Zone anlegt. Let's Encrypt prüft den Eintrag und stellt bei Erfolg das Zertifikat aus.
+
+Der Vorteil: Der Server muss dafür nicht aus dem Internet erreichbar sein. Ports 80/443 können vollständig hinter dem Router verbleiben. Cloudflare dient hier ausschließlich als DNS-Anbieter, der diesen TXT-Eintrag setzen darf. Es fließen **keinerlei sensible Inhalte** an Cloudflare.
+
+> [!NOTE]
+> **Andere DNS-Anbieter sind ebenfalls möglich** (z.B. Hetzner DNS, Namecheap, Porkbun). Cloudflare wurde gewählt, weil es registrar-unabhängig ist: Die DNS-Verwaltung kann auf Cloudflare umgezogen werden, unabhängig davon, wo die Domain registriert ist. Alle von Traefik unterstützten Anbieter sind unter `https://doc.traefik.io/traefik/https/acme/#providers` gelistet. Bei Verwendung eines anderen Anbieters muss `ACME_DNS_PROVIDER` in der `.env` entsprechend gesetzt und der passende API-Key-Variablenname verwendet werden.
+
+### Cloudflare API-Token generieren
+
+1. Unter **dash.cloudflare.com** einloggen.
+2. Oben rechts auf das Profilbild klicken → **My Profile** → Reiter **API Tokens**.
+3. **Create Token** klicken.
+4. Die Vorlage **„Edit zone DNS"** auswählen und auf **Use template** klicken.
+5. Unter **Zone Resources** einstellen:
+   - _Include_ → _Specific zone_ → eigene Domain auswählen
+6. Optional: unter **Client IP Address Filtering** die IP des Servers eintragen, um den Token auf diese IP zu beschränken.
+7. **Continue to summary** → **Create Token**.
+8. Den angezeigten Token **sofort kopieren**. Er wird nur einmal angezeigt.
+
+> [!WARNING]
+> Der Token benötigt ausschließlich die Berechtigung `Zone:DNS:Edit` für die jeweilige Zone. Keinen globalen API-Key verwenden, ein scoped Token minimiert den Schaden bei versehentlicher Exposition.
+
+Der Token wird im nächsten Schritt als `CF_DNS_API_TOKEN` in die `.env`-Datei eingetragen.
+
+---
+
+## 9. Stack starten
+
+Das Installationsskript hat die `.env` bereits befüllt und alle Secrets generiert. Nach dem Neustart genügen drei Schritte.
+
+### Stack erstmals starten
+
+```bash
+cd /opt/apphost
+docker compose up -d
+```
+
+### Tor-Adresse eintragen
+
+Nach dem ersten Start die Onion-Adresse ermitteln und in die `.env` eintragen, damit alle Dienste sie kennen:
+
+```bash
+bash scripts/show-onion-address.sh
+vim .env        # TOR_DOMAIN=<adresse>.onion eintragen
+docker compose up -d
+```
+
+### Immich OIDC (manuell)
+
+Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden:
+
+_Administration → Settings → OAuth_
+
+```bash
+# Client Secret anzeigen:
+grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env
+```
+
+> [!NOTE]
+> **Passwörter ändern:** Nach Änderungen an Passwörtern in der `.env` müssen die Secrets neu generiert und der Stack neu gestartet werden. Details siehe [Abschnitt 12](#12-passwörter-ändern).
+
+---
+
+## 10. AIDE initialisieren
+
+AIDE (Advanced Intrusion Detection Environment) überwacht die Integrität des Dateisystems und erkennt unbefugte Änderungen. Direkt nach der Installation wird die Referenzdatenbank einmalig angelegt.
+
+1. Datenbank initialisieren:
+   ```bash
+   aide --init && cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+   ```
+2. Erste Integritätsprüfung ausführen:
+   ```bash
+   aide --check
+   ```
+
+Die laufende Überwachung im Betrieb ist in [Abschnitt 13](#13-aide-integritätsprüfung) beschrieben.
+
+---
+
+# Teil 2 – Betrieb und Wartung
+
+Für häufige Verwaltungsaufgaben sind Shell-Aliase definiert, die nach dem Login als `apphost` direkt verfügbar sind.
+
+## 11. Verwaltungs-Aliase
+
+### NixOS-System aktualisieren
+
+| Alias          | Beschreibung                                                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `update`       | Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden. Entspricht `nix flake update && nixos-rebuild switch`.                 |
+| `rebuild`      | System neu bauen und **sofort** aktivieren, ohne Flake-Inputs zu aktualisieren. Nützlich nach Änderungen an Konfigurationsdateien.                             |
+| `rebuild-boot` | System neu bauen, Aktivierung erst **beim nächsten Neustart**. Sinnvoll, wenn Kernel-Updates ein Reboot erfordern, ohne den laufenden Betrieb zu unterbrechen. |
+| `gc`           | Nix-Store aufräumen: löscht Generationen älter als 30 Tage und optimiert den Store (Deduplizierung via Hard-Links).                                            |
+
+> [!WARNING]
+> `update` und `rebuild` aktivieren die neue Konfiguration sofort (_switch_). Falls etwas schiefgeht, kann beim nächsten Reboot über das Boot-Menü eine ältere Generation ausgewählt werden (max. 10 Generationen werden vorgehalten).
+
+### Docker-Stack verwalten
+
+| Alias           | Beschreibung                                                        |
+| --------------- | ------------------------------------------------------------------- |
+| `up`            | Alle Container starten bzw. aktualisieren (`docker compose up -d`)  |
+| `down`          | Alle Container stoppen                                              |
+| `logs`          | Log-Stream aller Container (`docker compose logs -f`)               |
+| `status`        | Docker-Daemon-Status und laufende Container (`docker ps`)           |
+| `regen-secrets` | Alle Secrets neu generieren (nach Passwortänderungen in der `.env`) |
+
+Nach dem Mergen eines RenovateBot-PRs genügt `up`, um die aktualisierten Images zu ziehen und die Container neu zu starten.
+
+---
+
+## 12. Passwörter ändern
+
+Bei Änderungen von MQTT-, Ntfy-, Authelia- oder anderen Secrets in der `.env` müssen diese neu generiert und der betroffene Dienst neu gestartet werden:
+
+```bash
+vim /opt/apphost/.env   # Passwort anpassen
+regen-secrets           # alle Secrets neu generieren
+up                      # Stack neu starten
+```
+
+---
+
+## 13. AIDE Integritätsprüfung
+
+Nach der initialen Einrichtung ([Abschnitt 10](#10-aide-initialisieren)) läuft AIDE im Betrieb automatisch:
+
+- Eine **tägliche** automatische Prüfung erfolgt über einen systemd-Service.
+- Überwacht werden u. a. `/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`, `/usr/sbin`, `/boot` und `/opt/apphost/config`.
+
+Eine manuelle Prüfung ist jederzeit möglich:
+
+```bash
+aide --check
+```
+
+> [!NOTE]
+> Nach legitimen Systemänderungen (z.B. einem größeren Update) sollte die Referenzdatenbank neu erstellt werden, damit die täglichen Prüfungen keine Fehlalarme melden:
+>
+> ```bash
+> aide --init && cp /var/lib/aide/aide.db.new /var/lib/aide/aide.db
+> ```
+
+---
+
+## 14. Container-Sicherheitsbericht
+
+Ein automatischer Container-Sicherheitsbericht wird jeden **Montag um 02:00 Uhr** mit dem Security-Scanner **Trivy** erstellt und unter `/var/log/docker-security-scan.log` abgelegt. Trivy prüft alle laufenden Images auf HIGH/CRITICAL-Schwachstellen.
+
+```bash
+less /var/log/docker-security-scan.log
+```
+
+---
+
+## 15. Tor-Onion-Adresse anzeigen
+
+Die `.onion`-Adresse wird beim ersten Start des Tor-Containers automatisch generiert und ist persistent. Sie kann jederzeit angezeigt werden:
+
+```bash
+bash /opt/apphost/scripts/show-onion-address.sh
+```
+
+Beispielausgabe:
+
+```
+Tor Onion-Adresse (Hidden Service v3)
+https://<26-stellige-adresse>.onion
+```
+
+> [!NOTE]
+> Alle Dienste sind unter `<subdomain>.<onion-adresse>` erreichbar, z.B. `dashboard.<adresse>.onion`. Der Tor-Browser-Hinweis auf das selbstsignierte Zertifikat ist normal: Tor erzeugt kein öffentlich vertrauenswürdiges TLS-Zertifikat, da die Onion-Kommunikation bereits Ende-zu-Ende verschlüsselt ist.
+>
+> Die Adresse muss nach der Erstinstallation in die `.env`-Datei eingetragen werden:
+> `TOR_DOMAIN=<adresse>.onion`
+
+---
+
+## 16. Automatische Container-Updates mit RenovateBot
+
+Alle Container-Image-Updates erfolgen automatisiert über RenovateBot direkt im GitHub-Repository. Es ist keine manuelle Versionspflege erforderlich.
+
+### Wie es funktioniert
+
+RenovateBot überwacht kontinuierlich das Repository und erkennt neue Versionen von Container-Images in den `docker-compose`-Dateien. Sobald ein Update verfügbar ist, öffnet RenovateBot automatisch einen Pull Request mit der aktualisierten Image-Version. Dieser PR kann geprüft, getestet und anschließend gemergt werden. Die Änderung landet dann beim nächsten `docker compose up -d` (Alias `up`) auf dem Server.
+
+### Vorteile
+
+- **Keine veralteten Images:** Updates werden zuverlässig erkannt, ohne dass jemand manuell auf neue Releases achten muss.
+- **Nachvollziehbarkeit:** Jede Aktualisierung ist als einzelner Commit im Git-Verlauf dokumentiert (wann, was und warum geändert wurde).
+- **Kontrollierter Rollout:** Updates werden als Pull Request vorgeschlagen, nicht sofort eingespielt. Änderungen können vor dem Merge begutachtet oder in einer Testumgebung validiert werden.
+- **Sicherheitsrelevanz:** Gepatchte Images mit Sicherheitsfixes werden zeitnah erkannt. In Kombination mit dem wöchentlichen Container-Sicherheitsscan entsteht eine kontinuierliche Angriffsflächen-Reduktion.
+
+> [!NOTE]
+> Ein vollautomatisches Mergen (ohne manuellen Review) ist mit RenovateBot ebenfalls möglich, muss jedoch explizit aktiviert werden und wurde hier zunächst bewusst nicht eingerichtet.
+
+---
+
+## 17. Proxmox-Backups einrichten
+
+Damit die komplette `apphost`-VM im Notfall wiederhergestellt werden kann, sollten regelmäßige Backups auf Ebene von Proxmox eingerichtet werden. Proxmox bringt dafür ein eigenes Werkzeug mit, das sich vollständig über die Weboberfläche steuern lässt. Es sichert die komplette VM (also Festplatten, Konfiguration, TPM, etc.), nicht nur einzelne Dateien.
+
+### Backup-Speicher festlegen
+
+1. In Proxmox auf **Datacenter → Storage** gehen.
+2. Sicherstellen, dass ein Storage existiert, der den Content-Typ **„VZDump backup file"** erlaubt (z.B. `local` oder ein per NFS/CIFS eingebundener Netzwerkspeicher).
+
+> [!WARNING]
+> Backups sollten möglichst auf einem externen oder Netzwerk-Speicher liegen und der bekannten 3-2-1 Regel folgen. Liegt das Backup nur auf derselben Festplatte wie die VM, ist es bei einem Hardware-Ausfall der Node ebenfalls verloren.
+
+### Geplantes Backup anlegen
+
+1. Auf **Datacenter → Backup → Add** klicken.
+2. Folgende Einstellungen wählen:
+   - **VM:** `apphost`
+   - **Storage:** den zuvor festgelegten Backup-Speicher
+   - **Schedule:** z.B. täglich um `03:00`
+   - **Mode:** `Snapshot` (die VM läuft während des Backups weiter). Alternativen sind `Suspend` oder `Stop` für noch sauberere Backups.
+   - **Compression:** `ZSTD` (guter Kompromiss aus Kompression und Geschwindigkeit)
+3. **Retention** festlegen, damit der Speicher nicht vollläuft, z.B. die letzten 7 täglichen und 4 wöchentlichen Backups behalten.
+
+### Manuelles Backup
+
+Ein Backup lässt sich auch jederzeit von Hand auslösen:
+
+_VM `apphost` → Backup → Backup now_
+
+### Wiederherstellung
+
+1. _VM `apphost` → Backup_ öffnen.
+2. Das gewünschte Backup auswählen und auf **Restore** klicken.
+
+> [!WARNING]
+> Ein Restore überschreibt die bestehende VM! Im Zweifel das Backup zunächst als neue VM mit anderer ID wiederherstellen. Es empfiehlt sich, eine Wiederherstellung gelegentlich zu testen, denn ein Backup ist nur dann etwas wert, wenn der Restore im Ernstfall auch funktioniert.
+
+---
+
+## 18. Hot-Wallet Bitcoin-Custody-Stack
+
+Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-Transaktionen über eine Policy-Engine (OPA), inklusive Cold-Refill-Workflow über eine air-gapped Signer-VM. Die Container liegen unter `services/hotwallet/`, der Compose-Service unter `compose/finance/hotwallet.yml`, operative Skripte unter `scripts/hotwallet/`.
+
+### Einrichtung
+
+1. In `.env` den Abschnitt „Hot-Wallet" ausfüllen (`HOTWALLET_POSTGRES_PASSWORD`, `HOTWALLET_DB_PASSWORD`, `HOTWALLET_RPC_PASS_MW`/`_TXB`, `HOTWALLET_NATS_*_PASS`, `HOTWALLET_NTFY_PASSWORD`, `HOTWALLET_SUBDOMAIN`).
+2. RPC-Credentials für `bitcoind` generieren:
+   ```bash
+   bash scripts/update-secrets-hotwallet.sh
+   ```
+   Schreibt `services/hotwallet/btc-core/src/rpcauth.conf` (gitignored) aus den `HOTWALLET_RPC_PASS_*`-Werten.
+3. ntfy-Benutzer inkl. `hotwallet` neu generieren (falls noch nicht nach dem Setzen der `.env`-Werte geschehen):
+   ```bash
+   bash scripts/update-secrets-ntfy.sh
+   ```
+4. Stack starten (läuft mit den anderen Diensten im selben `docker compose up -d`, siehe [Abschnitt 9](#9-stack-starten)):
+   ```bash
+   docker compose up -d hotwallet-postgres hotwallet-nats hotwallet-opa hotwallet-btc-core hotwallet-tx-builder hotwallet-middleware
+   ```
+5. Bitcoin-Core-Wallets initialisieren (einmalig, regtest) – siehe `services/hotwallet/btc-core/.demo/wallet_init_oneTime.sh` als Vorlage.
+6. WireGuard-Tunnel zur Signer-VM einrichten (separat, siehe oben) – ohne diesen Schritt bleibt der Stack auf den Aufbau von PSBTs beschränkt, eine Signatur ist nicht möglich.
+7. Hot-/Cold-/externe Wallets registrieren:
+   ```bash
+   sudo bash scripts/hotwallet/ops/setup/wallet_import.sh
+   sudo bash scripts/hotwallet/ops/setup/whiteWallet.sh /pfad/zu/partner-meta-dateien
+   ```
+
+### Betrieb
+
+- **Manuelle PSBT einreichen:** `sudo API_BASE="https://${HOTWALLET_SUBDOMAIN}.${DOMAIN}" bash scripts/hotwallet/ops/psbt_submit.sh /pfad/zum/sparrow-export`
+- **Cold-Refill (Export/Broadcast):** `scripts/hotwallet/ops/refill/psbt_export.sh` bzw. `psbt_broadcast.sh`
+- **Regtest-Simulation:** Skripte unter `scripts/hotwallet/testing/` (Wallets laden, Über-/Unterdeckung simulieren, Testzahlungen über die API anstoßen)
+- Vollständige Beschreibung von Architektur, Policies, PSBT-Zuständen und Secret-Handling: `services/hotwallet/README.md`

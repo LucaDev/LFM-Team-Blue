@@ -1,0 +1,47 @@
+name: apphost
+networks:
+  traefik-public:
+    external: true
+    name: traefik-public
+volumes:
+  tor_data:
+    name: apphost_tor_data
+services:
+  tor:
+    image: osminogin/tor-simple:${TOR_VERSION}
+    container_name: tor
+    restart: unless-stopped
+    runtime: runc
+    networks:
+      traefik-public: {}
+    volumes:
+      - tor_data:/var/lib/tor
+      - ../../config/tor/torrc:/etc/tor/torrc:ro
+    environment:
+      TZ: Europe/Berlin
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /run:size=32m,mode=0755
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          memory: 32M
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep tor || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"

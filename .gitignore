@@ -1,4 +1,55 @@
-.env
-Hot-KeyHolder/.env
 Hot-Wallet/services/btc-core/src/rpcauth.conf
 Hot-Wallet/middleware_data/
+
+# Umgebungsvariablen (NIEMALS committen!)
+.env
+.env.local
+.env.*.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*^
+.Spotlight-V8
+.Trashes
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Mosquitto Passwortdatei (enthält gehashte Passwörter)
+apphost/config/mosquitto/passwd
+
+# Hot-Wallet: generierte RPC-Credentials (siehe scripts/update-secrets-hotwallet.sh)
+apphost/services/hotwallet/btc-core/src/rpcauth.conf
+
+# Hot-Wallet: Wallet-Metadaten, Signer-HMAC-Secret, PSBT-Staging – niemals committen
+apphost/secrets
+
+# Tor Hidden Service Keys
+apphost/config/tor/hidden_service/
+
+# Zertifikate und Schlüssel
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+# Ausnahme: öffentliche CA-Zertifikate (wenn nötig)
+# !config/mosquitto/certs/ca.pem
+
+# Temporäre Dateien
+tmp/
+temp/
+*.tmp
+
+# Backup-Dateien
+*.bak
+*.backup
+
+# NixOS maschinenspezifische Dateien
+hardware-configuration.nix

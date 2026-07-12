@@ -1,0 +1,7 @@
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+- greeting:
+    text_size: xl
+    text: Hallo User!

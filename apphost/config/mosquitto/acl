@@ -1,0 +1,17 @@
+# Home Assistant – Vollzugriff
+user homeassistant
+topic readwrite #
+
+# Zigbee2MQTT – nur eigene Topics
+user zigbee2mqtt
+topic readwrite zigbee2mqtt/#
+topic readwrite homeassistant/#
+
+# ESPHome – eigene Topics
+user esphome
+topic readwrite esphome/#
+topic readwrite homeassistant/#
+
+# Nur-Lese-Gast (für Monitoring)
+user readonly
+topic read #

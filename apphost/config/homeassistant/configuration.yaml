@@ -1,0 +1,8 @@
+homeassistant:
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.23.0.0/16  # traefik-public network
+
+default_config:

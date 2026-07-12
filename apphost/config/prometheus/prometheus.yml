@@ -1,0 +1,89 @@
+# Prometheus Sammelt Metriken von allen AppHost-Services
+global:
+  scrape_interval: 60s # Wie oft Metriken gesammelt werden
+  evaluation_interval: 60s # Wie oft Regeln ausgewertet werden
+  scrape_timeout: 10s
+  # Labels die allen Metriken hinzugefügt werden
+  external_labels:
+    instance: "${HOSTNAME}"
+# Alertmanager-Anbindung
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+      timeout: 10s
+      api_version: v2
+# Alert-Regeln laden
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+# Scrape-Jobs
+scrape_configs:
+  # Prometheus selbst
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+    metrics_path: /metrics
+  # Node Exporter – Host-Metriken
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: "([^:]+).*"
+        replacement: "${1}"
+  # cAdvisor – Container-Metriken
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+    metrics_path: /metrics
+  # Traefik
+  - job_name: "traefik"
+    static_configs:
+      - targets: ["traefik:8080"]
+    metrics_path: /metrics
+  # Docker Daemon
+  - job_name: "docker"
+    static_configs:
+      - targets: ["172.17.0.1:9323"] # Docker Daemon Metrics
+    metrics_path: /metrics
+  # Redis/Valkey (via redis-exporter)
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+  # Immich
+  - job_name: "immich"
+    static_configs:
+      - targets: ["immich-server:8081"]
+    metrics_path: /metrics
+  # Grafana
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+    metrics_path: /metrics
+    basic_auth:
+      username: "admin"
+      password_file: "/etc/prometheus/secrets/grafana-password"
+  # Loki
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]
+    metrics_path: /metrics
+  # Alertmanager
+  - job_name: "alertmanager"
+    static_configs:
+      - targets: ["alertmanager:9093"]
+    metrics_path: /metrics
+  # Garage S3
+  - job_name: "garage"
+    static_configs:
+      - targets: ["garage:3903"]
+    metrics_path: /metrics
+  # Home Assistant
+  - job_name: "homeassistant"
+    static_configs:
+      - targets: ["homeassistant:8123"]
+    metrics_path: /api/prometheus
+    bearer_token_file: "/etc/prometheus/secrets/hass-token"
+    scheme: http

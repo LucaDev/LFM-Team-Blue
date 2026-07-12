@@ -1,0 +1,86 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:allNonMajor"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": ["after 3am and before 5am on Monday"],
+  "labels": ["dependencies", "renovate"],
+  "assignees": [],
+  "reviewers": [],
+
+  "ignorePaths": [
+    "apphost/.env",
+    "apphost/scripts/**",
+    "apphost/secrets/**"
+  ],
+
+  "docker-compose": {
+    "enabled": false
+  },
+
+  "packageRules": [
+    {
+      "description": "Automerge patch & digest updates für Monitoring-Stack",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": [
+        "prom/prometheus",
+        "prom/alertmanager",
+        "prom/node-exporter",
+        "grafana/grafana-oss",
+        "grafana/loki",
+        "grafana/promtail",
+        "gcr.io/cadvisor/cadvisor"
+      ],
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": "Kein Auto-Merge für Datenbanken und Storage",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": [
+        "postgres",
+        "valkey/valkey",
+        "redis",
+        "dxflrs/garage"
+      ],
+      "automerge": false,
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Major Updates: manuell bestätigen",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-update"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Traefik: vorsichtig updaten (Internet-facing)",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["traefik"],
+      "automerge": false,
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Alpine digest updates automatisch mergen",
+      "matchPackageNames": ["/alpine/"],
+      "matchUpdateTypes": ["digest"],
+      "automerge": true
+    }
+  ],
+
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Image-Versionen in apphost/.env.example über # renovate:-Annotationen",
+      "managerFilePatterns": ["/(^|/)apphost/\\.env\\.example$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\n[A-Z0-9_]+_VERSION=(?<currentValue>.*)\\n"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+name: apphost
+networks:
+  traefik-public:
+    external: true
+    name: traefik-public
+  communication-network:
+    external: true
+    name: communication-network
+  # Rein interne Verbindung zwischen den Hot-Wallet-Diensten. Nur die Middleware hängt zusätzlich an traefik-public/communication-network.
+  finance-network:
+    name: finance-network
+    driver: bridge
+volumes:
+  hotwallet_postgres_data: {name: apphost_hotwallet_postgres_data}
+  hotwallet_btccore_data: {name: apphost_hotwallet_btccore_data}
+services:
+  hotwallet-postgres:
+    image: postgres:${HOTWALLET_POSTGRES_VERSION:-16}
+    container_name: hotwallet-postgres
+    restart: unless-stopped
+    runtime: runc
+    networks: [finance-network]
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    volumes:
+      - hotwallet_postgres_data:/var/lib/postgresql/data
+      - ../../services/hotwallet/postgres/001_psbt.sql:/docker-entrypoint-initdb.d/001_psbt.sql:ro
+      - ../../services/hotwallet/postgres/002_grant.sh:/docker-entrypoint-initdb.d/002_grant.sh:ro
+    environment:
+      POSTGRES_USER: hotwallet
+      POSTGRES_PASSWORD: ${HOTWALLET_POSTGRES_PASSWORD:?}
+      POSTGRES_DB: hotwallet
+      MW_DB_USER: mw_app
+      MW_DB_PASSWORD: ${HOTWALLET_DB_PASSWORD:?}
+      TZ: Europe/Berlin
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 1G}
+        reservations: {memory: 128M}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotwallet -d hotwallet"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    labels:
+      - "traefik.enable=false"
+  hotwallet-nats:
+    image: nats:${HOTWALLET_NATS_VERSION:-2.10}
+    container_name: hotwallet-nats
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    restart: unless-stopped
+    runtime: runc
+    networks: [finance-network]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    volumes:
+      - ../../services/hotwallet/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
+    environment:
+      MW_NATS_PASS: ${HOTWALLET_NATS_MW_PASS:?}
+      TXB_NATS_PASS: ${HOTWALLET_NATS_TXB_PASS:?}
+      OPERATOR_NATS_PASS: ${HOTWALLET_NATS_OPERATOR_PASS:?}
+      SETUP_NATS_PASS: ${HOTWALLET_NATS_SETUP_PASS:?}
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 256M}
+    labels:
+      - "traefik.enable=false"
+  hotwallet-opa:
+    image: openpolicyagent/opa:${HOTWALLET_OPA_VERSION:-1.17.1}
+    container_name: hotwallet-opa
+    command: ["run", "--watch", "--server", "--addr=0.0.0.0:8181", "/policies", "/data"]
+    restart: unless-stopped
+    runtime: runc
+    networks: [finance-network]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    volumes:
+      - ../../services/hotwallet/opa/policies:/policies:ro
+      - ../../services/hotwallet/opa/data:/data:ro
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 256M}
+    labels:
+      - "traefik.enable=false"
+  hotwallet-btc-core:
+    build: ../../services/hotwallet/btc-core
+    container_name: hotwallet-btc-core
+    restart: unless-stopped
+    runtime: runc
+    networks: [finance-network]
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    volumes:
+      - hotwallet_btccore_data:/home/app/.bitcoin
+      - ../../services/hotwallet/btc-core/src/bitcoin.conf:/home/app/.bitcoin/bitcoin.conf:ro
+      - ../../services/hotwallet/btc-core/src/rpcauth.conf:/home/app/.bitcoin/rpcauth.conf:ro
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    deploy:
+      resources:
+        limits: {cpus: "2.0", memory: 2G}
+    labels:
+      - "traefik.enable=false"
+  hotwallet-tx-builder:
+    build: ../../services/hotwallet/tx-builder
+    container_name: hotwallet-tx-builder
+    restart: unless-stopped
+    runtime: runc
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    user: "1000:1000"
+    networks: [finance-network]
+    depends_on:
+      hotwallet-nats:
+        condition: service_started
+      hotwallet-postgres:
+        condition: service_healthy
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      SERVICE_NAME: tx-builder
+      NATS_URL: nats://txbuilder:${HOTWALLET_NATS_TXB_PASS:?}@hotwallet-nats:4222
+      MIDDLEWARE_URL: http://hotwallet-middleware:8080
+      BITCOIN_NETWORK: regtest
+      BTC_CORE_RPC_URL: http://hotwallet-btc-core:18443
+      BTC_CORE_RPC_USER: txbuilder
+      BTC_CORE_RPC_PASS: ${HOTWALLET_RPC_PASS_TXB:?}
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 512M}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "traefik.enable=false"
+  hotwallet-middleware:
+    build: ../../services/hotwallet/middleware
+    container_name: hotwallet-middleware
+    restart: unless-stopped
+    runtime: runc
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    user: "1000:1000"
+    networks:
+      finance-network: {}
+      # Für die Nutzung des bestehenden ntfy-Dienstes (Cold-Refill-/Fehler-Alarme)
+      communication-network: {}
+      # Öffentliche Zahlungs-API für externe Partner (siehe Doku)
+      traefik-public: {}
+    depends_on:
+      hotwallet-nats:
+        condition: service_started
+      hotwallet-opa:
+        condition: service_started
+      hotwallet-postgres:
+        condition: service_healthy
+    volumes:
+      - hotwallet_btccore_data:/home/app/.bitcoin
+      - ../../secrets/hotwallet/wallets:/run/wallets:ro
+      - ../../secrets/hotwallet/secrets:/run/secrets:ro
+      - ../../secrets/hotwallet:/run
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      SERVICE_NAME: middleware
+      NATS_URL: nats://middleware:${HOTWALLET_NATS_MW_PASS:?}@hotwallet-nats:4222
+      OPA_URL: http://hotwallet-opa:8181
+      # Signer-VM: nur über den (separat einzurichtenden) WireGuard-Tunnel erreichbar,
+      # siehe Installationsanleitung Abschnitt "Hot-Wallet".
+      SIGNER_URL: http://10.10.0.2
+      SIGNER_PORT: 8080
+      POSTGRES_HOST: hotwallet-postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: mw_app
+      POSTGRES_PASSWORD: ${HOTWALLET_DB_PASSWORD:?}
+      POSTGRES_DB: hotwallet
+      BITCOIN_NETWORK: regtest
+      BTC_CORE_RPC_URL: http://hotwallet-btc-core:18443
+      BTC_CORE_RPC_USER: middleware
+      BTC_CORE_RPC_PASS: ${HOTWALLET_RPC_PASS_MW:?}
+      SIGNER_HMAC_SECRET: /run/secrets/signer-hmac.secret
+      REFILL_PSBT: /run/refill.psbt
+      WALLET_DIR: /home/app/.bitcoin
+      # Benachrichtigungen über den bestehenden ntfy-Dienst (siehe compose/communication/ntfy.yml)
+      NTFY_URL: "http://ntfy/hotwallet-alerts"
+      NTFY_USER: hotwallet
+      NTFY_PASSWORD: ${HOTWALLET_NTFY_PASSWORD:?}
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 512M}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hotwallet.rule=Host(`${HOTWALLET_SUBDOMAIN:-hotwallet}.${DOMAIN}`)"
+      - "traefik.http.routers.hotwallet.entrypoints=websecure"
+      - "traefik.http.services.hotwallet.loadbalancer.server.port=8080"
+      # Eigene Autorisierung (OPA-Policy + Wallet-Whitelist) statt Authelia:
+      # externe Partner rufen /api/v1/request/* auf, ein Browser-Login-Redirect würde diese Integration brechen.
+      - "traefik.http.routers.hotwallet.middlewares=default-chain@file"
+      - "homepage.group=Finanzen"
+      - "homepage.name=Hot Wallet"
+      - "homepage.icon=bitcoin.png"
+      - "homepage.href=https://${HOTWALLET_SUBDOMAIN:-hotwallet}.${DOMAIN}"

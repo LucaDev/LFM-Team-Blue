@@ -1,0 +1,57 @@
+name: apphost
+networks:
+  traefik-public:
+    external: true
+    name: traefik-public
+  home-network:
+    external: true
+    name: home-network
+volumes:
+  mosquitto_data: {name: apphost_mosquitto_data}
+  mosquitto_logs: {name: apphost_mosquitto_logs}
+services:
+  mosquitto:
+    image: eclipse-mosquitto:${MOSQUITTO_VERSION}
+    container_name: mosquitto
+    restart: unless-stopped
+    runtime: runc
+    networks:
+      home-network:
+        aliases: [mosquitto, mqtt]
+      traefik-public: {}
+    ports:
+      - "127.0.0.1:1883:1883" # MQTT intern (nur lokal!)
+      - "8883:8883" # MQTT+TLS extern
+    volumes:
+      - ../../config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ../../config/mosquitto/acl:/mosquitto/config/acl:ro
+      - ../../config/mosquitto/certs:/mosquitto/certs:ro
+      - ../../secrets/mosquitto.passwd:/mosquitto/config/passwd:ro
+      - mosquitto_data:/mosquitto/data
+    environment:
+      TZ: Europe/Berlin
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    user: "1883:1883"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 128M}
+        reservations: {memory: 32M}
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 1883 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqtt-ws.rule=Host(`${MOSQUITTO_SUBDOMAIN:-mqtt}.${DOMAIN}`)"
+      - "traefik.http.routers.mqtt-ws.entrypoints=websecure"
+      - "traefik.http.services.mqtt-ws.loadbalancer.server.port=9001"
+      - "traefik.http.routers.mqtt-ws.middlewares=default-chain@file"
+      - "traefik.http.routers.mqtt-ws-tor.rule=HostRegexp(`^${MOSQUITTO_SUBDOMAIN:-mqtt}\\.[a-z2-7]{16,56}\\.onion`)"
+      - "traefik.http.routers.mqtt-ws-tor.entrypoints=tor-http"
+      - "traefik.http.routers.mqtt-ws-tor.service=mqtt-ws"
+      - "traefik.http.routers.mqtt-ws-tor.middlewares=tor-chain@file"

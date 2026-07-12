@@ -1,0 +1,80 @@
+name: apphost
+networks:
+  monitoring-network:
+    external: true
+    name: monitoring-network
+volumes:
+  alloy_data: {name: apphost_alloy_data}
+services:
+  node-exporter:
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION}
+    container_name: node-exporter
+    restart: unless-stopped
+    runtime: runc
+    network_mode: host
+    userns_mode: "host"
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    read_only: true
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 64M}
+    labels:
+      - "traefik.enable=false"
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
+    container_name: cadvisor
+    restart: unless-stopped
+    runtime: runc
+    networks: [monitoring-network]
+    privileged: true
+    userns_mode: "host"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    security_opt: ['no-new-privileges:true']
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 256M}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=false"
+  alloy:
+    image: grafana/alloy:${ALLOY_VERSION}
+    container_name: alloy
+    restart: unless-stopped
+    runtime: runc
+    networks: [monitoring-network]
+    volumes:
+      - ../../config/alloy:/etc/alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /run/docker.sock:/run/docker.sock:ro
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 128M}
+    labels:
+      - "traefik.enable=false"

@@ -1,0 +1,117 @@
+name: apphost
+networks:
+  traefik-public:
+    external: true
+    name: traefik-public
+  socket-proxy:
+    external: true
+    name: socket-proxy
+volumes:
+  traefik_certs:
+    name: apphost_traefik_certs
+services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
+    container_name: socket-proxy
+    restart: unless-stopped
+    runtime: runc
+    userns_mode: "host"
+    networks:
+      - socket-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      EVENTS: 1
+      PING: 1
+      VERSION: 1
+      POST: 0
+      DELETE: 0
+      PUT: 0
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /run:size=16m,mode=0755
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 64M}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2375/version"]
+      interval: 5s
+      timeout: 10s
+      retries: 12
+    labels:
+      - "traefik.enable=false"
+  traefik:
+    image: traefik:${TRAEFIK_VERSION}
+    container_name: traefik
+    restart: unless-stopped
+    runtime: runc
+    depends_on:
+      socket-proxy:
+        condition: service_healthy
+    networks:
+      traefik-public:
+        ipv4_address: 172.23.1.2
+      socket-proxy: {}
+    ports:
+      - "80:8081"
+      - "443:8443"
+      - "443:8443/udp" # HTTP/3 QUIC
+      - "8880:8880" # Tor – HTTP ohne TLS
+    volumes:
+      # Zertifikate: named volume (persistent, Traefik erstellt acme.json selbst)
+      - traefik_certs:/certs
+      # Konfiguration: aus dem Repo
+      - ../../config/traefik:/etc/traefik:ro
+    environment:
+      TZ: Europe/Berlin
+      # Hetzner:
+      HETZNER_API_KEY: ${HETZNER_API_KEY:-}
+      # Cloudflare:
+      CF_DNS_API_TOKEN: ${CF_DNS_API_TOKEN:-}
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_DNSCHALLENGE: true
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_DNSCHALLENGE_PROVIDER: ${ACME_DNS_PROVIDER}
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_ACME_EMAIL: ${ACME_EMAIL}
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_staging_ACME_DNSCHALLENGE: true
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_staging_ACME_DNSCHALLENGE_PROVIDER: ${ACME_DNS_PROVIDER}
+      TRAEFIK_CERTIFICATESRESOLVERS_letsencrypt_staging_ACME_EMAIL: ${ACME_EMAIL}
+      # Überschreibt den Platzhalter-Domainnamen aus config/traefik/traefik.yml
+      TRAEFIK_ENTRYPOINTS_websecure_HTTP_TLS_DOMAINS_0_MAIN: ${DOMAIN}
+      TRAEFIK_ENTRYPOINTS_websecure_HTTP_TLS_DOMAINS_0_SANS_0: "*.${DOMAIN}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    deploy:
+      resources:
+        limits: {cpus: "2.0", memory: 512M}
+        reservations: {cpus: "0.25", memory: 128M}
+    ulimits:
+      nofile: {soft: 65536, hard: 65536}
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=authelia-chain@file"
+      - "traefik.http.routers.traefik-tor.rule=HostRegexp(`^traefik\\.[a-z2-7]{16,56}\\.onion`)"
+      - "traefik.http.routers.traefik-tor.entrypoints=tor-http"
+      - "traefik.http.routers.traefik-tor.service=api@internal"
+      - "traefik.http.routers.traefik-tor.middlewares=tor-authelia-chain@file"
+      - "homepage.group=Infrastruktur"
+      - "homepage.name=Traefik"
+      - "homepage.icon=traefik.png"
+      - "homepage.href=https://traefik.${DOMAIN}"
+      - "homepage.description=Reverse Proxy"
