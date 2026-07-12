@@ -213,7 +213,7 @@ Die Zugangsdaten der einzelnen \ac{NATS}-Identitäten werden, analog zu den bere
 
 Eine weitergehende Ausbaustufe besteht in der Umstellung von der statischen, passwortbasierten Autorisierung auf ein dezentrales, auf NKeys und JSON Web Token basierendes Account-Modell. Dieses würde eine kryptografisch verankerte Identität je Dienst sowie eine signierte Rechtevergabe ermöglichen und die Verwaltung der Berechtigungen von der Server-Konfiguration entkoppeln. Aufgrund des erhöhten Verwaltungsaufwands und des für den aktuellen Projektumfang bereits hinreichenden Schutzniveaus der statischen Variante wurde diese Ausbaustufe als optionale Erweiterung eingestuft.
 
-In Kombination mit \ac{NATS} wird \ac{HTTP} als \ac{API} für gezielte GET-Abfragen zwischen Containern verwendet, wenn Informationen für den weiteren Prozessverlauf abgefragt statt Ereignisse ausgelöst werden. Die Transportwege sind dabei klar getrennt, sodass über \ac{HTTP} ausschließlich die externen Eingänge (\texttt{bip21}/\texttt{psbt}, siehe Tabelle~\ref{tab:tx_rails}), der Signier-Aufruf an die Key~A \ac{VM} (\texttt{POST /sign}) sowie die Health- und Metrics-Endpunkte laufen. Alle betreiberausgelösten internen Abläufe wie die manuelle \ac{PSBT}-Einreichung, der Abschluss des Wechselmedium-Exports und der Broadcast der signierten Cold-\ac{PSBT} werden hingegen über \ac{NATS} unter der Operator-Identität ausgelöst (\texttt{\seqsplit{psbt.submit.requested}}, \texttt{\seqsplit{refill.export.done}}, \texttt{\seqsplit{refill.broadcast.requested}}) und besitzen bewusst keinen nach außen gerichteten \ac{HTTP}-Endpunkt. Eine frühere \ac{HTTP}-Variante dieser Operator-Aufrufe wurde zugunsten dieser einheitlichen, über die \ac{NATS}-Berechtigungen abgesicherten Ereignissteuerung entfernt.
+In Kombination mit \ac{NATS} wird \ac{HTTP} als \ac{API} für gezielte GET-Abfragen zwischen Containern verwendet, wenn Informationen für den weiteren Prozessverlauf abgefragt statt Ereignisse ausgelöst werden. Die Transportwege sind dabei klar getrennt, sodass über \ac{HTTP} ausschließlich die externen Eingänge (\texttt{BIP21}/\texttt{PSBT}, siehe Tabelle~\ref{tab:tx_rails}), der Signier-Aufruf an die Key~A \ac{VM} (\texttt{POST /sign}) sowie die Health- und Metrics-Endpunkte laufen. Alle betreiberausgelösten internen Abläufe wie die manuelle \ac{PSBT}-Einreichung, der Abschluss des Wechselmedium-Exports und der Broadcast der signierten Cold-\ac{PSBT} werden hingegen über \ac{NATS} unter der Operator-Identität ausgelöst (\texttt{\seqsplit{psbt.submit.requested}}, \texttt{\seqsplit{refill.export.done}}, \texttt{\seqsplit{refill.broadcast.requested}}) und besitzen bewusst keinen nach außen gerichteten \ac{HTTP}-Endpunkt. Eine frühere \ac{HTTP}-Variante dieser Operator-Aufrufe wurde zugunsten dieser einheitlichen, über die \ac{NATS}-Berechtigungen abgesicherten Ereignissteuerung entfernt.
 
 \paragraph{\ac{WG}} \mbox{}\\
 \ac{WG} beziehungsweise sein gebildeter Tunnel stellt den einzigen Kommunikationspfad zwischen dem Hot-Basis-System (Middleware) und der Signierer-\ac{VM} (Key~A) dar, wodurch die Signierer-\ac{VM} von keinem anderen System erreichbar ist. Übertragen werden ausschließlich die zu signierenden \acp{PSBT} vom Basis-System zur Signierer-\ac{VM} und zurückgegeben werden die signierten \acp{PSBT}. Das geheime Schlüsselmaterial wird nicht ausgetauscht und verlässt zu keinem Zeitpunkt die \ac{VM} von Key~A (siehe \ref{sec:in_transit_vault}).
@@ -272,7 +272,7 @@ Nach dem Auslösen der \ac{BIP}21-Schnittstelle wird geprüft, ob der Partner ei
 
 Jegliche Statusveränderung im Prozess wird in der \ac{PSBT}-\ac{DB} geloggt und kann darüber nachvollzogen werden. Zudem wird die Entscheidung des \ac{OPA} samt Begründung und Eingabe separat in \path{btc.opa_decision} persistiert.
 
-Insgesamt lassen sich die Auslöser einer Transaktion in vier Rails einteilen: die beiden externen \ac{HTTP}-Eingänge \texttt{bip21} und \texttt{psbt}, den über \ac{NATS} ausgelösten manuellen Operator-Pfad \texttt{manual} sowie die intern durch \ac{OPA} erzeugten Austausch-Transaktionen \texttt{OPA\_hot} und \texttt{OPA\_cold} (siehe Tabelle~\ref{tab:tx_rails}).
+Insgesamt lassen sich die Auslöser einer Transaktion in vier Rails einteilen: die beiden externen \ac{HTTP}-Eingänge \texttt{BIP21} und \texttt{PSBT}, den über \ac{NATS} ausgelösten manuellen Operator-Pfad \texttt{manual} sowie die intern durch \ac{OPA} erzeugten Austausch-Transaktionen \texttt{OPA\_hot} und \texttt{OPA\_cold} (siehe Tabelle~\ref{tab:tx_rails}).
 
 \begin{table}[htbp]
 \centering
@@ -283,7 +283,7 @@ Insgesamt lassen sich die Auslöser einer Transaktion in vier Rails einteilen: d
 \toprule
 \textbf{Rail} & \textbf{Auslöser} & \textbf{Whitelist} & \textbf{\ac{OPA} Betrag/Fee} & \textbf{Daily-Cap} \\
 \midrule
-\texttt{bip21}  & \ac{HTTP} \texttt{\seqsplit{/api/v1/request/bip21}} & ext & ja & ja \\
+\texttt{BIP21}  & \ac{HTTP} \texttt{\seqsplit{/api/v1/request/bip21}} & ext & ja & ja \\
 \texttt{psbt}   & \ac{HTTP} \texttt{\seqsplit{/api/v1/request/psbt}}  & ext & ja & ja \\
 \texttt{manual} & \ac{NATS} \texttt{\seqsplit{psbt.submit.requested}} (Operator, fertige \ac{PSBT}) & Bypass & übersprungen & ja \\
 \texttt{OPA\_hot}/\texttt{OPA\_cold} & interne Tauschlogik & interne Wallets & übersprungen & -- \\

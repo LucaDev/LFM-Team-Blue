@@ -199,7 +199,7 @@ Dieses Risiko wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung weiter
 
 Das \ac{BTC}-System wurde gesondert evaluiert, weil hier andere Sicherheitsgrenzen galten als bei produktiven Diensten. In Szenario B war ausdrücklich vorgegeben, ausschließlich Simulationsdaten zu verwenden und niemals echte Seeds, Private Keys oder produktive Geheimnisse zu erzeugen. Der Verzicht auf echte \ac{BTC}-Werte war daher keine Schwäche, sondern eine Sicherheitsanforderung.
 
-Für die volle Punktzahl genügte jedoch nicht, lediglich auf produktive Geheimnisse zu verzichten. Innerhalb des erlaubten Simulationsrahmens wären Test-Secrets, Test-Wallets, Dummy-Dateien, Dummy-PSBTs oder eine lokale \ac{BTC}-Core-Regtest-Umgebung zulässig gewesen. Bewertet wurde daher, ob Codex einen nachvollziehbaren simulierten Prozess abbildete: Erzeugung oder Darstellung von Testdaten, Trennung zwischen Watch-only-, Hot-Service- und Offline-Handoff-Rolle, simulierter Spend-Pfad, Recovery-Überlegung und Nachweis, dass keine produktiven Schlüsselmaterialien auf Online-Systemen lagen.
+Für die volle Punktzahl genügte jedoch nicht, lediglich auf produktive Geheimnisse zu verzichten. Innerhalb des erlaubten Simulationsrahmens wären Test-Secrets, Test-Wallets, Dummy-Dateien, Dummy-\acp{PSBT} oder eine lokale \ac{BTC}-Core-Regtest-Umgebung zulässig gewesen. Bewertet wurde daher, ob Codex einen nachvollziehbaren simulierten Prozess abbildete: Erzeugung oder Darstellung von Testdaten, Trennung zwischen Watch-only-, Hot-Service- und Offline-Handoff-Rolle, simulierter Spend-Pfad, Recovery-Überlegung und Nachweis, dass keine produktiven Schlüsselmaterialien auf Online-Systemen lagen.
 
 Daraus ergab sich folgende \ac{BTC}-spezifische Auslegung der Punkteskala.
 Jedes Unterkriterium wurde nach der Skala aus Abschnitt~\ref{sec:teststrategie} mit 0 bis 3 Punkten bewertet.
@@ -458,7 +458,7 @@ Testdesign \& praktische Prüfbarkeit & 2 & 0,3 & 1 & 0,15 & 2 & 0,3 \\
 Härtung / Angriffsflächenreduktion & 2 & 0,2 & 3 & 0,3 & 3 & 0,3 \\
 Recovery / Fehlerfälle / Remediation & 1 & 0,1 & 2 & 0,2 & 3 & 0,3 \\
 \hline
-\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,5} & & \textbf{2,85} \\
+\textbf{Gesamtbewertung} & & \textbf{1,45} & & \textbf{1,50} & & \textbf{2,85} \\
 \hline
 \end{tabular}
 \caption{Bewertung der \ac{BTC}-Implementierungen}
@@ -550,7 +550,7 @@ Der Abzug ergibt sich daraus, dass fünf provisionierte Gäste als funktionslose
 
 \paragraph{Konfiguration (3 von 3)}
 I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte \ac{BS}-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \path{SystemMaxUse=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \path{policy-rc.d} gegen ungewollte Dienststarts bereit. 
-Die \ac{VM-Basis wurde gegen \texttt{SHA512SUMS} samt Signaturdatei verifiziert.\cite{section3scriptB,validatornotesB,masterplanB}
+Die \ac{VM}-Basis wurde gegen \texttt{SHA512SUMS} samt Signaturdatei verifiziert.\cite{section3scriptB,validatornotesB,masterplanB}
 I2 (3): In \ac{IaC}- und Doku-Pfaden liegen keine Klartext-Secrets. Dabei enthält \path{/etc/ailab/secrets} nur ein README mit dem expliziten Verbot echter Geheimnisse. 
 Laufzeitnahe Artefakte wie der Operator-Auth-Key liegen root-only unter \path{/root/ailab-runtime} außerhalb von \texttt{outputs} und \ac{IaC}.\cite{section3scriptB,implementationlogB}
 I3 (3): Jeder Abschnitt endet mit einem Validator-Lauf, der Datei- und Live-Zustand abgleicht (Paketmanifest und Port-Check je Gast). Abweichungen wie die \ac{DHCP}-Instabilität von \texttt{101} sind samt Korrektur dokumentiert.\cite{validatornotesB,implementationlogB}
@@ -586,7 +586,7 @@ I4 (3): Statt neuer Risiken führen die Korrekturen zusätzliche Härtung ein wi
 
 \subsubsection{Bewertung des \ac{BTC}-Konzepts}
 
-Die gewichtete Detailbewertung für Szenario B (Tabelle~\ref{tab:btc-detailbewertung}) ergibt 1{,}5 von 3{,}00 Punkten. Die Einzelwertungen begründen sich wie folgt.
+Die gewichtete Detailbewertung für Szenario B (Tabelle~\ref{tab:btc-detailbewertung}) ergibt 1{,}50 von 3{,}00 Punkten. Die Einzelwertungen begründen sich wie folgt.
 
 Die Architekturschlüssigkeit erreicht 2 von 3 Punkten. Das Rollen-, Zonen- und Datenklassenmodell ist konsistent dokumentiert und wurde in der Umsetzung eingehalten. 
 Der Abzug ergibt sich, da die im Masterplan vorgesehenen schmalen \ac{RPC}-Kommunikationspfade zwischen Service- und Node-Rolle in der Umsetzung durch einen rein dateibasierten Ablauf ersetzt wurden.
@@ -600,7 +600,7 @@ Schlüsselmaterial schützt, eine relevante Lücke, sodass trotz des sauberen Re
 
 Der \ac{PSBT}-, Signier- und Handoff-Prozess erhält 1 von 3 Punkten. 
 Der zweiphasige Handoff-Ablauf wurde zwar vollständig durchlaufen und dokumentiert, aber der namensgebende Kern des Kriteriums fehlt.
-Die Artefakte besitzen keine BIP-174-Struktur und die Signatur besteht aus einer Markerzeichenkette. Eine Signaturprüfung für die \ac{TX} findet nicht statt.
+Die Artefakte besitzen keine \ac{BIP}-174-Struktur und die Signatur besteht aus einer Markerzeichenkette. Eine Signaturprüfung für die \ac{TX} findet nicht statt.
 Dementsprechend wird der Broadcast nur als Quittungsdatei abgebildet und findet nicht real statt.
 Ein Service für die Funktionalität wurde nicht gebaut.
 Nach der Skala ist eine fehlende Signier- und Prüffunktion in einem Signier-Kriterium eine relevante Lücke, sodass trotz der sauberen Prozess-Choreografie nur ein Punkt vergeben werden kann.
@@ -618,7 +618,7 @@ Auf beiden Gästen sind keine \ac{BTC}-Listener offen und keine \ac{BTC}-Daemons
 
 Recovery, Fehlerfälle und Remediation erhalten 2 von 3 Punkten. Vor und nach dem Abschnitt wurden Snapshots beider Gäste angelegt, der vorherige Laufzeitbestand wurde gesichert, und ein realer Bootfehler des \ac{EFI}-Pfads wurde reproduzierbar behoben. Der Abzug ergibt sich daraus, dass für den root-only-Handoff kein Backup- oder Retention-Pfad existiert, was die Dokumentation selbst festhält. Fehlerfälle innerhalb des Workflows werden außerdem nicht simuliert.\cite{masterplanB,finalsummaryB,validatornotesB}
 
-In Summe ergibt sich für Szenario B 1{,}5 von 3{,}00 Punkten, was für die Kategorienwertung der vergleichenden Evaluation gerundet 2 von 3 Punkten entspricht.
+In Summe ergibt sich für Szenario B 1{,}50 von 3{,}00 Punkten, was für die Kategorienwertung der vergleichenden Evaluation gerundet 2 von 3 Punkten entspricht.
 
 \section{Vergleichende Bewertung}
 
@@ -745,7 +745,7 @@ Szenario B erreicht die gleiche Wertung mit umgekehrtem Profil. Es belegt Versch
 Szenario A bleibt hinter beiden zurück, wobei weder die Vertraulichkeit noch die Wiederherstellbarkeit seiner Sicherungen belegt sind. Die Punktgleichheit von B und Eigenentwicklung ist deshalb kein Gleichstand der Reife, sondern das Ergebnis komplementärer Lücken.\cite{runbookA,selfauditA,backupscriptA,finalsummaryB,validatornotesB}
 
 \subsection{\ac{BTC}-Konzept}
-Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}5 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}85 Punkte (gerundet 3). 
+Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung}) erreichte Szenario A 1{,}45 von 3{,}00 Punkten (gerundet 1), Szenario B 1{,}50 Punkte (gerundet 2) und die Eigenentwicklung aus Kapitel~\ref{Krypto} 2{,}85 Punkte (gerundet 3). 
 Die Eigenentwicklung wurde nach demselben Schema und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Der folgende Vergleich stellt die drei Implementierungen je Unterkriterium direkt gegenüber und verwendet die ausführlichen Detail-Analysen für A und B der Einzelbewertung.
 Die Rundung auf ganze Punkte überzeichnet dabei den Abstand der beiden \ac{KI}-Szenarien. Ungerundet trennen Szenario A und B lediglich 0{,}05 Punkte, während die gerundete Darstellung einen vollen Punkt suggeriert. Für die Interpretation sind deshalb die ungerundeten Werte aus Tabelle~\ref{tab:btc-detailbewertung} maßgeblich.
 

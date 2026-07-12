@@ -68,32 +68,32 @@ unseren Anwendungsfall schlicht überdimensioniert waren:
     Anwendungsfall (Caching für Immich und Paperless) aber keine Rolle. Der Hauptgrund für Dragonfly war die Verfügbarkeit eines Dragonfly Operators.
 \end{itemize}
 
-\subsubsection*{Ein einziger gehärteter Apphost statt VM pro Dienst}
+\subsubsection*{Ein einziger gehärteter Apphost statt \ac{VM} pro Dienst}
 
 Eine weitere zentrale Entscheidung war, alle Dienste auf einer einzigen, gut
 abgesicherten virtuellen Maschine zu betreiben, statt jeden Dienst in eine
-eigene VM zu legen. Dafür gab es mehrere Gründe:
+eigene \ac{VM} zu legen. Dafür gab es mehrere Gründe:
 
 \begin{itemize}
-  \item \textbf{Geringere Komplexität.} Eine VM pro Dienst hätte schnell zu
+  \item \textbf{Geringere Komplexität.} Eine \ac{VM} pro Dienst hätte schnell zu
     einem unübersichtlichen Wildwuchs geführt. Bei über 18 Diensten wären
     das über 18 Betriebssysteme, die alle einzeln aktualisiert, gehärtet und
     überwacht werden müssten. Das ist gerade für den Endanwender kaum noch
     handhabbar.
-  \item \textbf{Kein internes Routing nötig.} Mit vielen VMs bräuchte man ein
+  \item \textbf{Kein internes Routing nötig.} Mit vielen \acp{VM} bräuchte man ein
     internes Routing zwischen ihnen. Auf einem Host übernimmt das Docker mit
     seinen internen Netzwerken, und wir können die Segmentierung sauber und an
     einer Stelle definieren (siehe Abschnitt~\ref{sec:apphost-netze}).
   \item \textbf{Kein Vendor-Lock-in auf Proxmox.} Wir haben bewusst auf die
     \ac{SDN}- und Netzwerk-Features von Proxmox verzichtet. Man sieht an Beispielen
-    wie VMware, wohin eine starke Abhängigkeit von einem einzelnen Hersteller
+    wie \textbf{VMware}, wohin eine starke Abhängigkeit von einem einzelnen Hersteller
     führen kann. Indem die gesamte Netzwerksegmentierung innerhalb des Apphosts
     in Docker stattfindet, bleibt der Apphost portabel. Er ließe sich theoretisch
     auch direkt auf Bare Metal oder unter einem anderen Hypervisor betreiben, ohne
     dass etwas an der Konfiguration geändert werden muss.
 \end{itemize}
 
-Die Isolation zwischen den Diensten erreichen wir also nicht über viele VMs,
+Die Isolation zwischen den Diensten erreichen wir also nicht über viele \acp{VM},
 sondern über getrennte Docker-Netzwerke, User-Namespace-Remapping und eine
 strikt gehärtete Host-Konfiguration. Das halten wir für den besseren
 Kompromiss aus Sicherheit und Wartbarkeit.
@@ -108,10 +108,10 @@ einer Privatperson realistischerweise vorfinden würde.
 \subsubsection*{OPNsense als Router}
 
 Als Router und Firewall des simulierten Heimnetzes haben wir OPNsense in einer
-eigenen VM betrieben. OPNsense ist eine quelloffene Firewall, die
+eigenen \ac{VM} betrieben. OPNsense ist eine quelloffene Firewall, die
 auch in einem realen Einsatz beim Mandanten eine sinnvolle Wahl wäre. Nur die
-OPNsense-VM hatte direkten Zugriff auf das Internet und hat den ausgehenden
-Verkehr für das interne Netz per NAT maskiert. Dahinter lief alles so, wie man
+OPNsense-\ac{VM} hatte direkten Zugriff auf das Internet und hat den ausgehenden
+Verkehr für das interne Netz per \ac{NAT} maskiert. Dahinter lief alles so, wie man
 es aus einem normalen Heimnetz kennt: \ac{DHCP} für die internen Geräte, ein
 lokaler \ac{DNS}-Cache und ein flaches internes Netzwerk.
 
@@ -196,7 +196,7 @@ keine sensiblen Daten ungeschützt im Swap landen.
 
 Optional lässt sich die Root-Partition mit LUKS2 verschlüsseln. \label{sec:LUKS2_apphost}
 Standardmäßig ist das jedoch deaktiviert, weil die Annahme getroffen wird,
-dass der gesamte Proxmox Host durch den Nutzer mit Festplattenverschlüsselung installiert wurde.
+dass der gesamte Proxmox-Host durch den Nutzer mit Festplattenverschlüsselung installiert wurde.
 Wer die zusätzliche Schutzschicht dennoch möchte, kann sie bei der Installation aktivieren.
 Die Umschaltung wirkt nur bei einer Neuinstallation, da dafür die Festplatte neu partitioniert
 wird.
@@ -255,9 +255,9 @@ verteilt die Anfragen anhand der Subdomain an den jeweiligen Dienst. Die
 Zuordnung passiert über Container-Labels, die Traefik direkt aus Docker liest.
 Damit Traefik nicht den vollen Zugriff auf den Docker-Socket braucht, lesen wir
 die Docker-\ac{API} ausschließlich über einen eingeschränkten Socket-Proxy aus,
-der nur lesende Anfragen zulässt, um selbst bei kompromitierung von Traefik keinen vollzugriff auf das System zu ermöglichen.
+der nur lesende Anfragen zulässt, um selbst bei Kompromitierung von Traefik keinen Vollzugriff auf das System zu ermöglichen.
 
-Für den internen Zugriff über das Heimnetz nutzen wir eine eigene Domain (z.B in unseren Tests: lbaecker.de), dessen \ac{DNS}-A Eintrag direkt auf die private IP-Adresse des Servers im Heimnetzwerk zeigt. Von außen ist dieser Eintrag zwar öffentlich auflösbar, jedoch nicht erreichbar. Die private IP ist außerhalb des Heimnetzes nicht routbar, wodurch kein Risiko (bis auf die Möglichkeit für Angreifer, die IP Adresse des Apphosts von außen zu ermitteln) entsteht. Diese sehr unkritische Information-Exposure stellt einen Tradeoff dar. Es wäre auch möglich, einen statischen \ac{DNS} Eintrag im lokalen \ac{DNS}-Resolver des Routers zu hinterlegen. Ein so sicherheitsbewusster Nutzer wie unser Mandant wird jedoch sicherlich einige Geräte besitzen, die standardmäßig auf sicheres \ac{DNS} setzen und den via \ac{DHCP}/Router Advertisement verteilten \ac{DNS}-Server ignorieren. Durch diesen Ansatz lässt sich die IP-Adresse problemlos mit jedem \ac{DNS}-Server auflösen. Ein interner Eintrag im Router kann auch zusätzlich erfolgen.
+Für den internen Zugriff über das Heimnetz nutzen wir eine eigene Domain (z. B. in unseren Tests: lbaecker.de), deren \ac{DNS}-A Eintrag direkt auf die private \ac{IP}-Adresse des Servers im Heimnetzwerk zeigt. Von außen ist dieser Eintrag zwar öffentlich auflösbar, jedoch nicht erreichbar. Die private \ac{IP} ist außerhalb des Heimnetzes nicht routbar, wodurch kein Risiko (bis auf die Möglichkeit für Angreifer, die \ac{IP} Adresse des Apphosts von außen zu ermitteln) entsteht. Diese sehr unkritische Information-Exposure stellt einen Tradeoff dar. Es wäre auch möglich, einen statischen \ac{DNS} Eintrag im lokalen \ac{DNS}-Resolver des Routers zu hinterlegen. Ein so sicherheitsbewusster Nutzer wie unser Mandant wird jedoch sicherlich einige Geräte besitzen, die standardmäßig auf sicheres \ac{DNS} setzen und den via \ac{DHCP}/Router Advertisement verteilten \ac{DNS}-Server ignorieren. Durch diesen Ansatz lässt sich die \ac{IP}-Adresse problemlos mit jedem \ac{DNS}-Server auflösen. Ein interner Eintrag im Router kann auch zusätzlich erfolgen.
 
 Der Charme der Lösung mit einer echten Domain liegt darin, dass wir ein echtes, öffentlich vertrauenswürdiges Zertifikat von Let's Encrypt bekommen, statt auf selbstsignierte Zertifikate zurückgreifen zu müssen. Das hat mehrere praktische Vorteile. Erstens kommt es
 zu keinen Zertifikatswarnungen im Browser. Das ist nicht nur bequemer, sondern
@@ -282,7 +282,7 @@ Eine bewusste Ausnahme bildet der Tor-Zugang. Onion-Adressen lassen sich von
 Let's Encrypt nicht zertifizieren, und sie brauchen es auch nicht, weil die
 Verbindung über Tor bereits Ende-zu-Ende verschlüsselt ist. Dort verwenden wir
 deshalb ein selbstsigniertes Zertifikat, was im Tor-Browser unkritisch ist.
-Auch wenn ein Zertifikat nicht notwendig wäre, da Tor die Verschlüsselung übernimmt, ist es dennoch sinnvoll, weil es eine zusätzliche Schutzschicht gegen Angreifer bildet, sollte das Tor-Netzwerk kompromittiert werden, oder sicherheitsschwächen im Tor-Protokoll selbst auftreten.
+Auch wenn ein Zertifikat nicht notwendig wäre, da Tor die Verschlüsselung übernimmt, ist es dennoch sinnvoll, weil es eine zusätzliche Schutzschicht gegen Angreifer bildet, sollte das Tor-Netzwerk kompromittiert werden, oder Sicherheitsschwächen im Tor-Protokoll selbst auftreten.
 
 
 \subsubsection{Single Sign-On mit Authelia}
@@ -339,7 +339,7 @@ verhalten sich völlig transparent: Home Assistant zum Beispiel orientiert sich 
 jeweils anfragenden Host und stellt sich automatisch auf die gerade verwendete
 \ac{URL} ein, sodass der Wechsel zwischen internem Pfad und Tor dort unbemerkt
 funktioniert. Eine echte Einschränkung betrifft dagegen die Dienste, die sich
-über \ac{OIDC} an Authelia anmelden. \ac{OIDC} bindet die ausgestellten Tokens, die Redirect-URIs
+über \ac{OIDC} an Authelia anmelden. \ac{OIDC} bindet die ausgestellten Tokens, die Redirect-\acp{URI}
 und vor allem die sogenannte Issuer-\ac{URL} fest an eine einzige Basis-Adresse.
 Betreiben wir Authelia intern unter \texttt{auth.domain}, dann sind alle Tokens
 auf genau diese Adresse ausgestellt. Versucht sich derselbe Nutzer anschließend
@@ -354,7 +354,7 @@ warum wir dem Mandanten dafür ergänzend einen WireGuard-Zugang empfehlen, steh
 im Abschnitt zu den eingegangenen Kompromissen.
 
 \subparagraph{Hintergrund}
-Der Zusammenhang mit dem \ac{HTTP} Host-Header ist dabei ganz direkt. Authelia bestimmt zwar die Issuer \ac{URL} aus einer statisch konfigurierten Basis-Adresse, prüft aber bei jeder Abfrage, ob der Host bzw X-Forwarded-Host Header zu dieser passt. Greift ein Client über eine andere Adresse zu (z.B. die Tor Adresse), schlägt dieser Abgleich fehl. Selbst wenn dieser Abgleich umgangen werden könnte, bliebe das Problem bestehen, da der ausgestellte \texttt{\ac{ID}-Token} die falsche Issuer-\ac{URL} trägt und die Anwendung sie gegen die hinterlegte validiert (oder: validieren sollte). Eine Lösung über den Browser (etwa durch Header-Manipulation) ist daher (meines erachtens nach) nicht sinnvoll möglich. Würden die \ac{OIDC}-Clienten Host-Header nicht strikt validieren, wären sie für Injection-Angriffe anfällig. Die feste Bindung ist daher kein Mangel, sondern eine bewusste Sicherheitsfunktion von \ac{OIDC}, welche wir nicht umgehen können, ohne die Sicherheit des gesamten Systems signifikant herabzusetzen.
+Der Zusammenhang mit dem \ac{HTTP} Host-Header ist dabei ganz direkt. Authelia bestimmt zwar die Issuer \ac{URL} aus einer statisch konfigurierten Basis-Adresse, prüft aber bei jeder Abfrage, ob der Host bzw. X-Forwarded-Host Header zu dieser passt. Greift ein Client über eine andere Adresse zu (z.B. die Tor Adresse), schlägt dieser Abgleich fehl. Selbst wenn dieser Abgleich umgangen werden könnte, bliebe das Problem bestehen, da der ausgestellte \texttt{\ac{ID}-Token} die falsche Issuer-\ac{URL} trägt und die Anwendung sie gegen die hinterlegte validiert (oder: validieren sollte). Eine Lösung über den Browser (etwa durch Header-Manipulation) ist daher (meines Erachtens nach) nicht sinnvoll möglich. Würden die \ac{OIDC}-Klienten Host-Header nicht strikt validieren, wären sie für Injection-Angriffe anfällig. Die feste Bindung ist daher kein Mangel, sondern eine bewusste Sicherheitsfunktion von \ac{OIDC}, welche wir nicht umgehen können, ohne die Sicherheit des gesamten Systems signifikant herabzusetzen.
 
 \subsubsection{Monitoring und Alerting} \label{sec:apphost-monitoring}
 
@@ -414,7 +414,7 @@ Compose-Dateien und sind damit für den Mandanten nachvollziehbar:
   \item \textbf{Capabilities auf null und gezielt zurück.} Wir entfernen mit
     \texttt{cap\_drop: ALL} zunächst sämtliche Linux-Capabilities und geben
     anschließend pro Dienst nur die wenigen wieder frei, die er wirklich
-    braucht. Typischerweise sind das SETUID oder SETGID, wenn der Container selbst intern den Benutzer welchselt. 
+    braucht. Typischerweise sind das SETUID oder SETGID, wenn der Container selbst intern den Benutzer wechselt. 
   \item \textbf{Read-only Dateisystem.} Wo es der Dienst zulässt (z.B. Traefik,
     Tor, Garage, Node-Exporter, Homepage, ntfy und Mosquitto), wird das
     Wurzeldateisystem des Containers schreibgeschützt eingebunden. Für die
@@ -609,7 +609,7 @@ setzen wir an mehreren Stellen an:
   \item \textbf{Tor.} Der Zugriff über Onion Services verbirgt sowohl die
     Identität des Servers als auch die des Nutzers vor dem lokalen Provider.
   \item \textbf{Verschlüsseltes \ac{DNS}.} Der Host nutzt \ac{DNS}-over-\ac{TLS} mit
-    \ac{DNS}SEC-Validierung gegen Resolver ohne Logging-Policy (Cloudflare und Quad9),
+    \ac{DNSSEC}-Validierung gegen Resolver ohne Logging-Policy (Cloudflare und Quad9),
     sodass \ac{DNS}-Anfragen nicht im Klartext beim Provider landen.
   \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über \ac{NTS}, also authentifiziert über \ac{TLS}.
   \item \textbf{Keine fremde Cloud für Benachrichtigungen.} Wie beschrieben laufen
@@ -622,13 +622,13 @@ Kein reales Setup ist frei von Kompromissen. Wir halten es für wichtig, diese
 offen zu benennen:
 
 \begin{itemize}
-  \item \textbf{Ein Host statt vieler VMs.} Wir bündeln viele Dienste auf einem
+  \item \textbf{Ein Host statt vieler \acp{VM}.} Wir bündeln viele Dienste auf einem
     Host. Damit ist der Host ein attraktiveres Ziel, als es eine einzelne
-    Mini-VM wäre. Wir halten das für vertretbar, weil die Isolation über
+    Mini-\ac{VM} wäre. Wir halten das für vertretbar, weil die Isolation über
     Docker-Netzwerke, User-Namespaces und die sehr umfangreiche Host-Härtung
     erfolgt und der Gewinn an Wartbarkeit für den Mandanten den Unterschied
     überwiegt.
-  \item \textbf{\ac{OIDC}und der duale \ac{URL}-Raum.} Dienste mit \ac{OIDC} funktionieren nicht
+  \item \textbf{\ac{OIDC} und der duale \ac{URL}-Raum.} Dienste mit \ac{OIDC} funktionieren nicht
     nahtlos gleichzeitig über die interne Domain und über Tor, weil \ac{OIDC} die
     Tokens fest an eine Basis-\ac{URL} bindet (die Mechanik dahinter haben wir im
     Tor-Abschnitt erläutert). Das ist eine reine Komforteinschränkung und kein
@@ -642,7 +642,7 @@ offen zu benennen:
     \texttt{SYS\_ADMIN}). Das ist der am wenigsten eingeschränkte Container im
     Stack. Wir akzeptieren das, weil die Funktion sonst nicht läuft, und
     begrenzen das Risiko über die Netzwerksegmentierung und die Anmeldung an OpenCloud. Aus diesem Grund ist Collabora jedoch standardmäßig nicht über Tor erreichbar.
-    In dem letzten Monaten hat sich \ac{EU}-Office als (\ac{EU}-)Fork von Onlyoffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. \ac{EU}-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von \ac{EU}-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
+    In den letzten Monaten hat sich \ac{EU}-Office als (\ac{EU}-)Fork von OnlyOffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. \ac{EU}-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von \ac{EU}-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
   \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen Sandbox-Runtimes
     sind vorbereitet, aber standardmäßig nicht aktiv (siehe nächster
     Abschnitt).
@@ -651,10 +651,10 @@ offen zu benennen:
 \subsection{Backups und Wiederherstellung}
 
 Für die Sicherung setzen wir bewusst auf die in Proxmox integrierte
-Backup-Funktion. Proxmox sichert komplette VMs als konsistente Snapshots und
+Backup-Funktion. Proxmox sichert komplette \acp{VM} als konsistente Snapshots und
 kann diese regelmäßig und vollautomatisch wegschreiben. Der Grund für diese
 Entscheidung ist vor allem die Einfachheit für den Mandanten: Da der gesamte
-Apphost in einer einzigen VM lebt, sichert ein VM-Backup automatisch den
+Apphost in einer einzigen \ac{VM} lebt, sichert ein \ac{VM}-Backup automatisch den
 konsistenten Gesamtzustand aller Dienste auf einmal. Es gibt also keine Situation,
 in der nach einer Wiederherstellung die Datenbank eines Dienstes nicht mehr zu
 dessen Dateien passt. Gerade für einen Anwender ohne tiefes \ac{IT}-Wissen ist es
@@ -666,15 +666,15 @@ Lock-in ist aber gering: Das Backup-Format ist offen und gut dokumentiert, die
 Sicherungen sind durch Kompression und Deduplizierung sehr effizient, und die
 Backups lassen sich verschlüsseln. So sind die Daten auch dann geschützt, wenn
 ein Backup-Medium gestohlen wird. Für die Wiederherstellung nach einem
-Hardwaredefekt genügt es, Proxmox neu aufzusetzen und die VM aus dem letzten
+Hardwaredefekt genügt es, Proxmox neu aufzusetzen und die \ac{VM} aus dem letzten
 Backup zurückzuspielen.
 
 \subsubsection{Dateisystemintegrität mit \ac{AIDE}}
-\ac{AIDE} (Advanced Intrusion Detection Environment) prüft die Integrität des Dateisystems, indem es Prüfsummen und Metadaten (Rechte, Eigentümer, Timestamps) von im Vorfeld konfiguierten Dateien und Verzeichnissen in einer Datenbank ablegt und bei jedem weiteren Lauf mit ihr vergleicht. 
+\ac{AIDE} (Advanced Intrusion Detection Environment) prüft die Integrität des Dateisystems, indem es Prüfsummen und Metadaten (Rechte, Eigentümer, Timestamps) von im Vorfeld konfigurierten Dateien und Verzeichnissen in einer Datenbank ablegt und bei jedem weiteren Lauf mit ihr vergleicht. 
 
-Der Sinn dahinter ist, unautorisierte Veränderungen schnell sichtbar zu machen, wie etwa eine eingeschleuste Backdoor in einer Binary, einer manipulierten Konfigurationsdatei oder üblicherweise schnell zu übersehenden Veränderungen wie veränderten SUID-Bits. Es wird davon ausgegangen, dass ein Angreifer einige der Schutzmechanismen bereits überwunden hat und Spuren seiner Kompromittierung auf dem Dateisystem hinterlassen hat, die sich über \ac{AIDE} auffinden lassen.
+Der Sinn dahinter ist, unautorisierte Veränderungen schnell sichtbar zu machen, wie etwa eine eingeschleuste Backdoor in einer Binary, einer manipulierten Konfigurationsdatei oder üblicherweise schnell zu übersehenden Veränderungen wie veränderten \ac{SUID}-Bits. Es wird davon ausgegangen, dass ein Angreifer einige der Schutzmechanismen bereits überwunden hat und Spuren seiner Kompromittierung auf dem Dateisystem hinterlassen hat, die sich über \ac{AIDE} auffinden lassen.
 
-\ac{AIDE} läuft automatisiert über einen systemd-Timer (das moderne Equivalent zu einem Cronjob), die Ergebnisse müssen jedoch manuell geprüft werden.
+\ac{AIDE} läuft automatisiert über einen systemd-Timer (das moderne Äquivalent zu einem Cronjob), die Ergebnisse müssen jedoch manuell geprüft werden.
 
 \subsection{Sicherheitshärtung im Überblick}
 
@@ -689,10 +689,10 @@ geordneten Überblick, die vollständige Liste mit konkreten Werten befindet sic
   \item \textbf{Kernel:} Aktivierte \ac{CPU}-Mitigationen (Spectre, Meltdown, MDS und
     weitere), vollständiges \ac{ASLR}, init-on-alloc und init-on-free, erzwungene
     \ac{IOMMU}, eingeschränkter Zugriff auf Kernel-Informationen sowie eine an den
-    CIS-Benchmark angelehnte Modul-Blacklist.
+    \ac{CIS}-Benchmark angelehnte Modul-Blacklist.
   \item \textbf{Netzwerk:} nftables mit Default-Deny, rate-limited \ac{SSH} und
-    \ac{ICMP}, gehärtete Sysctl-Einstellungen, \ac{DNS}-over-\ac{TLS} mit \ac{DNS}SEC und
-    authentifizierte Zeit über NTS.
+    \ac{ICMP}, gehärtete Sysctl-Einstellungen, \ac{DNS}-over-\ac{TLS} mit \ac{DNSSEC} und
+    authentifizierte Zeit über \ac{NTS}.
   \item \textbf{Zugriff:} ausschließlich schlüsselbasiertes \ac{SSH} mit modernen
     und post-quanten-fähigen Verfahren, gehärtetes sudo mit I/O-Logging, eine
     unveränderliche Benutzerdatenbank, ein gesperrtes Root-Konto und AppArmor
@@ -722,8 +722,8 @@ größere Schwierigkeiten gestoßen sind und wie wir damit umgegangen sind.
     kompletten Rewrite auf Docker Compose entschieden, weil das Endergebnis
     dadurch wartbarer und für den Mandanten nachvollziehbarer ist. Im Rückblick
     war das die richtige Entscheidung, auch wenn sie viel Arbeit gekostet hat. Grund war ein gewisser Bias, der sich über Jahre entwickelt hat.
-  \item \textbf{Der Bias.} Durch die jahrelange Arbeit mit Kubernetes Clustern, entstand ein gewisser architektonischer Bias. Best Practices sind bekannt und oft sind sogar bereits fertige Lösungsbausteine existent. Dadurch entsteht entsteht die Tendenz, jede Herausforderung als Kubernetes-Usecase zu betrachten. Es ist jedoch wichtig, objektiv zu bleiben und anzuerkennen, dass diese Herangehensweise in bestimmten Einsatzszenarien keinen messbaren Vorteil bietet oder sogar unnötige Komplexität erzeugt.
-  Eines der Teammitglieder betreibt zum Beispiel seit Jahre sein Homelab auf Kubernetes-Basis: \texttt{https://github.com/LucaDev/Home/}
+  \item \textbf{Der Bias.} Durch die jahrelange Arbeit mit Kubernetes Clustern, entstand ein gewisser architektonischer Bias. Best Practices sind bekannt und oft sind sogar bereits fertige Lösungsbausteine existent. Dadurch entsteht die Tendenz, jede Herausforderung als Kubernetes-Usecase zu betrachten. Es ist jedoch wichtig, objektiv zu bleiben und anzuerkennen, dass diese Herangehensweise in bestimmten Einsatzszenarien keinen messbaren Vorteil bietet oder sogar unnötige Komplexität erzeugt.
+  Eines der Teammitglieder betreibt zum Beispiel seit Jahren sein Homelab auf Kubernetes-Basis: \texttt{https://github.com/LucaDev/Home/}
   \item \textbf{NixOS-Versionssprung kurz vor Abgabe.} Gegen Ende der
     Bearbeitungszeit erschien die neue NixOS-Version, und der Sprung auf
     \texttt{26.05} brachte einige Breaking Changes mit sich. Wir hätten es uns

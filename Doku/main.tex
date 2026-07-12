@@ -131,12 +131,12 @@
 % Hauptteil
 \pagestyle{headings} 
 %Anmerkung von M: subject to change
-	\include{Doku/Teil 1/Einleitung}
-    \include{Doku/Teil 1/Services}
+	\include{Doku/Teil1/Einleitung}
+    \include{Doku/Teil1/Services}
     \include{Doku/Apphost/Dokumentation}
-    \include{Doku/Teil 1/Krypto}
-    \include{Doku/Teil 2/KI3}
-    \include{Doku/Teil 3}
+    \include{Doku/Teil1/Krypto}
+    \include{Doku/Teil2/KI3}
+    \include{Doku/Teil3}
 
 
 \pagenumbering{Roman}
@@ -144,7 +144,7 @@
     
 %%%%%%%%%%%%%% Abkürzungsverzeichnis, obligatorisch
 %\addchap{Abkürzungsverzeichnis}
-%\input{abbreviations}
+%\input{Doku/Definitionen/Glossar}
 
 
 
@@ -156,12 +156,12 @@
 	\addcontentsline{toc}{chapter}{Literaturverzeichnis}
     \printbibliography[title={Literaturverzeichnis}]
 	
-%%%%%%%%%%%%%%%%%%%%%%%%  Stichwortverzeichnis optional  %%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%  Abkürzungsverzeichnis optional  %%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage
-\chapter*{Stichwortverzeichnis}
-\addcontentsline{toc}{chapter}{Stichwortverzeichnis}
+\chapter*{Abkürzungsverzeichnis}
+\addcontentsline{toc}{chapter}{Abkürzungsverzeichnis}
 \input{Doku/Definitionen/Glossar}
-    % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/stichwortverzeichnis/
+    % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/Abkürzungsverzeichnis/
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Anhang  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage
@@ -178,7 +178,7 @@
 \include{Doku/Anhang-KI}
 \include{Doku/Apphost/Anhang-Appverzeichnis}
 \include{Doku/Apphost/Anhang-Security}
-\include{Doku/Teil 1/Anhang-Krypto}
+\include{Doku/Teil1/Anhang-Krypto}
 
 % Danach ToC-Tiefe wiederherstellen, falls danach noch etwas kommt
 \addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
