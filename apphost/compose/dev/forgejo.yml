@@ -10,7 +10,7 @@ volumes:
   forgejo_data: {name: apphost_forgejo_data}
 services:
   forgejo:
-    image: codeberg.org/forgejo/forgejo:${FORGEJO_VERSION}
+    image: codeberg.org/forgejo/forgejo:15.0.2
     container_name: forgejo
     restart: unless-stopped
     runtime: runc
@@ -83,7 +83,7 @@ services:
       - "homepage.icon=gitea.png"
       - "homepage.href=https://${FORGEJO_SUBDOMAIN:-git}.${DOMAIN}"
   forgejo-init:
-    image: codeberg.org/forgejo/forgejo:${FORGEJO_VERSION}
+    image: codeberg.org/forgejo/forgejo:15.0.2
     container_name: forgejo-init
     restart: "no"
     runtime: runc

@@ -13,7 +13,7 @@ volumes:
   immich_ml_cache: {name: apphost_immich_ml_cache}
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION}
+    image: ghcr.io/immich-app/immich-server:v2.7.5
     container_name: immich-server
     restart: unless-stopped
     runtime: runc
@@ -71,7 +71,7 @@ services:
       - "homepage.icon=immich.png"
       - "homepage.href=https://${IMMICH_SUBDOMAIN:-photos}.${DOMAIN}"
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION}
+    image: ghcr.io/immich-app/immich-machine-learning:v2.7.5
     container_name: immich-ml
     restart: unless-stopped
     runtime: runc
@@ -95,7 +95,7 @@ services:
     labels:
       - "traefik.enable=false"
   immich-postgres:
-    image: ghcr.io/immich-app/postgres:${IMMICH_POSTGRES_VERSION}
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
     container_name: immich-postgres
     restart: unless-stopped
     runtime: runc
@@ -124,7 +124,7 @@ services:
     labels:
       - "traefik.enable=false"
   immich-redis:
-    image: docker.io/valkey/valkey:${VALKEY_VERSION:-9}
+    image: docker.io/valkey/valkey:8-alpine
     container_name: immich-redis
     restart: unless-stopped
     runtime: runc

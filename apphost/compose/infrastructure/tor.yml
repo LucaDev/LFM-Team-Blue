@@ -8,7 +8,7 @@ volumes:
     name: apphost_tor_data
 services:
   tor:
-    image: osminogin/tor-simple:${TOR_VERSION}
+    image: osminogin/tor-simple:0.4.9.8
     container_name: tor
     restart: unless-stopped
     runtime: runc

@@ -28,7 +28,7 @@ volumes:
   prometheus_data: {name: apphost_prometheus_data}
 services:
   prometheus:
-    image: prom/prometheus:${PROMETHEUS_VERSION}
+    image: prom/prometheus:v3.12.0
     container_name: prometheus
     restart: unless-stopped
     runtime: runc

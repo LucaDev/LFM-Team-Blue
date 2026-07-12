@@ -11,7 +11,7 @@ volumes:
     name: apphost_traefik_certs
 services:
   socket-proxy:
-    image: tecnativa/docker-socket-proxy:${SOCKET_PROXY_VERSION}
+    image: tecnativa/docker-socket-proxy:v0.4.2
     container_name: socket-proxy
     restart: unless-stopped
     runtime: runc
@@ -46,7 +46,7 @@ services:
     labels:
       - "traefik.enable=false"
   traefik:
-    image: traefik:${TRAEFIK_VERSION}
+    image: traefik:v3.7.1
     container_name: traefik
     restart: unless-stopped
     runtime: runc

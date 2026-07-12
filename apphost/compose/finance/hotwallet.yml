@@ -15,7 +15,7 @@ volumes:
   hotwallet_btccore_data: {name: apphost_hotwallet_btccore_data}
 services:
   hotwallet-postgres:
-    image: postgres:${HOTWALLET_POSTGRES_VERSION:-16}
+    image: postgres:16
     container_name: hotwallet-postgres
     restart: unless-stopped
     runtime: runc
@@ -47,7 +47,7 @@ services:
     labels:
       - "traefik.enable=false"
   hotwallet-nats:
-    image: nats:${HOTWALLET_NATS_VERSION:-2.10}
+    image: nats:2.10
     container_name: hotwallet-nats
     command: ["-c", "/etc/nats/nats-server.conf"]
     restart: unless-stopped
@@ -71,7 +71,7 @@ services:
     labels:
       - "traefik.enable=false"
   hotwallet-opa:
-    image: openpolicyagent/opa:${HOTWALLET_OPA_VERSION:-1.17.1}
+    image: openpolicyagent/opa:1.17.1
     container_name: hotwallet-opa
     command: ["run", "--watch", "--server", "--addr=0.0.0.0:8181", "/policies", "/data"]
     restart: unless-stopped

@@ -11,7 +11,7 @@ volumes:
   mosquitto_logs: {name: apphost_mosquitto_logs}
 services:
   mosquitto:
-    image: eclipse-mosquitto:${MOSQUITTO_VERSION}
+    image: eclipse-mosquitto:2.1.2-alpine
     container_name: mosquitto
     restart: unless-stopped
     runtime: runc

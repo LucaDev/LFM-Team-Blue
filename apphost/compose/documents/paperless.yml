@@ -14,7 +14,7 @@ volumes:
   paperless_redis: {name: apphost_paperless_redis}
 services:
   paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:${PAPERLESS_VERSION}
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
     container_name: paperless
     restart: unless-stopped
     runtime: runc
@@ -84,7 +84,7 @@ services:
       - "homepage.icon=paperless-ngx.png"
       - "homepage.href=https://paperless.${DOMAIN}"
   paperless-redis:
-    image: valkey/valkey:${VALKEY_VERSION}
+    image: valkey/valkey:8-alpine
     container_name: paperless-redis
     restart: unless-stopped
     runtime: runc

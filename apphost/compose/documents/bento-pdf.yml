@@ -8,7 +8,7 @@ networks:
     name: documents-network
 services:
   bento-pdf:
-    image: ghcr.io/alam00000/bentopdf-simple:${BENTO_PDF_VERSION}
+    image: ghcr.io/alam00000/bentopdf-simple:2.8.5
     container_name: bento-pdf
     restart: unless-stopped
     runtime: runc

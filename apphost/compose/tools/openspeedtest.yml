@@ -8,7 +8,7 @@ networks:
     name: tools-network
 services:
   openspeedtest:
-    image: openspeedtest/latest:${OPENSPEEDTEST_VERSION}
+    image: openspeedtest/latest:v2.0.6
     container_name: openspeedtest
     restart: unless-stopped
     runtime: runc

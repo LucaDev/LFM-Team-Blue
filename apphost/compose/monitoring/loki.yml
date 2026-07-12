@@ -7,7 +7,7 @@ volumes:
   loki_data: {name: apphost_loki_data}
 services:
   loki:
-    image: grafana/loki:${LOKI_VERSION}
+    image: grafana/loki:3.7.2
     container_name: loki
     restart: unless-stopped
     runtime: runc

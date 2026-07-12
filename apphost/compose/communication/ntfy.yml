@@ -10,7 +10,7 @@ volumes:
   ntfy_data: {name: apphost_ntfy_data}
 services:
   ntfy:
-    image: binwiederhier/ntfy:${NTFY_VERSION}
+    image: binwiederhier/ntfy:v2.23.0
     container_name: ntfy
     restart: unless-stopped
     runtime: runc

@@ -7,7 +7,7 @@ volumes:
   authelia_data: {name: apphost_authelia_data}
 services:
   authelia:
-    image: authelia/authelia:${AUTHELIA_VERSION}
+    image: authelia/authelia:4.38.18
     container_name: authelia
     restart: unless-stopped
     runtime: runc

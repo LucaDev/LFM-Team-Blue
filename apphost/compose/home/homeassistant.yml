@@ -10,7 +10,7 @@ volumes:
   homeassistant_data: {name: apphost_homeassistant_data}
 services:
   homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:${HOMEASSISTANT_VERSION}
+    image: ghcr.io/home-assistant/home-assistant:2026.5.4
     container_name: homeassistant
     restart: unless-stopped
     runtime: runc
