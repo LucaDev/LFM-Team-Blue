@@ -6,7 +6,7 @@
   "assignees": [],
   "reviewers": [],
 
-  "ignorePaths": ["apphost/.env", "apphost/scripts/**", "apphost/secrets/**"],
+  "ignorePaths": ["apphost/.env", "apphost/scripts/**", "apphost/secrets/**", "KI-Evaluaion/**"],
 
   "docker-compose": {
     "managerFilePatterns": [
