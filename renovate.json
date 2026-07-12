@@ -1,22 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":dependencyDashboard",
-    ":semanticCommits",
-    "group:allNonMajor"
-  ],
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
   "timezone": "Europe/Berlin",
-  "schedule": ["after 3am and before 5am on Monday"],
   "labels": ["dependencies", "renovate"],
   "assignees": [],
   "reviewers": [],
 
-  "ignorePaths": [
-    "apphost/.env",
-    "apphost/scripts/**",
-    "apphost/secrets/**"
-  ],
+  "ignorePaths": ["apphost/.env", "apphost/scripts/**", "apphost/secrets/**"],
 
   "docker-compose": {
     "managerFilePatterns": [
@@ -55,7 +45,7 @@
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Major Updates: manuell bestätigen",
+      "description": "Major Updates manuell bestätigen",
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "major-update"],
