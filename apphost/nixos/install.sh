@@ -262,7 +262,8 @@ cp "/mnt/opt/apphost/.env.example" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
 # Werte in .env eintragen (Python für sicheres Escaping beliebiger Zeichen)
-python3 - "$ENV_FILE" \
+# python3 ist auf dem Live-ISO nicht vorinstalliert, daher wie openssl/mkpasswd via nix run.
+nix run "${NIX_FLAGS[@]}" nixpkgs#python3 -- - "$ENV_FILE" \
     "$ENV_DOMAIN" "$ENV_ACME_EMAIL" "$ENV_CF_TOKEN" \
     "$ENV_AUTH_USER" "$ENV_AUTH_EMAIL" "$ENV_AUTH_PW" \
     "$ENV_MQTT_HA" "$ENV_MQTT_Z2M" "$ENV_MQTT_ESP" "$ENV_MQTT_RO" \

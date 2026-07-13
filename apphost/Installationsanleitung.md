@@ -11,27 +11,26 @@
 5. [Initiale NixOS-Konfiguration](#5-initiale-nixos-konfiguration)
 6. [Installation](#6-installation)
 7. [Secure Boot einrichten](#7-secure-boot-einrichten)
-8. [Cloudflare API-Token erstellen](#8-cloudflare-api-token-erstellen)
-9. [Stack starten](#9-stack-starten)
-10. [AIDE initialisieren](#10-aide-initialisieren)
+8. [Stack starten](#8-stack-starten)
+9. [AIDE initialisieren](#9-aide-initialisieren)
 
 **Teil 2 – Betrieb und Wartung**
 
-11. [Verwaltungs-Aliase](#11-verwaltungs-aliase)
-12. [Passwörter ändern](#12-passwörter-ändern)
-13. [AIDE Integritätsprüfung](#13-aide-integritätsprüfung)
-14. [Container-Sicherheitsbericht](#14-container-sicherheitsbericht)
-15. [Tor-Onion-Adresse anzeigen](#15-tor-onion-adresse-anzeigen)
-16. [Automatische Container-Updates mit RenovateBot](#16-automatische-container-updates-mit-renovatebot)
-17. [Proxmox-Backups einrichten](#17-proxmox-backups-einrichten)
-18. [Hot-Wallet Bitcoin-Custody-Stack](#18-hot-wallet-bitcoin-custody-stack)
+10. [Verwaltungs-Aliase](#10-verwaltungs-aliase)
+11. [Passwörter ändern](#11-passwörter-ändern)
+12. [AIDE Integritätsprüfung](#12-aide-integritätsprüfung)
+13. [Container-Sicherheitsbericht](#13-container-sicherheitsbericht)
+14. [Tor-Onion-Adresse anzeigen](#14-tor-onion-adresse-anzeigen)
+15. [Automatische Container-Updates mit RenovateBot](#15-automatische-container-updates-mit-renovatebot)
+16. [Proxmox-Backups einrichten](#16-proxmox-backups-einrichten)
+17. [Hot-Wallet Bitcoin-Custody-Stack](#17-hot-wallet-bitcoin-custody-stack)
 
 **Teil 3 – Referenz und Hintergrund**
 
-19. [Sicherheitshärtungen des Systems](#19-sicherheitshärtungen-des-systems)
-20. [Installierte Applikationen](#20-installierte-applikationen)
-21. [Architektonische Hinweise](#21-architektonische-hinweise)
-22. [Zusammenfassung der Mindestanforderungen](#22-zusammenfassung-der-mindestanforderungen)
+18. [Sicherheitshärtungen des Systems](#18-sicherheitshärtungen-des-systems)
+19. [Installierte Applikationen](#19-installierte-applikationen)
+20. [Architektonische Hinweise](#20-architektonische-hinweise)
+21. [Zusammenfassung der Mindestanforderungen](#21-zusammenfassung-der-mindestanforderungen)
 
 ---
 
@@ -45,7 +44,7 @@ Vor Beginn der Installation müssen folgende Bedingungen erfüllt sein:
 - Netzwerkzugang zur Proxmox-Weboberfläche und per SSH.
 - Eine eigene Domain mit der Möglichkeit, DNS-Einträge zu verwalten.
 - Zugang zum Router, um statische DHCP-Vergabe einzurichten.
-- Ein Cloudflare-Konto für die DNS-01-ACME-Challenge (kostenlos). Details siehe [Abschnitt 8](#8-cloudflare-api-token-erstellen).
+- Ein Cloudflare-Konto für die DNS-01-ACME-Challenge (kostenlos). Details siehe [Cloudflare API-Token erstellen](#cloudflare-api-token-erstellen) in Abschnitt 6.
 - Ein SSH-Schlüsselpaar auf dem lokalen Rechner (Admin-Client). Falls noch keines existiert, siehe [Abschnitt 6, SSH-Key für den Admin-Nutzer](#6-installation).
 
 > [!NOTE]
@@ -230,38 +229,32 @@ Der Prompt sollte lauten:
    sudo ./apphost/nixos/install.sh
    ```
 
-Das Skript partitioniert die Festplatte, installiert NixOS, generiert die Secure-Boot-Schlüssel und startet das System anschließend automatisch neu.
+Das Skript partitioniert die Festplatte, installiert NixOS, generiert die Secure-Boot-Schlüssel, installiert den Bootloader, fragt die `.env`-Werte ab (Domain, ACME E-Mail, Cloudflare-Token, Authelia-Zugangsdaten), generiert die restlichen Secrets (MQTT, Ntfy) automatisch und startet das System anschließend neu. Die folgenden Unterabschnitte beschreiben die interaktiven Prompts in der Reihenfolge, in der sie tatsächlich erscheinen.
 
-### SSH-Key für den Admin-Nutzer
+### Passwort für den Admin-Nutzer setzen
 
-Während der Installation fragt das Skript nach einem **SSH Public Key**, der für den Login als `apphost`-Nutzer hinterlegt wird:
+Als erstes fragt das Skript nach einem Passwort für den `apphost`-Nutzer (mit Bestätigung):
 
 ```
-SSH Public Key:
+Passwort:
+Passwort bestätigen:
+```
+
+> [!NOTE]
+> Dieses Passwort ist **nicht** identisch mit dem in [Abschnitt 5](#5-initiale-nixos-konfiguration) per `passwd` gesetzten temporären Passwort des Live-ISO-Nutzers `nixos` – jenes wird mit der Installation obsolet, da die Festplatte komplett neu beschrieben wird. Das hier gesetzte Passwort wird ausschließlich für `sudo` als zweiter Faktor nach dem SSH-Key benötigt.
+
+Direkt danach folgt die Sicherheitsabfrage vor der Partitionierung:
+
+```
+Bitte 'ja' eingeben um fortzufahren:
 ```
 
 > [!WARNING]
-> Passwort-Login ist deaktiviert, der hier hinterlegte SSH-Key ist der einzige Anmeldeweg zum Server. Das anfangs gesetzte Passwort wird ausschließlich für `sudo` als zweiter Faktor benötigt.
-
-Falls auf dem **lokalen Rechner** (nicht auf dem Server!) noch kein SSH-Schlüsselpaar existiert, zunächst dort eines erzeugen:
-
-```bash
-ssh-keygen -t ed25519 -C "<name>@<rechner>"
-```
-
-Die Standardpfade (`~/.ssh/id_ed25519` bzw. `~/.ssh/id_ed25519.pub`) können mit Enter übernommen werden, am besten mit Passphrase für eine weitere Schutzschicht.
-
-Anschließend den Public Key anzeigen und beim Prompt einfügen:
-
-```bash
-cat ~/.ssh/id_ed25519.pub
-```
-
-Der Key wird nach `nixos/ssh-key.nix` geschrieben und kann dort jederzeit nachträglich angepasst werden (z.B. um weitere Keys zu ergänzen). Änderungen an dieser Datei werden erst nach einem `sudo nixos-rebuild switch --flake /opt/apphost#apphost` wirksam.
+> Ab hier werden **alle Daten auf der Zielfestplatte unwiderruflich gelöscht**. Nur mit `ja` bestätigen, wenn die richtige Festplatte ausgewählt ist.
 
 ### Optionale Festplattenverschlüsselung
 
-Während der Partitionierung fragt das Skript, ob die Root-Partition zusätzlich mit LUKS2 verschlüsselt werden soll:
+Direkt danach fragt das Skript, ob die Root-Partition zusätzlich mit LUKS2 verschlüsselt werden soll:
 
 ```
 Festplattenverschlüsselung aktivieren? [j/N]:
@@ -273,6 +266,89 @@ Standardmäßig ist die Verschlüsselung **aus** (Antwort einfach mit Enter übe
 > Eine verschlüsselte Root-Partition muss bei **jedem** Boot mit dieser Passphrase über die Server-Konsole (z.B. die Proxmox-Konsole) entsperrt werden. Automatische Neustarts, etwa nach Kernel-Updates, bleiben dann so lange stehen, bis die Passphrase eingegeben wurde. Wer keinen regelmäßigen Konsolenzugriff hat, sollte die Verschlüsselung deaktiviert lassen.
 
 Die Einstellung lässt sich auch ohne den interaktiven Dialog umschalten, indem `nixos/disk-encryption.nix` vor der Installation manuell auf `true`/`false` gesetzt wird. Ein nachträgliches Umschalten auf einem bereits installierten System ist nicht möglich, da dafür die Festplatte neu partitioniert werden muss.
+
+### SSH-Key für den Admin-Nutzer
+
+Direkt danach fragt das Skript nach einem **SSH Public Key**, der für den Login als `apphost`-Nutzer hinterlegt wird:
+
+```
+SSH Public Key:
+```
+
+> [!WARNING]
+> Passwort-Login ist deaktiviert, der hier hinterlegte SSH-Key ist der einzige Anmeldeweg zum Server. Das zuvor gesetzte Passwort wird ausschließlich für `sudo` als zweiter Faktor benötigt.
+
+Falls auf dem **lokalen Rechner** (nicht auf dem Server!) noch kein SSH-Schlüsselpaar existiert, zunächst dort eines erzeugen:
+
+```bash
+ssh-keygen -t ed25519
+```
+
+Die Standardpfade (`~/.ssh/id_ed25519` bzw. `~/.ssh/id_ed25519.pub` unter Windows mit dem gleichen Dateinamen in `C:\Users\<Nutzername>\.ssh`) können mit Enter übernommen werden, am besten mit Passphrase für eine weitere Schutzschicht.
+
+Anschließend den Public Key (Endung: .pub) anzeigen und beim Prompt einfügen:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+
+Beispielausgabe:
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILjUx5YA3RwdM0xfXY7KMZb3N3BrK1tDyJ/qcQQvBWJE luca@Laptop-von-Luca.local
+```
+
+Der Key wird automatisch nach `nixos/ssh-key.nix` geschrieben und kann dort jederzeit nachträglich angepasst werden (z.B. um weitere Keys zu ergänzen). Änderungen an dieser Datei werden erst nach einem `rebuild` (siehe Aliase) wirksam.
+
+Nach diesem Prompt partitioniert und formatiert das Skript die Festplatte, installiert NixOS und richtet Secure Boot sowie den Bootloader ein – ohne weitere Eingaben. Erst danach folgt die `.env`-Konfiguration:
+
+### Cloudflare API-Token erstellen
+
+#### Warum Cloudflare?
+
+Für gültige TLS-Zertifikate (Let's Encrypt) wird die **ACME DNS-01-Challenge** verwendet. Bei dieser Methode beweist der Server den Besitz einer Domain, indem er einen temporären TXT-Eintrag in der DNS-Zone anlegt. Let's Encrypt prüft den Eintrag und stellt bei Erfolg das Zertifikat aus.
+
+Der Vorteil: Der Server muss dafür nicht aus dem Internet erreichbar sein. Ports 80/443 können vollständig hinter dem Router verbleiben. Cloudflare dient hier ausschließlich als DNS-Anbieter, der diesen TXT-Eintrag setzen darf. Es fließen **keinerlei sensible Inhalte** an Cloudflare.
+
+> [!NOTE]
+> **Andere DNS-Anbieter sind ebenfalls möglich** (z.B. Hetzner DNS, Namecheap, Porkbun). Cloudflare wurde gewählt, weil es registrar-unabhängig ist: Die DNS-Verwaltung kann auf Cloudflare umgezogen werden, unabhängig davon, wo die Domain registriert ist. Alle von Traefik unterstützten Anbieter sind unter `https://doc.traefik.io/traefik/https/acme/#providers` gelistet. Bei Verwendung eines anderen Anbieters muss `ACME_DNS_PROVIDER` in der `.env` entsprechend gesetzt und der passende API-Key-Variablenname verwendet werden.
+
+#### Cloudflare API-Token generieren
+
+1. Unter **dash.cloudflare.com** einloggen.
+2. Oben rechts auf das Profilbild klicken → **My Profile** → Reiter **API Tokens**.
+3. **Create Token** klicken.
+4. Die Vorlage **„Edit zone DNS"** auswählen und auf **Use template** klicken.
+5. Unter **Zone Resources** einstellen:
+   - _Include_ → _Specific zone_ → eigene Domain auswählen
+6. Optional: unter **Client IP Address Filtering** die IP des Servers eintragen, um den Token auf diese IP zu beschränken.
+7. **Continue to summary** → **Create Token**.
+8. Den angezeigten Token **sofort kopieren**. Er wird nur einmal angezeigt.
+
+> [!WARNING]
+> Der Token benötigt ausschließlich die Berechtigung `Zone:DNS:Edit` für die jeweilige Zone. Keinen globalen API-Key verwenden, ein scoped Token minimiert den Schaden bei versehentlicher Exposition.
+
+Der Token wird im nächsten Schritt als `CF_DNS_API_TOKEN` in die `.env`-Datei eingetragen.
+
+#### Beispiel
+
+![Beispielbild](docs/Cloudflare%20API%20Key.png)
+
+### .env konfigurieren
+
+Nach Abschluss der Installation (NixOS, Secure Boot, Bootloader) fragt das Skript noch die restlichen Werte für die `.env`-Datei ab:
+
+```
+Domain (z.B. example.com):
+ACME E-Mail (Let's Encrypt):
+Cloudflare API Token:
+Authelia Admin-Nutzer [admin]:
+Authelia Admin-E-Mail [<ACME E-Mail>]:
+Authelia Admin-Passwort:
+Authelia Admin-Passwort (bestätigen):
+```
+
+> [!NOTE]
+> **MQTT- und Ntfy-Passwörter werden automatisch als zufällige Zeichenketten generiert**, dafür ist keine Eingabe nötig. Alle Werte – auch die hier abgefragten – können jederzeit nachträglich in `/opt/apphost/.env` angepasst werden, siehe [Abschnitt 11](#11-passwörter-ändern).
+
+Anschließend generiert das Skript die Secrets für Authelia, MQTT und Ntfy und startet automatisch neu.
 
 ### Erneut per SSH verbinden
 
@@ -310,37 +386,7 @@ ssh apphost@<IP-ADRESSE>
 
 ---
 
-## 8. Cloudflare API-Token erstellen
-
-### Warum Cloudflare?
-
-Für gültige TLS-Zertifikate (Let's Encrypt) wird die **ACME DNS-01-Challenge** verwendet. Bei dieser Methode beweist der Server den Besitz einer Domain, indem er einen temporären TXT-Eintrag in der DNS-Zone anlegt. Let's Encrypt prüft den Eintrag und stellt bei Erfolg das Zertifikat aus.
-
-Der Vorteil: Der Server muss dafür nicht aus dem Internet erreichbar sein. Ports 80/443 können vollständig hinter dem Router verbleiben. Cloudflare dient hier ausschließlich als DNS-Anbieter, der diesen TXT-Eintrag setzen darf. Es fließen **keinerlei sensible Inhalte** an Cloudflare.
-
-> [!NOTE]
-> **Andere DNS-Anbieter sind ebenfalls möglich** (z.B. Hetzner DNS, Namecheap, Porkbun). Cloudflare wurde gewählt, weil es registrar-unabhängig ist: Die DNS-Verwaltung kann auf Cloudflare umgezogen werden, unabhängig davon, wo die Domain registriert ist. Alle von Traefik unterstützten Anbieter sind unter `https://doc.traefik.io/traefik/https/acme/#providers` gelistet. Bei Verwendung eines anderen Anbieters muss `ACME_DNS_PROVIDER` in der `.env` entsprechend gesetzt und der passende API-Key-Variablenname verwendet werden.
-
-### Cloudflare API-Token generieren
-
-1. Unter **dash.cloudflare.com** einloggen.
-2. Oben rechts auf das Profilbild klicken → **My Profile** → Reiter **API Tokens**.
-3. **Create Token** klicken.
-4. Die Vorlage **„Edit zone DNS"** auswählen und auf **Use template** klicken.
-5. Unter **Zone Resources** einstellen:
-   - _Include_ → _Specific zone_ → eigene Domain auswählen
-6. Optional: unter **Client IP Address Filtering** die IP des Servers eintragen, um den Token auf diese IP zu beschränken.
-7. **Continue to summary** → **Create Token**.
-8. Den angezeigten Token **sofort kopieren**. Er wird nur einmal angezeigt.
-
-> [!WARNING]
-> Der Token benötigt ausschließlich die Berechtigung `Zone:DNS:Edit` für die jeweilige Zone. Keinen globalen API-Key verwenden, ein scoped Token minimiert den Schaden bei versehentlicher Exposition.
-
-Der Token wird im nächsten Schritt als `CF_DNS_API_TOKEN` in die `.env`-Datei eingetragen.
-
----
-
-## 9. Stack starten
+## 8. Stack starten
 
 Das Installationsskript hat die `.env` bereits befüllt und alle Secrets generiert. Nach dem Neustart genügen drei Schritte.
 
@@ -373,11 +419,11 @@ grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env
 ```
 
 > [!NOTE]
-> **Passwörter ändern:** Nach Änderungen an Passwörtern in der `.env` müssen die Secrets neu generiert und der Stack neu gestartet werden. Details siehe [Abschnitt 12](#12-passwörter-ändern).
+> **Passwörter ändern:** Nach Änderungen an Passwörtern in der `.env` müssen die Secrets neu generiert und der Stack neu gestartet werden. Details siehe [Abschnitt 11](#11-passwörter-ändern).
 
 ---
 
-## 10. AIDE initialisieren
+## 9. AIDE initialisieren
 
 AIDE (Advanced Intrusion Detection Environment) überwacht die Integrität des Dateisystems und erkennt unbefugte Änderungen. Direkt nach der Installation wird die Referenzdatenbank einmalig angelegt.
 
@@ -390,7 +436,7 @@ AIDE (Advanced Intrusion Detection Environment) überwacht die Integrität des D
    aide --check
    ```
 
-Die laufende Überwachung im Betrieb ist in [Abschnitt 13](#13-aide-integritätsprüfung) beschrieben.
+Die laufende Überwachung im Betrieb ist in [Abschnitt 12](#12-aide-integritätsprüfung) beschrieben.
 
 ---
 
@@ -398,7 +444,7 @@ Die laufende Überwachung im Betrieb ist in [Abschnitt 13](#13-aide-integritäts
 
 Für häufige Verwaltungsaufgaben sind Shell-Aliase definiert, die nach dem Login als `apphost` direkt verfügbar sind.
 
-## 11. Verwaltungs-Aliase
+## 10. Verwaltungs-Aliase
 
 ### NixOS-System aktualisieren
 
@@ -426,7 +472,7 @@ Nach dem Mergen eines RenovateBot-PRs genügt `up`, um die aktualisierten Images
 
 ---
 
-## 12. Passwörter ändern
+## 11. Passwörter ändern
 
 Bei Änderungen von MQTT-, Ntfy-, Authelia- oder anderen Secrets in der `.env` müssen diese neu generiert und der betroffene Dienst neu gestartet werden:
 
@@ -438,9 +484,9 @@ up                      # Stack neu starten
 
 ---
 
-## 13. AIDE Integritätsprüfung
+## 12. AIDE Integritätsprüfung
 
-Nach der initialen Einrichtung ([Abschnitt 10](#10-aide-initialisieren)) läuft AIDE im Betrieb automatisch:
+Nach der initialen Einrichtung ([Abschnitt 9](#9-aide-initialisieren)) läuft AIDE im Betrieb automatisch:
 
 - Eine **tägliche** automatische Prüfung erfolgt über einen systemd-Service.
 - Überwacht werden u. a. `/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`, `/usr/sbin`, `/boot` und `/opt/apphost/config`.
@@ -460,7 +506,7 @@ aide --check
 
 ---
 
-## 14. Container-Sicherheitsbericht
+## 13. Container-Sicherheitsbericht
 
 Ein automatischer Container-Sicherheitsbericht wird jeden **Montag um 02:00 Uhr** mit dem Security-Scanner **Trivy** erstellt und unter `/var/log/docker-security-scan.log` abgelegt. Trivy prüft alle laufenden Images auf HIGH/CRITICAL-Schwachstellen.
 
@@ -470,7 +516,7 @@ less /var/log/docker-security-scan.log
 
 ---
 
-## 15. Tor-Onion-Adresse anzeigen
+## 14. Tor-Onion-Adresse anzeigen
 
 Die `.onion`-Adresse wird beim ersten Start des Tor-Containers automatisch generiert und ist persistent. Sie kann jederzeit angezeigt werden:
 
@@ -493,7 +539,7 @@ https://<26-stellige-adresse>.onion
 
 ---
 
-## 16. Automatische Container-Updates mit RenovateBot
+## 15. Automatische Container-Updates mit RenovateBot
 
 Alle Container-Image-Updates erfolgen automatisiert über RenovateBot direkt im GitHub-Repository. Es ist keine manuelle Versionspflege erforderlich.
 
@@ -513,7 +559,7 @@ RenovateBot überwacht kontinuierlich das Repository und erkennt neue Versionen 
 
 ---
 
-## 17. Proxmox-Backups einrichten
+## 16. Proxmox-Backups einrichten
 
 Damit die komplette `apphost`-VM im Notfall wiederhergestellt werden kann, sollten regelmäßige Backups auf Ebene von Proxmox eingerichtet werden. Proxmox bringt dafür ein eigenes Werkzeug mit, das sich vollständig über die Weboberfläche steuern lässt. Es sichert die komplette VM (also Festplatten, Konfiguration, TPM, etc.), nicht nur einzelne Dateien.
 
@@ -552,7 +598,7 @@ _VM `apphost` → Backup → Backup now_
 
 ---
 
-## 18. Hot-Wallet Bitcoin-Custody-Stack
+## 17. Hot-Wallet Bitcoin-Custody-Stack
 
 Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-Transaktionen über eine Policy-Engine (OPA), inklusive Cold-Refill-Workflow über eine air-gapped Signer-VM. Die Container liegen unter `services/hotwallet/`, der Compose-Service unter `compose/finance/hotwallet.yml`, operative Skripte unter `scripts/hotwallet/`.
 
@@ -568,7 +614,7 @@ Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-T
    ```bash
    bash scripts/update-secrets-ntfy.sh
    ```
-4. Stack starten (läuft mit den anderen Diensten im selben `docker compose up -d`, siehe [Abschnitt 9](#9-stack-starten)):
+4. Stack starten (läuft mit den anderen Diensten im selben `docker compose up -d`, siehe [Abschnitt 8](#8-stack-starten)):
    ```bash
    docker compose up -d hotwallet-postgres hotwallet-nats hotwallet-opa hotwallet-btc-core hotwallet-tx-builder hotwallet-middleware
    ```
