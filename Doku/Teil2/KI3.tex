@@ -10,7 +10,7 @@ Dafür wurden zwei Szenarien miteinander verglichen. In Szenario A wurde ein Nut
 
 In Szenario B wurde dasselbe Ziel verfolgt, allerdings mit deutlich engerer fachlicher Steuerung durch einen \ac{IT}-Experten. Der Startprompt enthielt hier bereits Sicherheitsregeln, ein Threat Model, klare Verbote, Dokumentationspflichten und Vorgaben zur späteren Prüfung.
 
-Für beide Szenarien wurden getrennte lokale Proxmox-\acp{VM} bereitgestellt. Das war notwendig, weil Codex für die praktische Umsetzung weitreichende Rechte innerhalb der jeweiligen Zielumgebung benötigte. Ein direkter Einsatz auf der eigentlichen Home-Lab-Umgebung wäre methodisch und sicherheitstechnisch problematisch gewesen. Es hätte das Risiko bestanden, dass Codex globale Einstellungen oder nicht vom Versuch umfasste Systembestandteile unbeabsichtigt verändert. Die getrennten \acp{VM} ermöglichten dagegen eine realitätsnahe Umsetzung, ohne das eigentliche Projekt zu gefährden.
+Für beide Szenarien wurden getrennte lokale Proxmox-\acp{VM} bereitgestellt. Das war notwendig, weil Codex für die praktische Umsetzung weitreichende Rechte innerhalb der jeweiligen Zielumgebung benötigte. Ein direkter Einsatz auf der eigentlichen Home-Lab-Umgebung wäre methodisch und sicherheitstechnisch problematisch gewesen. Es hätte das Risiko bestanden, dass Codex globale Einstellungen oder nicht vom Versuch umfasste Systembestandteile unbeabsichtigt verändert. Die getrennten \acp{VM} ermöglichten dagegen eine realitätsnahe Umsetzung, ohne das eigentliche Projekt zu gefährden.\cite{openai2026codexsandbox}
 
 \subsection{Forschungsstand}
 
@@ -84,13 +84,13 @@ Für jedes der vier Artefakte wurde vor den Läufen festgelegt, welche Fehler en
 
 Codex wurde genutzt, weil im Rahmen der Untersuchung die Ressourcen bereitgestellt worden sind. Gleichzeitig war Codex für die Fragestellung besonders passend, weil es als agentisches System nicht nur textbasiert antwortet, sondern praktisch in der Umgebung arbeiten kann. Es kann Dateien lesen und verändern, Shell-Befehle ausführen, Fehlermeldungen beobachten und auf diese reagieren. Dadurch ließ sich die Frage des Mandanten deutlich realitätsnäher und zukunftsorientierter untersuchen als mit einer rein chatbasierten \ac{KI}.
 
-Hinzu kommt, dass OpenAI-Modelle zu den bekanntesten und am weitesten verbreiteten \ac{LLM}-Systemen gehören. In beiden Szenarien wurde Codex mit dem Modell \texttt{gpt-5.4} und der Reasoning-Einstellung \glqq Sehr hoch\grqq{} genutzt.
+Hinzu kommt, dass OpenAI-Modelle zu den bekanntesten und am weitesten verbreiteten \ac{LLM}-Systemen gehören. In beiden Szenarien wurde Codex mit dem Modell \texttt{gpt-5.4} und der Reasoning-Einstellung \glqq Sehr hoch\grqq{} genutzt.\cite{openaiGPT54}
 
 Der Agent hatte Zugriff auf Dateien, Konfigurationen und Terminalausgaben innerhalb der jeweiligen \acs{VM}. Dadurch konnte er Fehler in der eigenen Planung erkennen, Anpassungen vornehmen und einzelne Bestandteile der Infrastruktur praktisch verbessern. Codex verfügte damit über mehr Kontext zur tatsächlichen Umgebung als ein normaler Chatbot.
 
 Dazu wurden zwei getrennte Proxmox-\acp{VM} verwendet. Szenario A lief auf \texttt{ailab1}, Szenario B auf \texttt{ailab2}.
 Um die Vergleichbarkeit zu sichern, wurden alle übrigen Faktoren konstant gehalten, wobei beide \acp{VM} identisch dimensioniert waren. Daneben kamen dasselbe Modell und dieselbe Reasoning-Einstellung der \ac{KI} zum Einsatz, beide Läufe folgten demselben Meta-Prompt-Rahmen und erhielten identische Fehlerartefakte für die abschließende Fehleranalyse. 
-Bewusst variiert wurde ausschließlich die fachliche Tiefe der Nutzereingaben. Nicht kontrollierbar waren Umfang und Dauer der Interaktion, die sich aus dem jeweiligen Nutzerverhalten ergaben.
+Bewusst variiert wurde ausschließlich die fachliche Tiefe der Nutzereingaben. Nicht kontrollierbar waren Umfang und Dauer der Interaktion, die sich aus dem jeweiligen Nutzerverhalten ergaben.\cite{chen2023promptreview}
 Diese Asymmetrie wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung
 ausgewiesen.
 
@@ -263,7 +263,7 @@ Szenario B war von Beginn an enger geführt. Schon der Initialprompt gab einen u
 
 \subsection{Nachvollziehbarkeit}
 
-Codex sollte in beiden Szenarien vor der Umsetzung erläutern, wie er vorgehen würde, welche Annahmen er trifft und welche Risiken bestehen. In Szenario B wurden diese Überlegungen zusätzlich im \texttt{decision-log.md} dokumentiert. Bewertet wurde anschließend, ob die Begründungen nicht nur nachvollziehbar klangen, sondern auch zur tatsächlichen Umsetzung passten.
+Codex sollte in beiden Szenarien vor der Umsetzung erläutern, wie er vorgehen würde, welche Annahmen er trifft und welche Risiken bestehen. In Szenario B wurden diese Überlegungen zusätzlich im \texttt{decision-log.md} dokumentiert. Bewertet wurde anschließend, ob die Begründungen nicht nur nachvollziehbar klangen, sondern auch zur tatsächlichen Umsetzung passten.\cite{decisionlogB}
 
 Das ließ sich später anhand der erzeugten Dateien und des Systemzustands prüfen. In Szenario B zeigte sich dies etwa bei der Nutzung von \texttt{nftables}, dem eingeschränkten Zugriff auf Host- und Monitoring-Oberflächen, dem Backup-Konzept und der Trennung zwischen echten \ac{BTC}-Prozessen und Dummy-\ac{PSBT}-Beispielen.
 
@@ -561,7 +561,7 @@ diesen Zustand.\cite{finalsummaryB,validatornotesB}
 \paragraph{Netzwerk, Tor und Zugriff (3 von 3)}
 I1 (3): Die Tabelle \texttt{inet ailab} setzt \texttt{policy drop} auf \texttt{input} und \texttt{forward}. Dadurch werden nur Loopback, \texttt{established/related} sowie zwei quellgebundene Pfade (\texttt{vmbr0} mit \texttt{ip saddr @operator\_v4} auf die Ports 22 und 8006
 sowie \texttt{vmbr10} mit der Adresse des Tor-Relays auf Port 22) akzeptiert.
-Da \texttt{pve-firewall} deaktiviert wurde, ist genau ein Regelwerk wirksam.\cite{section4scriptB,finalsummaryB}
+Da \texttt{pve-firewall} deaktiviert wurde, ist genau ein Regelwerk wirksam.\cite{section4scriptB,finalsummaryB, proxmoxFirewall}
 I2 (2): Der einzige Tor-Pfad ist der Admin-Onion (\texttt{HiddenServicePort 22 10.10.10.1:22}). Service-Onions existieren mangels ausgerollter Dienste nicht, sodass der Indikator nur für den
 Admin-Pfad belegt ist, was eine größere Lücke darstellt.\cite{section4scriptB,finalsummaryB}
 I3 (3): Der Admin-Onion ist auf genau einen autorisierten Client verengt, sodass service-seitig eine einzige Datei \path{operator-1.auth} (Rechte 0600, \texttt{debian-tor}) unter \path{authorized_clients} und host-seitig ein einziges root-only \path{operator-1.auth_private} außerhalb des \ac{IaC}-Pfads existieren.
@@ -665,8 +665,6 @@ werden (Abschnitt~\ref{Apphost}).
 \footnotesize
 \renewcommand{\arraystretch}{1.3}
 \begin{xltabular}{\linewidth}{@{} p{2.9cm} c c >{\RaggedRight\arraybackslash}X @{}}
-\caption{Indikatorbasierte Detailbewertung der Eigenentwicklung in den
-Basis-Kategorien}\label{tab:basis-eigen-details}\\
 \toprule
 \textbf{Kategorie} & \textbf{I1--I4} & \textbf{Wertung} & \textbf{Details der Eigenentwicklung} \\
 \midrule
@@ -679,6 +677,8 @@ Basis-Kategorien}\label{tab:basis-eigen-details}\\
 \multicolumn{4}{r}{\small\itshape Fortsetzung auf der nächsten Seite} \\
 \endfoot
 \bottomrule
+\caption{Indikatorbasierte Detailbewertung der Eigenentwicklung in den
+Basis-Kategorien}\label{tab:basis-eigen-details}\\
 \endlastfoot
 Architekturplanung & 3/3/2/2 (2{,}50) & 3 &
 I1 (3): Zonenmodell über dedizierte Docker-Netzsegmente je Dienstgruppe
@@ -695,12 +695,12 @@ I4 (3): Keine funktionslosen Zusatzdienste, jede Compose-Datei zugeordnet zu ein
 \addlinespace
 Konfiguration & 3/2/3/3 (2{,}75) & 3 &
 I1 (3): Gehärtete Defaults zentral und deklarativ in vier NixOS-Modulen (\path{security.nix}, \path{networking.nix}, \path{docker.nix}, \path{secureboot.nix}).
-I2 (2): Verwendung von Hashes durch Argon2id über \path{scripts/update-secrets-authelia.sh}, bcrypt für ntfy), \path{secrets/} mit Rechten 0700 außerhalb des Repositories. Die Dienst-Passwörter liegen jedoch systembedingt im Klartext in der \path{.env} auf dem Host.
+I2 (2): Verwendung von Hashes durch Argon2id über \path{scripts/update-secrets-authelia.sh}, bcrypt für ntfy, \path{secrets/} mit Rechten 0700 außerhalb des Repositories. Die Dienst-Passwörter liegen jedoch systembedingt im Klartext in der \path{.env} auf dem Host.
 I3 (3): Konsistenz zwischen Dokumentation und Dateien nach Review-Abgleich, wobei konkrete Werte im Anhang ausgewiesen sind.
 I4 (3): Reproduzierbar über Flake-Pinning (\path{flake.lock}) und atomare Generationen mit Rollback. \\
 \addlinespace
 Netzwerk / Tor / Zugriff & 3/3/2/3 (2{,}75) & 3 &
-I1 (3): Konfiguriert über nftables mit \texttt{policy drop} auf Input und Forward (\path{modules/networking.nix}). \ac{SSH} ist rate-limitiert und existiert kein nach außen geöffneter Port durch \ac{DNS}-01-Zertifikaten.
+I1 (3): Konfiguriert über nftables mit \texttt{policy drop} auf Input und Forward (\path{modules/networking.nix}). \ac{SSH} ist rate-limitiert und es existiert kein nach außen geöffneter Port durch \ac{DNS}-01-Zertifikaten.
 I2 (3): Tor-Erreichbarkeit pro Dienst ist über ein eigenes Label-Set explizit zuschaltbar. Der Tor-Client  ist gehärtet (\path{config/tor/torrc}: \texttt{ClientOnly}, deaktivierter Control- und \ac{SOCKS}-Port).
 I3 (2): Admin-Oberflächen zusätzlich hinter Authelia-Forward-Auth mit optional aktivierbarer \acs{MFA}. Fail2ban-Web-Jail ist eingerichtet
 I4 (3): Die interne Kommunikation wird über Segmentierung und User-Namespace-Remapping begrenzt und Docker-\ac{API} ist nur über den lesenden Socket-Proxy erreichbar. \\
@@ -713,8 +713,6 @@ I4 (3): Etablierung einer Alarmkette durch Alertmanager über selbst gehostetes 
 \midrule
 \textbf{Gesamt} & & \textbf{14 / 15} &  \\
 \end{xltabular}
-\caption{Indikatorbasierte Detailbewertung der Eigenentwicklung in den Basis-Kategorien}
-\label{tab:basis-eigen-details}
 \endgroup
 
 In den nächsten Abschnitten werden die Kategorien einzeln verglichen. Die zugehörigen Einzelbefunde sind in Abschnitt~\ref{sec:einzelbewertung} indikatorweise belegt und werden hier nicht wiederholt. Der Vergleich ordnet sie ein und bezieht die Eigenentwicklung als Referenz mit ein.
@@ -725,7 +723,6 @@ Szenario A ließ die Architektur während des Aufbaus entstehen und erzwang sie 
 Szenario B legte die Zielstruktur vor der ersten Umsetzung verbindlich fest und validierte die Grenzen anschließend fortlaufend. 
 Die Eigenentwicklung geht darüber hinaus, weil sie konkurrierende Ansätze zunächst ernsthaft erprobt und begründet verworfen hat. Ihre Entscheidung für einen einzelnen gehärteten Host entstand aus einem echten
 Abwägungsprozess und wurde bis in ein produktives System getragen. 
-Zu nennen ist, dass Szenario B in einem Aspekt formal sauberer als die Eigententwicklung arbeitet. B's Deny-by-default-Kommunikationsmatrix dokumentiert jeden erlaubten Pfad mit Quelle, Ziel und Port, während die Eigenentwicklung ihre real erzwungenen Pfade nur in einer vereinfachten Netzübersicht ausweist und dementsprechend eine stärkere Dokumentation liefert.
 Szenario B plant insofern auf Augenhöhe, belegt seine Grenzen aber nur an einer leeren Basis.
 Szenario A bleibt hinter beiden zurück, weil sein Modell zwar vergleichbar sinnvoll war, seine Durchsetzung aber nicht nachgewiesen wurde.\cite{runbookA,selfauditA,masterplanB,validatornotesB}
 
@@ -820,7 +817,14 @@ Ein Refill-Prozess zwischen Treasury und Hot-Wallet wurde im Sessionverlauf zwar
 Zum Signieren wird keine automatische Lösung vorgeschlagen, sondern auf einen externen, nicht weiter behandelten Signierer verwiesen, den der Prompter eigenständig evaluieren sollte.
 Szenario B führt eine vollständige Prozess-Choreografie durch, deren Artefakte jedoch aus \ac{JSON}-Metadaten statt \acp{PSBT} bestehen und deren Signatur nur über eine Markerzeichenkette simuliert wird. Zwar werden einzelne Aspekte evaluiert und etwa \ac{BTC} Core ausgewählt, umgesetzt wird jedoch keine der Maßnahmen. Die Ansätze verlassen die theoretische Phase nicht und der Prompter wird stattdessen mit statischen Ausgaben getäuscht.
 
-Beide \ac{KI}-Szenarien scheitern damit am selben Kernkriterium aus entgegengesetzten Richtungen. A liefert den Unterbau ohne Prozess und B den Prozess ohne Kryptographie. Für den Mandanten bedeutet dies, dass keines der beiden \ac{KI}-Szenarien die eigentliche Kernanforderung erfüllt, eine Zahlung tatsächlich als \ac{BTC}-Transaktion auszuführen. 
+Beide \ac{KI}-Szenarien scheitern damit am selben Kernkriterium aus entgegengesetzten Richtungen. A liefert den Unterbau ohne Prozess und B den Prozess ohne Kryptographie. 
+Hinzu kommt der Blick auf den Ausgangspunkt der Automatisierung. 
+Szenario B war im Initialprompt ausdrücklich vorgegeben, dass im Zentrum ein Service steht, der regelmäßig und automatisiert \ac{BTC}-Transaktionen durchführt.
+Umgesetzt wurde jedoch kein Dienst mit einem Auftragseingang. Stattdessen wird der Dummy-Ablauf ausschließlich manuell über Skripte angestoßen und eine Schnittstelle, über die ein Zahlungspartner eine Transaktion automatisiert auslösen könnte, existiert nicht. 
+Szenario A erhielt diese Automatisierungsanforderung nicht explizit und wird daran nicht gemessen, dort fehlt mangels Wallet jedoch ohnehin jeder Auslösepfad. 
+Die Eigenentwicklung stellt dafür die beiden externen Eingänge \texttt{BIP21} und \texttt{PSBT} bereit (siehe Tabelle~\ref{tab:tx_rails}), deren Anfragen ohne menschliches Eingreifen dedupliziert, gegen die Whitelist geprüft, durch den \ac{OPA} autorisiert, automatisch signiert und ausgeführt werden.
+
+Für den Mandanten bedeutet dies, dass keines der beiden \ac{KI}-Szenarien die eigentliche Kernanforderung erfüllt, eine Zahlung tatsächlich als \ac{BTC}-Transaktion auszuführen. 
 Szenario A bleibt hinter dieser Anforderung zurück, weil der Nutzer den entscheidenden Signierschritt selbst hätte lösen müssen. 
 Szenario B bleibt in der Wirkung sogar noch weiter zurück, da es einen funktionsfähigen Ablauf lediglich vortäuscht und ein Mandant, der es übernähme, ein System besäße, das Erfolgsmeldungen erzeugt, aber keinen einzigen Satoshi bewegen kann. Da dieses Kriterium mit 20\,\% gewichtet ist und beide Szenarien hier nur einen Punkt erreichen, verfehlen beide den zentralen Nutzen des Auftrags, während allein die Eigenentwicklung den vollständigen Transaktionsweg belastbar bereitstellt.
 
@@ -887,7 +891,7 @@ Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acp{VM}. Bewegg
 \item \textbf{Ein System, ein Modell:} Untersucht wurde nur ein einzelnes agentisches System mit einem Modell (Codex mit \texttt{gpt-5.4}). Aussagen über \acp{LLM} im Allgemeinen sind daraus nur eingeschränkt ableitbar.
 \item \textbf{Offener Simulationsrahmen:} Die Erwartung einer möglichst vollständigen Simulation war im Prompt bewusst nicht explizit beschrieben. Damit sollte sichtbar werden, ob das \ac{LLM} solche Validierungsansätze eigenständig vorschlägt. Keines der beiden Szenarien hat die naheliegende Regtest-Option von sich aus evaluiert.
 \item \textbf{Doppelrolle der Bewerter:} Die Bewerter waren zugleich die Architekten der Referenzlösung. Insbesondere der Vergleich mit der Eigenentwicklung ist dadurch keine unabhängige Fremdbewertung. Der Grad der Objektivität wurde versucht durch eine Bewertung durch mehrere Personen zu erhöhen.
-\item \textbf{Asymmetrische Beweislage:} Szenario~B musste bereits per Prompt genau die Dokumente erzeugen, die später als Bewertungsnachweise dienten. Dafür erhielt dieser Versuch sowohl mehr Nutzer-Nachrichten, längere Laufzeit als auch ein größeres Steuerungsbudget. Der Punktabstand misst daher die Kombination aus fachlicher Promptqualität und Steuerungsumfang, nicht die Qualität allein.
+\item \textbf{Asymmetrische Beweislage:} Szenario~B musste bereits per Prompt genau die Dokumente erzeugen, die später als Bewertungsnachweise dienten. Dafür erhielt dieser Versuch sowohl mehr Nutzer-Nachrichten, längere Laufzeit als auch ein größeres Steuerungsbudget. Der Punktabstand misst daher die Kombination aus fachlicher Promptqualität und Steuerungsumfang, nicht die Qualität allein. \cite{openaiGPT54}
 \end{itemize}
 
 Diese Einschränkungen sprechen jedoch nicht zugunsten des \ac{LLM}. In einer echten Produktivumgebung mit realen Werten wären Expertensteuerung, manuelle Freigaben und Gegenprüfungen noch wichtiger.
@@ -915,5 +919,4 @@ Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale H
 
 Zu Beginn der Untersuchung wurde geprüft, ob Codex direkt auf der Serverumgebung des eigenen Home-Labs arbeiten könnte. Aus Sicherheitsgründen wurden die Zugriffsrechte dabei bewusst eingeschränkt, um unbeabsichtigte Änderungen an globalen Einstellungen, Zugriffspfaden oder anderen Bestandteilen zu verhindern. Dadurch war Codex zunächst gezwungen, über die Proxmox-\acs{API} zu arbeiten. Dieser Ansatz war jedoch aufwendig, langsam und der Tokenverbrauch zu hoch. 
 
-Deshalb wurde der Versuchsaufbau auf zwei getrennte lokale Proxmox-\acp{VM} umgestellt. Codex konnte dadurch praktischer arbeiten, ohne das eigentliche Home-Lab zu gefährden. Rückblickend hätte diese Entscheidung jedoch bereits früher getroffen werden können. Für zukünftige Untersuchungen dieser Art sollte die isolierte Testumgebung daher von Beginn an eingeplant werden, damit der Agent ausreichend Handlungsspielraum erhält, ohne die produktiven Systeme zu gefährden.
-
+Deshalb wurde der Versuchsaufbau auf zwei getrennte lokale Proxmox-\acp{VM} umgestellt. Codex konnte dadurch praktischer arbeiten, ohne das eigentliche Home-Lab zu gefährden. Rückblickend hätte diese Entscheidung jedoch bereits früher getroffen werden können. Für zukünftige Untersuchungen dieser Art sollte die isolierte Testumgebung daher von Beginn an eingeplant werden, damit der Agent ausreichend Handlungsspielraum erhält, ohne die produktiven Systeme zu gefährden.\cite{openai2026codexsandbox}
