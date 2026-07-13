@@ -3,9 +3,6 @@ networks:
   traefik-public:
     external: true
     name: traefik-public
-  tools-network:
-    external: true
-    name: tools-network
 volumes:
   vaultwarden_data: {name: apphost_vaultwarden_data}
 services:
@@ -15,7 +12,6 @@ services:
     restart: unless-stopped
     runtime: runc
     networks:
-      tools-network: {}
       traefik-public: {}
     volumes:
       - vaultwarden_data:/data

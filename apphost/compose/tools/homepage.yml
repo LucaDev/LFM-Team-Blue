@@ -3,9 +3,6 @@ networks:
   traefik-public:
     external: true
     name: traefik-public
-  tools-network:
-    name: tools-network
-    driver: bridge
   socket-proxy:
     external: true
     name: socket-proxy
@@ -16,7 +13,6 @@ services:
     restart: unless-stopped
     runtime: runc
     networks:
-      tools-network: {}
       traefik-public: {}
       socket-proxy: {} # Docker-Widget via Socket-Proxy
     volumes:

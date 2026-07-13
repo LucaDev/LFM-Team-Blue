@@ -3,9 +3,6 @@ networks:
   traefik-public:
     external: true
     name: traefik-public
-  tools-network:
-    external: true
-    name: tools-network
 services:
   openspeedtest:
     image: openspeedtest/latest:v2.0.6
@@ -13,7 +10,6 @@ services:
     restart: unless-stopped
     runtime: runc
     networks:
-      tools-network: {}
       traefik-public: {}
     environment:
       TZ: Europe/Berlin
