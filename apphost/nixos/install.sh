@@ -117,16 +117,20 @@ printf '%s' "$APPHOST_PW_HASH" > /mnt/etc/apphost-password-hash
 chmod 600 /mnt/etc/apphost-password-hash
 info "Passwort-Hash nach /mnt/etc/apphost-password-hash geschrieben"
 
-# fileSystems und swapDevices werden von disko deklarativ verwaltet und dürfen nicht in hardware-configuration.nix auftauchen (Konflikted -.-).
+# fileSystems, swapDevices und boot.initrd.luks.devices werden von disko deklarativ
+# verwaltet und dürfen nicht in hardware-configuration.nix auftauchen (Konflikte -.-).
+# Letzteres detektiert nixos-generate-config, weil disko den LUKS-Container beim
+# Formatieren bereits geöffnet hat (per by-uuid statt disko's by-partlabel).
 info "Generiere nixos/hardware-configuration.nix..."
 nixos-generate-config \
   --root /mnt \
   --show-hardware-config \
   | awk '
-      /^  fileSystems\./  { skip = 1 }
-      skip && /^    \};/  { skip = 0; next }
-      skip                { next }
-      /^  swapDevices /   { next }
+      /^  fileSystems\./          { skip = 1 }
+      skip && /^    \};/          { skip = 0; next }
+      skip                        { next }
+      /^  swapDevices /           { next }
+      /^  boot\.initrd\.luks\.devices\./ { next }
       { print }
     ' > nixos/hardware-configuration.nix
 
