@@ -25,7 +25,7 @@ Im Sinne einer klassischen Hot- und Cold-Wallet-Architektur hält das Hot-Wallet
 \end{figure}
 
 \paragraph{\ac{PSBT}} \mbox{}\\
-Als \ac{BIP}~174 wurde das \ac{PSBT}-Format als Standard veröffentlicht und bildet die Grundlage des gesamten Signierprozesses
+Als \ac{BIP}~174 wurde das \ac{PSBT}-Format als Standard veröffentlicht und bildet die Grundlage des gesamten Signierprozesses.
 Ein \ac{BIP} ist ein standardisiertes Dokument des offenen Bitcoin-Entwicklungsprozesses, über das technische Erweiterungen, Formate und Konventionen vorgeschlagen, diskutiert und bei Annahme durch die Community als einheitlicher Standard etabliert werden. \acp{BIP} sind fortlaufend nummeriert und stellen sicher, dass unabhängige Implementierungen (Wallets, Nodes, Bibliotheken) interoperabel bleiben.
 
 \ac{BIP}~174 beschreibt ein einheitliches Austauschformat für eine noch unvollständig signierte \ac{TX}, das alle zur Prüfung und Signierung nötigen Informationen wie Inputs, \acp{UTXO}, Ableitungspfade und Outputs mitführt, ohne private Schlüssel zu enthalten. Dies ermöglicht die Realisierung unseres Ansatzes, eine \ac{TX} über mehrere getrennte Systeme wie Hot-Signer und air-gapped Cold-Signer hinweg schrittweise zu signieren, ohne dass Schlüsselmaterial die jeweilige Zone verlässt. Da alle beteiligten Werkzeuge denselben \ac{BIP}-174-Standard umsetzen, ist die \ac{PSBT} über den gesamten Weg interoperabel verarbeitbar.
@@ -119,7 +119,7 @@ Die Infrastruktur teilt sich in Microservices für die direkte \ac{TX}-Verarbeit
     \item Middleware (Orchestrierung und interne und externe Kommunikation),
     \item \ac{OPA} (Deklarative Policy-Engine, die \acp{TX} anhand von Regeln autorisiert (im Detail siehe \ref{sec:opa})),
     \item TX-Builder (Transaktionskonstruktion),
-    \item Signierer .
+    \item Signierer.
 \end{itemize}
 \textbf{Unterstützende Komponenten}
 \begin{itemize}
@@ -167,7 +167,7 @@ Gespeichert werden:
 Der Zugriff auf die \texttt{btc}-\ac{DB} wird ausschließlich über den Middleware-Microservice administriert, um eine einzige Source of Truth darstellen zu können. Dementsprechend werden auf diesem Service verschiedene \acp{API} zum Adressieren der Datenbank bereitgestellt.
 
 \label{sec:wallet_import}
-Neben den Hot- und Cold-Wallets werden die Namen externer, whitelisted Wallets in der Wallet-\ac{DB} eingetragen. Dafür wurden die Skripte \path{wallet_import.sh} und \path{whiteWallet.sh} eingerichtet, sodass relevante Informationen wie Registrierungs-Name, Schlüssel-Fingerprint und Deskriptoren für die einzelnen Wallets kontrolliert aus dem Dateiverzeichnig (oder einem\ac{USB}-Medium im Falle eines stand-alone Ansatz des Krypto Sub-System) extrahiert werden können.
+Neben den Hot- und Cold-Wallets werden die Namen externer, whitelisted Wallets in der Wallet-\ac{DB} eingetragen. Dafür wurden die Skripte \path{wallet_import.sh} und \path{whiteWallet.sh} eingerichtet, sodass relevante Informationen wie Registrierungs-Name, Schlüssel-Fingerprint und Deskriptoren für die einzelnen Wallets kontrolliert aus dem Dateiverzeichnis (oder einem \ac{USB}-Medium im Falle eines stand-alone Ansatzes des Krypto Sub-Systems) extrahiert werden können.
 Die Registrierung selbst erfolgt nicht über einen \ac{HTTP}-Endpunkt, sondern ereignisgesteuert über \ac{NATS}, da sich eine nicht-internet exponierte Schnittstelle als sicherer erweist.
 Die Setup-Identität veröffentlicht \texttt{\seqsplit{wallet.import.requested}}, woraufhin die Middleware das Wallet in Bitcoin Core und PostgreSQL einträgt und den Ausgang über \texttt{\seqsplit{wallet.import.done}} bzw.\ \texttt{\seqsplit{wallet.import.failed}} zurückmeldet.
 
@@ -251,7 +251,7 @@ Ebenfalls wird Sparrow als Watch-Only-\ac{GUI} integriert, um einem menschlichen
 \subsubsection{Microservices zur Transaktionsverarbeitung}
 
 \paragraph{Middleware} \mbox{}\\
-Die Kommunikation und Koordination der einzelnen Services erfolgt über eine dedizierte Orchestrierungskomponente, welche den gesamten Transaktionsprozess steuert (siehe Abbildung~\ref{fig1:krypto_zonen}, woebi der Ablauf selbst wird in \ref{sec:hot_flow} beschrieben).
+Die Kommunikation und Koordination der einzelnen Services erfolgt über eine dedizierte Orchestrierungskomponente, welche den gesamten Transaktionsprozess steuert (siehe Abbildung~\ref{fig1:krypto_zonen}, wobei der Ablauf selbst wird in \ref{sec:hot_flow} beschrieben).
 Die Middleware stellt neben dem \ac{NATS}-Event-Manager sowohl interne als auch externe Schnittstellen bereit und übernimmt die direkte Kommunikation über \ac{HTTP} und \ac{NATS}. Ihre Aufgaben sind:
 \begin{itemize}
     \item Entgegennahme externer und operatorseitiger Eingänge (Übersicht in Tabelle~\ref{tab:tx_rails}),
@@ -326,10 +326,10 @@ Die autorisierende Entscheidung über Transaktionen erfolgt zentral über den Op
 Policy-Entscheidungen werden, wie erwähnt, revisionsfähig protokolliert und von der Middleware bei Entgegennahme der Entscheidung in der PostgreSQL-Datenbank unter \path{btc.opa_decision} persistiert.
 Diese Trennung erhöht die Wartbarkeit, Revisionssicherheit und Nachvollziehbarkeit sicherheitskritischer Entscheidungen.
 
-Die vordefinierten \ac{OPA}-Policies, die im Zuge der \seqsplit{System-Operationalisierung} erstellt wurden, werden in der Datei \path{policies/hot.rego} gespeichert, wobei die dazugehörigen Limits in der Datei \path{data/data.json} verwaltet werden. Diese Regeln können durch Rego- und Json-Code zu den Vorstellungen und Budget des Mandanten angepasst werden. Die exakte aufgestellte Konfiguration kann im Anhang in Tabelle~\ref{tab:opa_hot} nachvollzogen werden.
+Die vordefinierten \ac{OPA}-Policies, die im Zuge der \seqsplit{System-Operationalisierung} erstellt wurden, werden in der Datei \path{policies/hot.rego} gespeichert, wobei die dazugehörigen Limits in der Datei \path{data/data.json} verwaltet werden. Diese Regeln können durch Rego- und Json-Code zu den Vorstellungen und zum Budget des Mandanten angepasst werden. Die exakte aufgestellte Konfiguration kann im Anhang in Tabelle~\ref{tab:opa_hot} nachvollzogen werden.
 
 \textbf{Tages-Abfluss (Daily-Cap)} \label{sec:OPA_vel}\\
-Zusätzlich zur Einzeltransaktions-Grenze begrenzt \ac{OPA} den kumulierten Tages-Abfluss. Das Basis-System zählt dazu den in den letzten 24 Stunden bereits ausgeschütteten Betrag der Zahlungen exklusive der internen Hot-/Cold-Tauschtransaktionen in den \ac{OPA}-Input. Überschreitet dieser dynamische Wert aus der Summe bereits verbrauchtem und des aktuell angefragtem Betrag den statisch festgelegten Grenzwert \texttt{\seqsplit{max\_daily\_sats}}, wird die Transaktion mit der Begründung \texttt{daily limit exceeded} abgelehnt. Für die intern durch \ac{OPA} ausgelösten Austausch-Transaktionen (\texttt{OPA\_hot}/\texttt{OPA\_cold}) entfällt diese Prüfung, da deren Höhe von OPA bestimmt wird und deren Ausführung systemkritisch ist.
+Zusätzlich zur Einzeltransaktions-Grenze begrenzt \ac{OPA} den kumulierten Tages-Abfluss. Das Basis-System zählt dazu den in den letzten 24 Stunden bereits ausgeschütteten Betrag der Zahlungen exklusive der internen Hot-/Cold-Tauschtransaktionen in den \ac{OPA}-Input. Überschreitet dieser dynamische Wert aus der Summe bereits verbrauchten und des aktuell angefragten Betrag den statisch festgelegten Grenzwert \texttt{\seqsplit{max\_daily\_sats}}, wird die Transaktion mit der Begründung \texttt{daily limit exceeded} abgelehnt. Für die intern durch \ac{OPA} ausgelösten Austausch-Transaktionen (\texttt{OPA\_hot}/\texttt{OPA\_cold}) entfällt diese Prüfung, da deren Höhe von OPA bestimmt wird und deren Ausführung systemkritisch ist.
 Sollte das Basis-System kompromittiert werden und dieser Test umgangen werden, greift zudem ein weiterer Velocity Test auf der Key~A VM direkt und senkt somit den maximal möglichen Schaden weiter (siehe \ref{sec:keyA_vel}).
 
 Weitere Regeln können vom Mandanten definiert werden. Ebenfalls denkbar ist die Verwendung einer Tag-Regel, die das Vorhandensein vorbestimmter Texte als zusätzliche Authentifizierung kontrolliert.
@@ -465,7 +465,7 @@ Eine andere Möglichkeit, dies zu realisieren, wäre, das \ac{TPM} anzuweisen, d
 Der Signer-Container, welcher als einziger Dienst unmittelbar mit angreiferkontrollierten \ac{PSBT}-Daten in Berührung kommen könnte, wurde zusätzlich auf Prozessebene gehärtet. Der Containerprozess wird unter einer dedizierten, nicht privilegierten Benutzerkennung ausgeführt und besitzt keine erweiterten Linux-Capabilities, da für den Betrieb des Signers keine davon benötigt wird: Der Zugriff auf den \ac{TPM}-Chip erfolgt über gewöhnliche Dateioperationen auf das Gerät. Die hierfür erforderliche Gerätegruppen-Zugehörigkeit wird beim Start automatisiert anhand des tatsächlichen Systemzustands ermittelt und dem Container zugewiesen. Ergänzend ist dem Prozess die Rechteausweitung über privilegierte Programmbits untersagt, und das Wurzeldateisystem des Containers ist unveränderlich eingebunden. Schreibvorgänge sind ausschließlich innerhalb der ohnehin für Wallet- und \ac{TPM}-Daten vorgesehenen, separat eingebundenen Datenverzeichnisse sowie eines flüchtigen Arbeitsspeicherbereichs für temporäre Dateien möglich. Eine erfolgreiche Kompromittierung des Signiervorgangs, etwa über einen Fehler beim Parsen einer \ac{PSBT}, bliebe dadurch auf die minimalen Rechte eines einzelnen, nicht privilegierten Prozesses beschränkt und führte nicht zu einer Rechteausweitung auf Betriebssystemebene.
 
 Ein automatisiertes Skript \path{wgHMAC_export.sh} zum Extrahieren der Wallet-Informationen samt \ac{xpub}, Public-Deskriptor und \seqsplit{Meta-Informationen} auf einen \ac{USB}-Stick wurde implementiert und hilft dem Mandanten beim Aufsetzen des Whitelistings auf der Hot-Wallet-\ac{VM} sowie beim Hinzufügen des \ac{xpub} im Multi-Signatur-Verfahren des Cold-Wallets.
-Dieses Skript schreibt gleichzeitig das \ac{HMAC}-Geheimnis und die WireGuard-Konfiguration samt Public Key~Auf diesen \ac{USB}-Stick. 
+Dieses Skript schreibt gleichzeitig das \ac{HMAC}-Geheimnis und die WireGuard-Konfiguration samt Public Key auf diesen \ac{USB}-Stick. 
 Diese Informationen können daraufhin per \ac{SSH} in das Dateiverzeichnis des Basis-Systems geladen werden und anschließend  per automatisiertem Skript auf der Hot-Wallet eingespielt werden, was das Laden der Deskriptoren in die PostgreSQL-\ac{DB} und das Pflegen der Geheimnisse in die \path{env.runtime} des Middleware-Docker-Containers umfasst (siehe~\ref{sec:SSH}).
 
 Die für die Datenbankanbindung notwendigen Zugangsdaten werden nicht statisch vorgegeben, sondern bei der Erstinitialisierung der Key~A \ac{VM} automatisiert und zufällig erzeugt. Sie verbleiben dabei außerhalb der versionierten Konfiguration in einer separaten, restriktiv berechtigten Laufzeitdatei, auf welche ausschließlich die beteiligten lokalen Prozesse Zugriff erhalten. In Verbindung mit der bereits beschriebenen Netzwerkisolation, durch welche die Datenbank ebenfalls keinen nach außen gerichteten Port mehr besitzt, wird damit ausgeschlossen, dass über einen direkten Datenbankzugriff von außen die \ac{ID}-basierte Eindeutigkeitsprüfung bereits verarbeiteter \acp{PSBT} umgangen werden könnte.
@@ -507,7 +507,7 @@ Außerdem wird eine Anbindung an einen eigenen Bitcoin Core Node ermöglicht, we
 Es unterstützt zudem die Besonderheit der Cold-Wallet \acp{VM}, sodass es offline Signierung sowohl über Dateien, \ac{USB} als auch animierte \ac{QR}-Codes ermöglicht. Daneben zeichnet es sich ebenfalls durch eine breite Hardware-Wallet-Integration und eine Vielzahl an Konnektoren und Wallet Formaten aus, welche als weitere Alternativen beschrieben wurden und dem Mandanten offenstehen (Siehe \ref{sec:alt_alg}).
 Ein besonderes Merkmal ist die transparente Darstellung aller Transaktions- und \ac{UTXO}-Details, die die manuelle Verifikation im Cold-Prozess erst sicher und praktikabel macht und dementsprechend fest eingeplant ist (siehe \ref{sec:sparrow_signierung}) \cite{sparrow_docs,Sparrow_Wallets_Features}.
 
-In unserer Integration fungiert Sparrow Wallet als Multi-Signatur"=Koordinator"=, \ac{PSBT}-Handler und Key Holder. Eine Instanz darf diese Rollen, wie oben bereits erwähnt, gleichzeitig halten \cite{sparrow_docs,sparrow_multisig}.
+In unserer Integration fungiert Sparrow Wallet als Multi-Signatur"=Koordinator, \ac{PSBT}-Handler und Key Holder. Eine Instanz darf diese Rollen, wie oben bereits erwähnt, gleichzeitig halten \cite{sparrow_docs,sparrow_multisig}.
 Zudem verwaltet die Applikation keine vollständige Blockchain, da sie keine Netzwerkverbindung besitzt. Private Schlüssel verbleiben ausschließlich auf den jeweiligen Cold-Key-Systemen, während allein der interne und externe Multi-Signatur-Deskriptor des Cold-Wallets auf Bitcoin Core registriert wird \cite{sparrow_multisig, airgap_psbt_guide}.
 
 Sparrow übernimmt im Cold-Bereich folgende Aufgaben:
@@ -645,7 +645,7 @@ Diese muss als neue Datei in Form ihres xpubs und Fingerprints auf das Wechselme
     \label{fig3:sparrow_multiSetup}
 \end{figure}
 
-Der \ac{BIP}84 Schlüssel wird primär für das automatische Signieren für des Hot-Wallet verwendet. Es empfiehlt sich jedoch ebenfalls, diesen direkt in Sparrow als separate Watch-Only-Wallet zu registrieren. Dadurch werden dynamische Adressen, die zu diesem Wallet gehören, automatisch aufgelöst und als Zieladresse der Transaktion angezeigt. \label{sec:sparrow_keyA_load}
+Der \ac{BIP}84 Schlüssel wird primär für das automatische Signieren für das Hot-Wallet verwendet. Es empfiehlt sich jedoch ebenfalls, diesen direkt in Sparrow als separate Watch-Only-Wallet zu registrieren. Dadurch werden dynamische Adressen, die zu diesem Wallet gehören, automatisch aufgelöst und als Zieladresse der Transaktion angezeigt. \label{sec:sparrow_keyA_load}
 
 Der daraus generierte wsh-Deskriptor muss anschließend als separate Datei auf dem Wechselmedium unter \path{/wallets/cold} als \path{cold-signer.wsh} abgelegt werden. Durch diese Nomenklatur kann der Deskriptor im nächsten Schritt vollautomatisch auf dem Basis-System importiert werden (siehe \ref{sec:wallet_import}).
 
@@ -684,7 +684,7 @@ Als Restschranken bleiben der Besitz der Operator-\ac{NATS}-Zugangsdaten, die Pf
 
 \subsubsection{Signierungs-Prozess} \label{sec:sparrow_signierung}
 
-Der Cold-Wallet-Prozess startet für den menschlichen Operator mit der Benachrichtigung auf seinem GrapheneOS-Handy (zugestellt über den selbst gehosteten ntfy-Dienst, siehe \ref{sec:apphost-monitoring}). Zuvor wurde eine vordefinierte untere Grenze für den Stand der Geldmittel des Hot-Wallets unterschritten. Dadurch werden mehr Geldmittel benötigt, um die Operationalität des automatischen Systems zu gewährleisten. Die \ac{PSBT} für diese Transaktion wird vollautomatisch gebildet und signiert, sodass der Operator sie im nächsten Schritt auf dem Basis-System durch ein automatisches Skript, \path{psbt_export.sh}, in das Datei-System des Basis-System schreiben kann. Daraufhin muss diese Datei per \ac{SSH} vom Apphost auf den \ac{PC} des Operator und anschließend auf ein angeschlossenes \ac{USB}-Medium transferiert werden (siehe~\ref{sec:SSH}).
+Der Cold-Wallet-Prozess startet für den menschlichen Operator mit der Benachrichtigung auf seinem GrapheneOS-Handy (zugestellt über den selbst gehosteten ntfy-Dienst, siehe \ref{sec:apphost-monitoring}). Zuvor wurde eine vordefinierte untere Grenze für den Stand der Geldmittel des Hot-Wallets unterschritten. Dadurch werden mehr Geldmittel benötigt, um die Operationalität des automatischen Systems zu gewährleisten. Die \ac{PSBT} für diese Transaktion wird vollautomatisch gebildet und signiert, sodass der Operator sie im nächsten Schritt auf dem Basis-System durch ein automatisches Skript, \path{psbt_export.sh}, in das Datei-System des Basis-Systems schreiben kann. Daraufhin muss diese Datei per \ac{SSH} vom Apphost auf den \ac{PC} des Operator und anschließend auf ein angeschlossenes \ac{USB}-Medium transferiert werden (siehe~\ref{sec:SSH}).
 Das GrapheneOS-Handy des Operators wird nur zur Benachrichtigung von sicherheitskritischen Geschehnissen verwendet. Zu keinem Zeitpunkt befindet sich in unserem definierten Prozess geheimes Schlüsselmaterial darauf. Koordinatoren, die Software-Schlüssel auf einem Smartphone ablegen (etwa Nunchuks mobile App, siehe \ref{sec:alt_sparrow}), wurden aufgrund des fehlenden air-gap als Schlüsselhalter verworfen.
 
 \begin{figure}[htbp]
@@ -699,7 +699,7 @@ Nach dem Umstecken auf die Key~B \ac{VM} muss der Operator die \ac{PSBT} in das 
 Diese Verifizierung stellt sich wie im weiteren Verlauf in \ref{sec:alt_hash} kurz angesprochen als letzte Verteidigungsmaßnahme für das Cold-Wallet dar und stellt einen Grund für die Auswahl von Sparrow-Wallet unter den Alternativen dar (siehe \ref{sec:alt_sparrow}). Unter \path{Outputs} können die genauen Höhen der Bewegungsgrößen bestehend aus Coins, Übertragungswerten (\texttt{Output \#1}) und Wechselgeld (\texttt{Output \#0}) und deren Zieladressen angesehen werden. Durch das Hinzufügen des öffentlichen Key~A \ac{BIP}84 Single-Signatur Deskriptors als eigenständiges Wallet in Sparrow (siehe \ref{sec:sparrow_keyA_load}), wird die Zieladresse direkt als zu Key~A gehörig aufgelöst (siehe \texttt{\seqsplit{Output~ \#1~-~Received~to~KeyA}} in der Abbildung und bereits erwähnt in \ref{sec:dyn_adress}). Diese Visualisierung ist in Grafik \ref{fig5:sparrow_output_verif} dargestellt. Diskrepanzen in dieser Überprüfung führen dazu, dass die \ac{PSBT} nicht signiert werden darf und weisen auf eine Kompromittierung des Basis-Systems hin.
 
 Nach der Signierung kann eine finalisierte \ac{TX} direkt als Datei mit der neuen Endung \path{.txn} auf dem Wechselmedium gespeichert werden. Dies ist wie in Abbildung \ref{fig6:sparrow_broadcast} direkt über den Knopf \texttt{Save Final Transaction} auf Sparrow möglich. Das dargestellte Bild zeigt zudem das als Alternative beschriebene direkte Broadcasting über Sparrow im Online-Modus aus Kapitel \ref{sec:alt_Sparrow_broadcast}.
-Danach kann das \ac{USB}-Medium wieder in den \ac{PC} des Mandanten eingesteckt, die Datei per \ac{SSH} in den Apphost transferiert werden und über das Skript \path{psbt_broadcast.sh} importiert sowie automatisch über Bitcoin Core gebroadcastet werden (siehe~\ref{sec:SSH}).
+Danach kann das \ac{USB}-Medium wieder in den \ac{PC} des Mandantens eingesteckt, die Datei per \ac{SSH} in den Apphost transferiert werden und über das Skript \path{psbt_broadcast.sh} importiert sowie automatisch über Bitcoin Core gebroadcastet werden (siehe~\ref{sec:SSH}).
 
 \begin{figure}[htbp]
     \centering
@@ -733,7 +733,7 @@ Beim Broadcast der signierten Cold-\ac{PSBT} wird erneut eine Löschung ausgelö
 
 Der dritte Löschpunkt besteht in der vollautomatischen Löschung der Nachbefüllungs-\ac{PSBT}, wenn diese noch nicht vom Operator aufgenommen wurde. Die Löschung wird ausgelöst, wenn \ac{OPA} eine \texttt{hot\_to\_cold}- oder \texttt{hold}-Aktion ermittelt. Dementsprechend muss seit Generierung der \ac{PSBT} dem Hot-Wallet eine ausgleichende Menge an Geldmitteln gutgeschrieben worden sein, was erst mit der nächsten Hot-\ac{TX} auffällt.
 Praktisch stammt dieser Zufluss, der den Hot-Saldo wachsen lässt, aus regulären eingehenden Zahlungen Dritter an das Hot-Wallet. \texttt{hot\_to\_cold} und \texttt{cold\_to\_hot} Zahlungen wurden bereits von den anderen Löschpunkten abgedeckt.
-Solche \acp{TX} können von jedem Wallet-Inhaber ohne Zustimmung der Zieladresse ausgeführt werden wie wir es ebenfalls vornehmen. Da es sich bei dem Hot-Wallet um ein vollautomatisches \ac{TX}-System handelt, ist der Fall, dass Partner ebenfalls Geld auf dieses Wallet senden, denkbar und musste in die Logik eingeplant werden.
+Solche \acp{TX} können von jedem Wallet-Inhaber ohne Zustimmung der Zieladresse ausgeführt werden, wie wir es ebenfalls vornehmen. Da es sich bei dem Hot-Wallet um ein vollautomatisches \ac{TX}-System handelt, ist der Fall, dass Partner ebenfalls Geld auf dieses Wallet senden, denkbar und musste in die Logik eingeplant werden.
 
 Ein verbleibender Randfall besteht, wenn der ausgleichende Zufluss erfolgt, nachdem die Nachfüll-\ac{PSBT} erzeugt, aber bevor eine weitere Hot-Transaktion die Balance-Prüfung erneut auslöst. Nimmt der Operator die zu diesem Zeitpunkt bereits obsolete \ac{PSBT} auf, ist sie nach dem Export keinem der drei Löschpunkte mehr zugänglich. Ihr Broadcast führt dann zu einer Überbefüllung und einer gegenläufigen \texttt{hot\_to\_cold}-Transaktion mit doppeltem Gebührenanfall. Eine vollständige Absicherung wäre durch eine erneute Bedarfsprüfung unmittelbar vor dem Broadcast erreichbar, wobei ein \ac{ZMQ}-basiertes Mithören auf Zuflüsse, das bei einer \ac{TX}-Erkennung für das Hot-Wallet eine Reevaluierung durch \ac{OPA} auslöst, das Fenster zwar verkleinern, aber aufgrund des verbleibenden Export-Zeitpunkts nicht schließen würde. Aufgrund der geringen Eintrittswahrscheinlichkeit wurde der Randfall als akzeptabel eingestuft.
 
@@ -870,7 +870,7 @@ Dieser Ansatz ist der Kern des dargestellten Schlüsselmodells und ermöglicht e
 Technisch wird dies umgesetzt, indem der Seed von Key~A für zwei verschiedene Pfade abgeleitet wird. Es handelt sich also um denselben physischen Schlüssel in zwei Deskriptor-Rollen.
 \begin{itemize}
     \item \path{m/84'/1'/0'}: Als Single-Signatur für das Hot-Wallet nach \ac{BIP}84 und
-    \item \path{m/48'/1'/0'/2'}: Als P2WSH-Cosigner für das Cold-Wallet nach \ac{BIP}48.
+    \item \path{m/48'/1'/0'/2'}: Als \acs{P2WSH}-Cosigner für das Cold-Wallet nach \ac{BIP}48.
 \end{itemize}
 
 Der Ansatz stellt einen bewussten Kompromiss zwischen Operationalität und Isolation dar, wobei eine Schwächung des Sicherheitsniveaus des Cold-Wallets in Kauf genommen wird.
@@ -903,8 +903,7 @@ Eine prägnante Darstellung dieses Sachverhalts kann in Tabelle~\ref{tab:limits}
 Betrag je \ac{TX} & begrenzt den Schaden einer einzelnen unautorisierten Zahlung & \ac{OPA} (Basis-System) & \path{data/data.json} \\
 Gebühr je \ac{TX} & verhindert Mittelabfluss über überhöhte Gebühren & \ac{OPA} (Basis-System) & \path{data/data.json} \\
 Tages-Abfluss & deckelt den kumulierten Abfluss regulärer Zahlungen & \ac{OPA} (Basis-System) & \texttt{max\_daily\_sats} \\
-Velocity-Cap & unabhängiger Backstop, überlebt eine Kompromittierung des Basis-Systems & Signierer (Key~A \ac{VM}) & \texttt{VELOCITY\_CAP\_SATS}, \path{\
-VELOCITY\_WINDOW\_SEC} \\
+Velocity-Cap & unabhängiger Backstop, überlebt eine Kompromittierung des Basis-Systems & Signierer (Key~A \ac{VM}) & \texttt{VELOCITY\_CAP\_SATS}, \path{VELOCITY\_WINDOW\_SEC} \\
 Hot-Balance-Zielbereich & steuert die Aufteilung der Mittel zwischen Hot- und Cold-Wallet & \ac{OPA} \texttt{hot.limits} & \path{data/data.json} \\
 \ac{HMAC}-Zeitfenster & begrenzt die Wiederverwendbarkeit abgefangener Signieraufträge & Signierer (Key~A \ac{VM}) & Signer-Konfiguration \\
 \bottomrule
@@ -988,7 +987,7 @@ Eine Härtung der \ac{TPM}-Bindung durch Secure Boot (unter NixOS über \texttt{
 Zuletzt soll noch die Möglichkeit einer Retry-Queue für fehlgeschlagene Zahlungsaufträge erwähnt werden, deren Ausgestaltung jedoch stark von den Prozessen des Mandanten und seiner Partner abhängt. 
 Die Architektur ist so ausgelegt, dass jede dieser Erweiterungen additiv möglich ist, ohne das Grundmodell zu verändern.
 
-Eine abschließende Übersicht für den Krypto-Aspeckt dieser Ausarbeitung kann in Tabelle~\ref{tab:threat_matrix} gefunden werden. Das zugrundeliegende bedrohungsmuster wurde in~\ref{sec:gefahrenmodell} zuvor diskutiert.
+Eine abschließende Übersicht für den Krypto-Aspekt dieser Ausarbeitung kann in Tabelle~\ref{tab:threat_matrix} gefunden werden. Das zugrundeliegende Bedrohungsmuster wurde in~\ref{sec:gefahrenmodell} zuvor diskutiert.
 
 \begin{table}[htbp]
 \centering

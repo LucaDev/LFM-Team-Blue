@@ -1,11 +1,11 @@
 \section{Ausgewählte Services}
-Die Anforderungen des Mandanten sehen die Umsetzung eines selbstgehosteten und umfassend abgesicherten Systems mit mindestens 15 Services vor, die \glqq eine breite Palette an alltäglichen Produktivitäts- und Cloud-Diensten abbildet...\grqq. Aufgrund der umfangreichen Investitionen in Kryptowährungen liegt außerdem ein besonderer Fokus auf Sicherheit und Datenschutz. Vor diesem Hintergurnd wurden Dienste ausgewählt, die zentrale Anwendungsbereiche abdecken und gleichzeitig die Anforderungen an Privatsphäre und Kontrolle erfüllen. 
+Die Anforderungen des Mandanten sehen die Umsetzung eines selbstgehosteten und umfassend abgesicherten Systems mit mindestens 15 Services vor, die \glqq eine breite Palette an alltäglichen Produktivitäts- und Cloud-Diensten abbildet...\grqq. Aufgrund der umfangreichen Investitionen in Kryptowährungen liegt außerdem ein besonderer Fokus auf Sicherheit und Datenschutz. Vor diesem Hintergrund wurden Dienste ausgewählt, die zentrale Anwendungsbereiche abdecken und gleichzeitig die Anforderungen an Privatsphäre und Kontrolle erfüllen. 
 
 Die ausgewählten Services beinhalten dabei sowohl alltägliche Anwendungen, wie Medienverwaltung, Dokumentenarchivierung und kollaboratives Arbeiten, als auch spezialisierte Komponenten für Infrastruktur, Monitoring und Sicherheit. Ergänzend dazu wurden Lösungen für eine sichere Smart-Home-Integration sowie Authentifizierungs- und Zugriffsmanagement berücksichtigt, um ein ganzheitliches und praxisnahes System zu realisieren. 
 
-Der thematische Schwerpunkt liegt auf der Integration eines sicheren Bitcoin-Ökosystems, das sowohl automatisierte Prozesse als auch manuelle Kontrollmechanismen unterstützt und damit den spezifischen Anforderung des Mandanten gerecht wird. Die Umsetzung des Ökosystems von Bitcoin wird in Kapitel \ref{Krypto} vertieft und in diesem Kapitel lediglich als Teil der angebotenen Services aufgelistet.
+Der thematische Schwerpunkt liegt auf der Integration eines sicheren Bitcoin-Ökosystems, das sowohl automatisierte Prozesse als auch manuelle Kontrollmechanismen unterstützt und damit den spezifischen Anforderungen des Mandanten gerecht wird. Die Umsetzung des Ökosystems von Bitcoin wird in Kapitel \ref{Krypto} vertieft und in diesem Kapitel lediglich als Teil der angebotenen Services aufgelistet.
 
-Das gesamte System besteht aus einer Vielzahl von Containern, welche in der deklarativ beschriebenen Linux-Distribution NixOS ausgeführt werden, die innerhalb der Open-Source Virtualisierungsumgebung "Proxmox" ausgeführt wird. 
+Das gesamte System besteht aus einer Vielzahl von Containern, welche in der deklarativ beschriebenen Linux-Distribution NixOS ausgeführt werden, die innerhalb der Open-Source Virtualisierungsumgebung \glqq Proxmox \grqq ausgeführt wird. 
 
 \begin{enumerate}
     \item Dokumente, Medien \& Notizen
@@ -59,7 +59,7 @@ Das gesamte System besteht aus einer Vielzahl von Containern, welche in der dekl
         \item ntfy
         \end{multicols}
     \end{itemize}
-    \item Authentifizierung \& Passwort- Manangement
+    \item Authentifizierung \& Passwort- Management
     \begin{itemize}
         \begin{multicols}{2}
         \item Authelia (Ursprünglich: KeyCloak)
@@ -82,7 +82,7 @@ Das gesamte System besteht aus einer Vielzahl von Containern, welche in der dekl
 
 \subsubsection{Vaultwarden}
 
-Während der Freigabe der Services äußerte der Mandant bedenken bezüglich dem ausgewählten Passwortmanager und brachte eine von ihm bevorzugte Alternative namens KeePass ein, da er einen Argon2-Schutz bevorzugt. Argon2 wird genutzt, um das Master-Passwort, welches die gesamte Datenbank entschlüsselt, zu hashen.   
+Während der Freigabe der Services äußerte der Mandant Bedenken bezüglich des ausgewählten Passwortmanagers und brachte eine von ihm bevorzugte Alternative namens KeePass ein, da er einen Argon2-Schutz bevorzugt. Argon2 wird genutzt, um das Master-Passwort, welches die gesamte Datenbank entschlüsselt, zu hashen. 
 
 Doch auch Vaultwarden ist mit Argon2 nutzbar \cite{cloudron}. Die konkrete Umsetzung von Argon2 ist in Kapitel (hier Referenz einfügen) beschrieben. Damit haben bezüglich der kryptographischen Absicherung der Master-Passwörter Vaultwarden und KeePass ein vergleichbares Sicherheitsniveau. 
 
@@ -90,10 +90,10 @@ Ein bedeutender Vorteil von Vaultwarden liegt in der Vereinbarkeit von Sicherhei
 
 Besonders die Integration mit Authelia trägt zu einer konsistenten und zentral verwalteten Authentifizierungsstrategie bei, denn Vaultwarden unterstützt OpenID Connect, sodass eine nahtlose Einbindung in das Identity- und Access-Management möglich ist \cite{v1350}. Der Mandant authentifiziert sich über Authelia, wodurch Single-Sign-On über verschiedene Dienste hinweg möglich ist. Gleichzeitig können sicherheitsrelevante Richtlinien wie z.B. Passwortanforderungen oder Mehrfaktorauthentifizierung zentral in Authelia verwaltet und durchgesetzt werden. Vaultwarden übernimmt dabei die sichere Speicherung der Logindaten im Sinne der Zero-Knowledge-Architektur \cite{hussain_2026}. 
 
-Ein weiterer Vorteil ergibt sich im Bereich Monitoring. In der geplanten Architektur mit Authelia können Ereignisse bei Authentifizierungen (Logs, (Loki) fehlgeschlagene Anmeldeversuche oder Token) erfasst und durch Prometheus und Grafana überwacht und in kritischen Situationen der Mandant durch ntfy alarmiert werden. Dadurch ist der Ablauf und der Nutzen für den Mandanten jederzeit einsichtbar und transparent. Vaultwarden selbst kann auch als Service von Prometheus überwacht werden.
+Ein weiterer Vorteil ergibt sich im Bereich Monitoring. In der geplanten Architektur mit Authelia können Ereignisse bei Authentifizierungen (Logs (via Loki), fehlgeschlagene Anmeldeversuche oder Token) erfasst und durch Prometheus und Grafana überwacht und in kritischen Situationen der Mandant durch ntfy alarmiert werden. Dadurch ist der Ablauf und der Nutzen für den Mandanten jederzeit einsehbar und transparent. Vaultwarden selbst kann auch als Service von Prometheus überwacht werden.
 
 Im Gegensatz dazu ist KeePass eine rein lokale Anwendung und deshalb nicht sinnvoll in das geplante Monitoring und Logging-Konzept integrierbar. Für Prometheus sind keine Metriken oder Authentifizierungsversuche erfassbar. Aktionen wie das Öffnen der Datenbank, fehlgeschlagene Log-In Versuche oder die Nutzung einzelner Einträge in der Datenbank bleiben lokal auf dem jeweiligen Gerät. 
 
-Die identifizierten Schwachstellen von Vaultwarden (insbesondere CVE-2024-55225 \cite{nist_cve_2024_55225}, CVE-2025-24364 \cite{nist_cve_2025_24364} und CVE-2025-24365 \cite{nist_cve_2025_24365}) wurden im Rahmen der Umsetzung betrachtet. Allerdings sind diese  (teils auch schwerwiegenden) Sicherheitslücken nur unter spezifischen Voraussetzungen ausnutzbar (z. B. bei vorhandenem Zugriff das Admin-Panel oder vorhandene Nutzerrechte) und bereits durch Updates oder manuelle Anleitungen behoben. Durch die im vorliegenden System implementierten Schutzmechanismen wird die Wahrscheinlichkeit einer erfolgreichen Ausnutzung dieser oder ähnlicher Schwachstellen erheblich reduziert (zudem wurden die Schwachstellen bereits behoben oder durch bereitgestellte Anleitungen zur manuellen Behebung adressiert).
+Die identifizierten Schwachstellen von Vaultwarden (insbesondere CVE-2024-55225 \cite{nist_cve_2024_55225}, CVE-2025-24364 \cite{nist_cve_2025_24364} und CVE-2025-24365 \cite{nist_cve_2025_24365}) wurden im Rahmen der Umsetzung betrachtet. Allerdings sind diese (teils auch schwerwiegenden) Sicherheitslücken nur unter spezifischen Voraussetzungen ausnutzbar (z. B. bei vorhandenem Zugriff auf das Admin-Panel oder vorhandene Nutzerrechte) und bereits durch Updates oder manuelle Anleitungen behoben. Durch die im vorliegenden System implementierten Schutzmechanismen wird die Wahrscheinlichkeit einer erfolgreichen Ausnutzung dieser oder ähnlicher Schwachstellen erheblich reduziert (zudem wurden die Schwachstellen bereits behoben oder durch bereitgestellte Anleitungen zur manuellen Behebung adressiert).
 
-Trotzdem muss Vaultwarden als Passwort-Manager kritisch bewertet werden, da eine Kompromittierung potenziell den Zugriff auf alle gespeicherten Logindaten ermöglichen würde. Dies hätte insbesondere im Kontext der Impelementierung des Bitcoin-Transaktionssystems gravierende Auswirkungen. Insgesamt sind die bestehenden Risiken durch geeignete technische und organisatorische Maßnahmen kontrollierbar und im Rahmen des Sicherheitskonzepts angemessen adressiert, sodass eine Nutzung von Vaultwarden unter den genannten Aspekten, berechtigt ist.
+Trotzdem muss Vaultwarden als Passwort-Manager kritisch bewertet werden, da eine Kompromittierung potenziell den Zugriff auf alle gespeicherten Logindaten ermöglichen würde. Dies hätte insbesondere im Kontext der Implementierung des Bitcoin-Transaktionssystems gravierende Auswirkungen. Insgesamt sind die bestehenden Risiken durch geeignete technische und organisatorische Maßnahmen kontrollierbar und im Rahmen des Sicherheitskonzepts angemessen adressiert, sodass eine Nutzung von Vaultwarden unter den genannten Aspekten berechtigt ist.
