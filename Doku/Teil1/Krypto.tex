@@ -137,7 +137,7 @@ Wie bei den deklarativ gehärteten Schlüsselhalter-\acp{VM} (siehe Tabelle~\ref
 
 \paragraph{Bitcoin Core Node} \mbox{}\\
 Bitcoin Core wird verwendet, um eine wesentliche Vereinfachung von Bitcoin-Operationen zu erreichen. Betrieben als Full Node ohne aktivierte Wallet-Funktion übernimmt dieser Service sowohl die Validierung von Blöcken und Transaktionen, die Mempool-Verwaltung als auch Gebührenschätzungen, besitzt jedoch keine kryptographischen Schlüssel \cite{bitcoin_core_docs,Sparrow_Wallets_Node_Connect}.
-Stattdessen können Wallets direkt auf Bitcoin Core durch Import von internen und externen öffentlichen Deskriptoren registriert werden, ohne dass geheimes Schlüsselmaterial preisgegeben werden muss. Anhand dieser Information kann der Service die Adressen- und \ac{PSBT}-Generierung für die Bitcoin-Wallet übernehmen.
+Stattdessen können Wallets direkt auf Bitcoin Core durch Import von internen und externen öffentlichen Deskriptoren registriert werden, ohne dass geheimes Schlüsselmaterial preisgegeben werden muss. Anhand dieser Information kann der Service die Adressen- und \ac{PSBT}-Generierung für die Bitcoin-Wallet übernehmen.\cite{bitcoincoreImportDescriptors}
 
 Im produktiven Umfeld würde Bitcoin Core als Node mit dem Mainnet verbunden, um reale \acp{TX} und \acp{UTXO} zu verfolgen. Zur Entwicklung und Validierung der Architektur simuliert die Node zudem ein lokales \enquote{Regtest}-Netzwerk. Dieses bietet volle Kontrolle über die Blockchain und stellt ein isoliertes, privates Testnetz ohne Verbindung zu externen Peers dar. Coins können dementsprechend lokal erzeugt werden und verursachen keine Kosten.
 Für die spätere produktive Nutzung durch den Mandanten ist eine Umstellung von Regtest auf das Mainnet sowohl in Bitcoin Core als auch in der angebundenen Sparrow Wallet erforderlich. Die vollständigen Migrationsschritte sind in \ref{sec:mainnet_migration} beschrieben.
@@ -145,7 +145,7 @@ Für die spätere produktive Nutzung durch den Mandanten ist eine Umstellung von
 Die Nutzung der automatischen Blockchain-Verwaltung ersetzt einen zuvor evaluierten Ansatz auf Basis eines \ac{ZMQ}-Listeners. Dieser würde Ereignisse für ausgewählte Wallets überwachen und könnte eine Referenz der \acp{UTXO} in deren Besitz extrahieren. Diese Lösung würde eine separate persistierende Logik erfordern, sodass gefundene \acp{UTXO} in eine weitere Datenbank geschrieben werden müssten. Eine besondere Herausforderung stellt dabei die Blockchain-Reorganisation dar, bei der bereits verarbeitete Blöcke einer sogenannten Fork verworfen und bei der Reintegration in die Blockchain durch alternative Ketten ersetzt werden können. Eine korrekte Behandlung dieser Problematik hätte eine komplexe und fehleranfällige Logik mit Betrachtung verschiedener Edge Cases erfordert. Daneben gestaltet sich das Berechnen der Gebühren einer \ac{TX} ebenfalls als sehr aufwendig, da diese dynamisch auf Basis von Mempool-Zuständen, Blockhöhe, Chain-Tips und Netzwerk-Auslastung über mehrere Berechnungen stabilisiert werden müssten.
 
 Durch die Nutzung von Bitcoin Core können diese Aspekte vollständig ausgelagert werden.
-Insbesondere ermöglicht die Kombination aus Deskriptor-Import und dem \ac{RPC}-Befehl \texttt{{walletcreatefundedpsbt}} eine einfache Erstellung von Transaktionen \cite{bitcoincore_walletcreatefundedpsbt}.
+Insbesondere ermöglicht die Kombination aus Deskriptor-Import und dem \ac{RPC}-Befehl \texttt{walletcreatefundedpsbt} eine einfache Erstellung von Transaktionen \cite{bitcoincore_walletcreatefundedpsbt}.
 
 Zudem erlaubt Bitcoin Core, dynamisch generierte Zieladressen einem registrierten Wallet zuzuordnen, ohne auf statische Adressen angewiesen zu sein, was die Problematik aus \ref{sec:dyn_adress} auflöst. Auf diese Weise wird die Nachvollziehbarkeit von \acp{TX} sichergestellt, während gleichzeitig datenschutzrelevante Anforderungen des Mandanten erfüllt werden.
 Dies stellt einen relevanten Aspekt zur Umsetzung der vollautomatischen Partner-Kommunikation dar. Ankommende Anfragen müssen vor Ausführung autorisiert werden, wobei verschiedene Möglichkeiten bestehen. Eine lässt sich in einer engen Absprache mit dem Partner durch den Austausch eines gemeinsamen Geheimnisses (siehe \ref{sec:partner_auth}) oder in der Verwendung von statischen Adressen finden.
@@ -215,18 +215,13 @@ Eine weitergehende Ausbaustufe besteht in der Umstellung von der statischen, pas
 
 In Kombination mit \ac{NATS} wird \ac{HTTP} als \ac{API} für gezielte GET-Abfragen zwischen Containern verwendet, wenn Informationen für den weiteren Prozessverlauf abgefragt statt Ereignisse ausgelöst werden. Die Transportwege sind dabei klar getrennt, sodass über \ac{HTTP} ausschließlich die externen Eingänge (\texttt{BIP21}/\texttt{PSBT}, siehe Tabelle~\ref{tab:tx_rails}), der Signier-Aufruf an die Key~A \ac{VM} (\texttt{POST /sign}) sowie die Health- und Metrics-Endpunkte laufen. Alle betreiberausgelösten internen Abläufe wie die manuelle \ac{PSBT}-Einreichung, der Abschluss des Wechselmedium-Exports und der Broadcast der signierten Cold-\ac{PSBT} werden hingegen über \ac{NATS} unter der Operator-Identität ausgelöst (\texttt{\seqsplit{psbt.submit.requested}}, \texttt{\seqsplit{refill.export.done}}, \texttt{\seqsplit{refill.broadcast.requested}}) und besitzen bewusst keinen nach außen gerichteten \ac{HTTP}-Endpunkt. Eine frühere \ac{HTTP}-Variante dieser Operator-Aufrufe wurde zugunsten dieser einheitlichen, über die \ac{NATS}-Berechtigungen abgesicherten Ereignissteuerung entfernt.
 
-\paragraph{\ac{WG}} \mbox{}\\
-\ac{WG} beziehungsweise sein gebildeter Tunnel stellt den einzigen Kommunikationspfad zwischen dem Hot-Basis-System (Middleware) und der Signierer-\ac{VM} (Key~A) dar, wodurch die Signierer-\ac{VM} von keinem anderen System erreichbar ist. Übertragen werden ausschließlich die zu signierenden \acp{PSBT} vom Basis-System zur Signierer-\ac{VM} und zurückgegeben werden die signierten \acp{PSBT}. Das geheime Schlüsselmaterial wird nicht ausgetauscht und verlässt zu keinem Zeitpunkt die \ac{VM} von Key~A (siehe \ref{sec:in_transit_vault}).
-
 \paragraph{Netzwerkanbindung} \mbox{}\\
 Netzwerkseitig fügt sich das Hot-Wallet in die Segmentierung des Basis-Systems ein (siehe Abschnitt~\ref{sec:apphost-netze}). Dabei laufen Sämtliche Microservices in einem eigenen, rein internen Docker-Netzwerk (\texttt{finance-network}) ohne veröffentlichte Ports. 
 Bitcoin Core, PostgreSQL, \ac{NATS}, \ac{OPA} und der TX-Builder sind dadurch weder aus dem Heimnetz noch von anderen Dienstgruppen des Apphosts erreichbar.
-Einzig die Middleware ist zusätzlich an zwei weitere Netzwerke angebunden und schickt Daten an das \texttt{communication-network}, um Alarme über den bestehenden ntfy-Dienst zuzustellen. Es empfängt Zahlungsanfragen an seiner \ac{API} unter einer eigenen Subdomain des reverse Proxy von dem \texttt{traefik-public}-Netzwerk.
-Authelia-Anmeldung wird an diesem Router bewusst verzichtet, da die \ac{API} von Partner-Systemen maschinell aufgerufen wird und ein Browser-Login-Redirect diese Integration brechen würde. die Autorisierung
-erfolgt stattdessen, wie beschrieben, über das Wallet-Whitelisting und die
-\ac{OPA}-Policies. Die Verbindung zur Signierer-\ac{VM} verläuft davon
-getrennt ausschließlich über den im Folgenden beschriebenen
-WireGuard-Tunnel.
+Einzig die Middleware ist zusätzlich an zwei weitere Netzwerke angebunden und schickt Daten an das \texttt{communication-network}, um Alarme über den bestehenden ntfy-Dienst zuzustellen. Sie empfängt Zahlungsanfragen an seiner \ac{API} unter einer eigenen Subdomain des reverse Proxy von dem \texttt{traefik-public}-Netzwerk.
+
+\paragraph{\ac{WG}} \mbox{}\\
+\ac{WG} beziehungsweise sein gebildeter Tunnel stellt den einzigen Kommunikationspfad zwischen dem Hot-Basis-System (Middleware) und der Signierer-\ac{VM} (Key~A) dar, wodurch die Signierer-\ac{VM} von keinem anderen System erreichbar ist. Übertragen werden ausschließlich die zu signierenden \acp{PSBT} vom Basis-System zur Signierer-\ac{VM} und zurückgegeben werden die signierten \acp{PSBT}. Das geheime Schlüsselmaterial wird nicht ausgetauscht und verlässt zu keinem Zeitpunkt die \ac{VM} von Key~A (siehe \ref{sec:in_transit_vault}).
 
 Der Tunnel bildet damit eine eigenständige Authentifizierungs- und Verschlüsselungsschicht für die \ac{API}-Verbindung und erfüllt die Aufgaben:
 \begin{itemize}
@@ -559,7 +554,7 @@ Als air-gap-fähige Koordinatoren kämen ebenfalls \texttt{Electrum}, \texttt{Sp
 \texttt{Electrum} & teilw. & nein
   & Online-Variante benötigt öffentlichen Electrum-Server (Metadaten-Leak),
     offline keine Wallet-übergreifende Adressauflösung, nicht Deskriptor-native
-    Konventionen erschweren \path{wsh}-Interoperabilität. \\
+    Konventionen erschweren \path{wsh}-Interoperabilität.\cite{electrum_docs} \\
 \addlinespace
 \texttt{Bitcoin Core} & ja & ja (nur Keys)
   & Kein für die manuelle Verifikation optimiertes \ac{GUI}
@@ -568,15 +563,15 @@ Als air-gap-fähige Koordinatoren kämen ebenfalls \texttt{Electrum}, \texttt{Sp
 \texttt{Specter Desktop} & ja & nein
   & Reiner Koordinator ohne eigenes Schlüsselmaterial, nur gekoppelt mit
     Bitcoin Core nutzbar, dann größere Codebasis/Angriffsfläche und geringere
-    \ac{PSBT}-Detailtiefe. \\
+    \ac{PSBT}-Detailtiefe.\cite{specter_devices,specter_faq_hotwallet} \\
 \addlinespace
 \texttt{Nunchuk} & ja & nein
   & Auf externe Signer (Hardware/Tapsigner) ausgelegt, eigene Software-Keys
-    vom Hersteller als testweise/unsicher deklariert. \\
+    vom Hersteller als testweise/unsicher deklariert.\cite{nunchuk_desktop, nunchuk_software_key} \\
 \addlinespace
 \texttt{Caravan} & ja & nein
   & Zustandslose Web-App, nur Watch-Only-Koordinator, keine Persistenz der
-    Wallet-Konfiguration, rudimentäre \ac{TX}-Darstellung. \\
+    Wallet-Konfiguration, rudimentäre \ac{TX}-Darstellung.\cite{caravan_github, caravan_multiSig} \\
 \midrule
 \textbf{Sparrow (gewählt)} & \textbf{ja} & \textbf{ja}
   & Vereint Koordinator, \ac{PSBT}-Handler und Key-Halter offline, transparente
@@ -584,7 +579,7 @@ Als air-gap-fähige Koordinatoren kämen ebenfalls \texttt{Electrum}, \texttt{Sp
     Deskriptor- und \ac{PSBT}-Unterstützung. \\
 \bottomrule
 \end{tabularx}
-\caption{Bewertung air-gap-fähiger Multi-Signatur-Koordinatoren gegenüber Sparrow Wallet}
+\caption{Bewertung air-gap-fähiger Multi-Signatur-Koordinatoren gegenüber Sparrow Wallet\cite{knowingbitcoin_coordinators}}
 \label{tab:sparrow_alternativen}
 \end{table}
 
