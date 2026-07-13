@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 as builder
+FROM ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90 as builder
 
 WORKDIR /root
 
@@ -36,7 +36,7 @@ RUN strip /root/bitcoin/build/bin/bitcoind && \
     strip /root/bitcoin/build/bin/bitcoin-cli
 
 
-FROM ubuntu:24.04
+FROM ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libevent-2.1-7 \
