@@ -7,7 +7,7 @@ volumes:
   alloy_data: {name: apphost_alloy_data}
 services:
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: prom/node-exporter:v1.11.1@sha256:e9cff4fc67b1818f8c97adb115b9f12c9a54b533de86765d4a0effc01b357205
     container_name: node-exporter
     restart: unless-stopped
     runtime: runc
@@ -32,7 +32,7 @@ services:
     labels:
       - "traefik.enable=false"
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.54.1
+    image: gcr.io/cadvisor/cadvisor:v0.54.1@sha256:bc8acf1ad463294f25f3ad34262bc524cb9ec8401d1442953045d59fb8e9119a
     container_name: cadvisor
     restart: unless-stopped
     runtime: runc
@@ -59,7 +59,7 @@ services:
     labels:
       - "traefik.enable=false"
   alloy:
-    image: grafana/alloy:v1.17.1
+    image: grafana/alloy:v1.17.1@sha256:4f6ddc56ffdcf8a6316748fc5162972e20cb301523cac1bb4a31957df733ae9b
     container_name: alloy
     restart: unless-stopped
     runtime: runc

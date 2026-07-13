@@ -11,7 +11,7 @@ volumes:
   garage_data: {name: apphost_garage_data}
 services:
   garage:
-    image: dxflrs/garage:v2.3.0
+    image: dxflrs/garage:v2.3.0@sha256:866bd13ed2038ba7e7190e840482bc27234c4afaf77be8cfa439ae088c1e4690
     container_name: garage
     restart: unless-stopped
     runtime: runc

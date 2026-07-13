@@ -11,7 +11,7 @@ volumes:
   jellyfin_cache: {name: apphost_jellyfin_cache}
 services:
   jellyfin:
-    image: jellyfin/jellyfin:10.11.10
+    image: jellyfin/jellyfin:10.11.10@sha256:f66273e014b307e4ac46778845ebc1e9ee24b2e57c1fc17d5ec5ac3015649bfa
     container_name: jellyfin
     restart: unless-stopped
     runtime: runc
