@@ -51,5 +51,7 @@ temp/
 *.bak
 *.backup
 
-# NixOS maschinenspezifische Dateien
+# NixOS maschinenspezifische Dateien (von install.sh pro Installation generiert)
 hardware-configuration.nix
+apphost/nixos/ssh-key.nix
+apphost/nixos/disk-encryption.nix

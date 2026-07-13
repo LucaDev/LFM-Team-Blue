@@ -192,10 +192,35 @@ else
   warn "  sudo nixos-rebuild boot --flake /opt/apphost#apphost"
 fi
 
-# Repo auf das Ziel-System kopieren
-info "Kopiere Repo nach /mnt/opt/apphost..."
-mkdir -p /mnt/opt/apphost
-cp -r "$REPO_DIR"/. /mnt/opt/apphost
+MONOREPO_ROOT="$(git -C "$REPO_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+MONOREPO_REMOTE=""
+[[ -n "$MONOREPO_ROOT" ]] && MONOREPO_REMOTE="$(git -C "$MONOREPO_ROOT" remote get-url origin 2>/dev/null || true)"
+
+if [[ -n "$MONOREPO_REMOTE" ]]; then
+  MONOREPO_BRANCH="$(git -C "$MONOREPO_ROOT" rev-parse --abbrev-ref HEAD)"
+  APPHOST_SUBDIR="$(realpath --relative-to="$MONOREPO_ROOT" "$REPO_DIR")"
+  CHECKOUT_DIR="/mnt/opt/.monorepo"
+
+  info "Richte aktualisierbares Git-Repo unter /opt ein (Sparse-Checkout: $APPHOST_SUBDIR)..."
+  mkdir -p /mnt/opt
+  git clone --no-checkout --branch "$MONOREPO_BRANCH" "$MONOREPO_ROOT" "$CHECKOUT_DIR"
+  git -C "$CHECKOUT_DIR" remote set-url origin "$MONOREPO_REMOTE"
+  git -C "$CHECKOUT_DIR" sparse-checkout init --cone
+  git -C "$CHECKOUT_DIR" sparse-checkout set "$APPHOST_SUBDIR"
+  git -C "$CHECKOUT_DIR" checkout "$MONOREPO_BRANCH"
+  ln -s "$CHECKOUT_DIR/$APPHOST_SUBDIR" /mnt/opt/apphost
+
+  # Maschinenspezifische Dateien sind gitignored (siehe .gitignore) und daher nach dem
+  # Sparse-Checkout nicht vorhanden – aus $REPO_DIR nachziehen, wo sie in diesem Lauf
+  # gerade frisch erzeugt wurden.
+  for f in nixos/hardware-configuration.nix nixos/ssh-key.nix nixos/disk-encryption.nix; do
+    cp "$REPO_DIR/$f" "/mnt/opt/apphost/$f"
+  done
+else
+  warn "Kein Git-Remote unter $REPO_DIR gefunden. Wurde die Ursprungskopie heruntergeladen und nicht geklont? Kopiere Repo ohne Versionierung (kein 'git pull' auf dem Server möglich)."
+  mkdir -p /mnt/opt/apphost
+  cp -r "$REPO_DIR"/. /mnt/opt/apphost
+fi
 
 # .env konfigurieren
 echo ""
