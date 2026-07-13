@@ -1,73 +1,73 @@
 \section{Installierte Applikationen}
 \label{sec:apps}
 
-Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<subdomain>.<DOMAIN>}. Konfigurierbare Subdomains können in der \texttt{.env}-Datei überschrieben werden. Zusätzlich ist jeder Dienst über das Tor-Netzwerk über die \texttt{<subdomain>}.\texttt{<tor-addresse>}.onion-Adresse erreichbar.
+Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<subdomain>.<DOMAIN>}. Konfigurierbare Subdomains können in der \texttt{.env}-Datei überschrieben werden. Die Spalte \textbf{Tor} zeigt, ob der Dienst zusätzlich über einen eigenen \texttt{<subdomain>.<onion-adresse>.onion}-Router erreichbar ist; rein intern genutzte Komponenten haben gar keinen Traefik-Router und damit auch keinen Tor-Zugang.
 
-\begin{xltabular}{\linewidth}{p{3.5cm} p{3.2cm} X}
+\begin{xltabular}{\linewidth}{p{3.2cm} p{2.6cm} p{1.3cm} X}
   \toprule
-  \textbf{Dienst} & \textbf{Subdomain} & \textbf{Beschreibung} \\
+  \textbf{Dienst} & \textbf{Subdomain} & \textbf{Tor} & \textbf{Beschreibung} \\
   \midrule
   \endfirsthead
   \toprule
-  \textbf{Dienst} & \textbf{Subdomain} & \textbf{Beschreibung} \\
+  \textbf{Dienst} & \textbf{Subdomain} & \textbf{Tor} & \textbf{Beschreibung} \\
   \midrule
   \endhead
   \midrule
-  \multicolumn{3}{r}{\small\itshape Fortsetzung auf der nächsten Seite} \\
+  \multicolumn{4}{r}{\small\itshape Fortsetzung auf der nächsten Seite} \\
   \endfoot
   \bottomrule
   \endlastfoot
-  \multicolumn{3}{l}{\textbf{Infrastruktur}} \\
+  \multicolumn{4}{l}{\textbf{Infrastruktur}} \\
   \midrule
-  Traefik         & \texttt{traefik.*}      & Reverse Proxy / \acs{TLS}-Termination \\
-  Authelia        & \texttt{auth.*}         & \acs{SSO} / \acs{MFA} / \acs{OIDC}-Provider \\
-  Garage          & \texttt{s3.*}           & \acs{S3}-kompatibler Objektspeicher \\
-  Garage UI       & \texttt{garage.*}       & Garage Web-Verwaltung \\
-  Tor             & ---                     & Onion-Routing für alle Dienste \\
+  Traefik         & \texttt{traefik.*}      & Ja   & Reverse Proxy / \acs{TLS}-Termination \\
+  Authelia        & \texttt{auth.*}         & Ja   & \acs{SSO} / \acs{MFA} / \acs{OIDC}-Provider \\
+  Garage          & \texttt{s3.*}           & Nein & \acs{S3}-kompatibler Objektspeicher \\
+  Garage UI       & \texttt{garage.*}       & Nein & Garage Web-Verwaltung \\
+  Tor             & ---                     & ---  & Onion-Routing für die anderen Dienste \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Medien}} \\
+  \multicolumn{4}{l}{\textbf{Medien}} \\
   \midrule
-  Jellyfin        & \texttt{jellyfin.*}     & Medienserver (Filme, Musik, TV) \\
-  Immich          & \texttt{photos.*}       & Foto- und Video-Backup \\
+  Jellyfin        & \texttt{jellyfin.*}     & Ja & Medienserver (Filme, Musik, TV) \\
+  Immich          & \texttt{photos.*}       & Ja & Foto- und Video-Backup \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Dokumente}} \\
+  \multicolumn{4}{l}{\textbf{Dokumente}} \\
   \midrule
-  Paperless-NGX   & \texttt{paperless.*}    & Dokumentenmanagement / \acs{OCR} \\
-  Bento-PDF       & \texttt{pdf.*}          & PDF-Werkzeuge \\
+  Paperless-NGX   & \texttt{paperless.*}    & Ja & Dokumentenmanagement / \acs{OCR} \\
+  Bento-PDF       & \texttt{pdf.*}          & Ja & PDF-Werkzeuge \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Cloud \& Office}} \\
+  \multicolumn{4}{l}{\textbf{Cloud \& Office}} \\
   \midrule
-  OpenCloud       & \texttt{cloud.*}        & Nextcloud-Alternative, Dateisync \\
-  Collabora       & \texttt{office.*}       & Browser-basierte Office-Suite \\
-  \acs{WOPI}-Server     & \texttt{wopi.*}         & Collaboration-Backend \\
+  OpenCloud       & \texttt{cloud.*}        & Ja   & Nextcloud-Alternative, Dateisync \\
+  Collabora       & \texttt{office.*}       & Nein & Browser-basierte Office-Suite \\
+  \acs{WOPI}-Server     & \texttt{wopi.*}         & Nein & Collaboration-Backend \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Home Automation}} \\
+  \multicolumn{4}{l}{\textbf{Home Automation}} \\
   \midrule
-  Home Assistant  & \texttt{home.*}         & Hausautomation \\
-  Mosquitto       & \texttt{mqtt.*}         & \acs{MQTT}-Broker (WebSocket) \\
+  Home Assistant  & \texttt{home.*}         & Ja & Hausautomation \\
+  Mosquitto       & \texttt{mqtt.*}         & Ja & \acs{MQTT}-Broker (WebSocket) \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Kommunikation}} \\
+  \multicolumn{4}{l}{\textbf{Kommunikation}} \\
   \midrule
-  Ntfy            & \texttt{ntfy.*}         & Push-Benachrichtigungen \\
-  Bichon          & \texttt{bichon.*}       & E-Mail-Client \\
+  Ntfy            & \texttt{ntfy.*}         & Ja & Push-Benachrichtigungen \\
+  Bichon          & \texttt{bichon.*}       & Ja & E-Mail-Client \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Entwicklung}} \\
+  \multicolumn{4}{l}{\textbf{Entwicklung}} \\
   \midrule
-  Forgejo         & \texttt{git.*}          & Self-hosted Git-Plattform \\
+  Forgejo         & \texttt{git.*}          & Ja & Self-hosted Git-Plattform \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Monitoring}} \\
+  \multicolumn{4}{l}{\textbf{Monitoring}} \\
   \midrule
-  Grafana         & \texttt{grafana.*}      & Dashboards \& Visualisierung \\
-  Prometheus      & \texttt{prometheus.*}   & Metriken-Scraping \\
-  Alertmanager    & \texttt{alertmanager.*} & Alert-Routing \\
-  Loki            & intern                  & Log-Aggregation \\
-  Node Exporter   & intern                  & Host-Metriken \\
-  cAdvisor        & intern                  & Container-Metriken \\
-  Promtail        & intern                  & Log-Shipper zu Loki \\
+  Grafana         & \texttt{grafana.*}      & Ja   & Dashboards \& Visualisierung \\
+  Prometheus      & \texttt{prometheus.*}   & Ja   & Metriken-Scraping \\
+  Alertmanager    & \texttt{alertmanager.*} & Ja   & Alert-Routing \\
+  Loki            & --                      & Nein & Log-Aggregation \\
+  Node Exporter   & --                      & Nein & Host-Metriken \\
+  cAdvisor        & --                      & Nein & Container-Metriken \\
+  Grafana Alloy   & --                      & Nein & Log-Shipper zu Loki (Docker- und Host-Logs) \\
   \midrule
-  \multicolumn{3}{l}{\textbf{Tools}} \\
+  \multicolumn{4}{l}{\textbf{Tools}} \\
   \midrule
-  Homepage        & \texttt{dashboard.*}    & Startseite / Service-Übersicht \\
-  Vaultwarden     & \texttt{vault.*}        & Passwortmanager (Bitwarden-kompatibel) \\
-  OpenSpeedTest   & \texttt{speedtest.*}    & Interner Netzwerk-Speedtest \\
+  Homepage        & \texttt{dashboard.*}    & Ja & Startseite / Service-Übersicht \\
+  Vaultwarden     & \texttt{vault.*}        & Ja & Passwortmanager (Bitwarden-kompatibel) \\
+  OpenSpeedTest   & \texttt{speedtest.*}    & Ja & Interner Netzwerk-Speedtest \\
 \end{xltabular}

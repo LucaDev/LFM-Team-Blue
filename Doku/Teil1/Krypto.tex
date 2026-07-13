@@ -218,6 +218,16 @@ In Kombination mit \ac{NATS} wird \ac{HTTP} als \ac{API} für gezielte GET-Abfra
 \paragraph{\ac{WG}} \mbox{}\\
 \ac{WG} beziehungsweise sein gebildeter Tunnel stellt den einzigen Kommunikationspfad zwischen dem Hot-Basis-System (Middleware) und der Signierer-\ac{VM} (Key~A) dar, wodurch die Signierer-\ac{VM} von keinem anderen System erreichbar ist. Übertragen werden ausschließlich die zu signierenden \acp{PSBT} vom Basis-System zur Signierer-\ac{VM} und zurückgegeben werden die signierten \acp{PSBT}. Das geheime Schlüsselmaterial wird nicht ausgetauscht und verlässt zu keinem Zeitpunkt die \ac{VM} von Key~A (siehe \ref{sec:in_transit_vault}).
 
+\paragraph{Netzwerkanbindung} \mbox{}\\
+Netzwerkseitig fügt sich das Hot-Wallet in die Segmentierung des Basis-Systems ein (siehe Abschnitt~\ref{sec:apphost-netze}). Dabei laufen Sämtliche Microservices in einem eigenen, rein internen Docker-Netzwerk (\texttt{finance-network}) ohne veröffentlichte Ports. 
+Bitcoin Core, PostgreSQL, \ac{NATS}, \ac{OPA} und der TX-Builder sind dadurch weder aus dem Heimnetz noch von anderen Dienstgruppen des Apphosts erreichbar.
+Einzig die Middleware ist zusätzlich an zwei weitere Netzwerke angebunden und schickt Daten an das \texttt{communication-network}, um Alarme über den bestehenden ntfy-Dienst zuzustellen. Es empfängt Zahlungsanfragen an seiner \ac{API} unter einer eigenen Subdomain des reverse Proxy von dem \texttt{traefik-public}-Netzwerk.
+Authelia-Anmeldung wird an diesem Router bewusst verzichtet, da die \ac{API} von Partner-Systemen maschinell aufgerufen wird und ein Browser-Login-Redirect diese Integration brechen würde. die Autorisierung
+erfolgt stattdessen, wie beschrieben, über das Wallet-Whitelisting und die
+\ac{OPA}-Policies. Die Verbindung zur Signierer-\ac{VM} verläuft davon
+getrennt ausschließlich über den im Folgenden beschriebenen
+WireGuard-Tunnel.
+
 Der Tunnel bildet damit eine eigenständige Authentifizierungs- und Verschlüsselungsschicht für die \ac{API}-Verbindung und erfüllt die Aufgaben:
 \begin{itemize}
     \item Absicherung der Datenübertragung durch Transportverschlüsselung zwischen den beiden Peers,

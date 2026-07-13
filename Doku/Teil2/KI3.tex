@@ -658,55 +658,66 @@ Die 17 Punkte für Szenario B bedeuten nicht, dass ein fertiges Produktivsystem 
 Fragen wie Produktivbetrieb, langfristige Wartung oder verbleibende Restrisiken flossen nicht in die Bewertung ein. 
 Erst der Abgleich mit der Eigenentwicklung zeigt zudem, wie viel Weg zwischen einer gut belegten Testbasis und einem tatsächlich betreibbaren System liegt.
 
-In den nächsten Abschnitten werden die Kategorien einzeln verglichen. Die zugehörigen Einzelbefunde sind in Abschnitt~\ref{sec:einzelbewertung} indikatorweise belegt und werden hier nicht wiederholt. Der Vergleich ordnet sie ein und bezieht die Eigenentwicklung als Referenz mit ein.
-
 Auf die Details der Eigenentwicklung wird analog zum \ac{BTC}-Konzept nur kurz eingegangen. Tabelle~\ref{tab:basis-eigen-details} begründet die vergebenen Wertungen und liefert die Vergleichspunkte für die folgenden Absätze. Die genannten Aspekte können in der Ausarbeitung des Basis-Systems nachgelesen
 werden (Abschnitt~\ref{Apphost}).
 
-\begin{table}[htbp]
-\centering
+\begingroup
 \footnotesize
 \renewcommand{\arraystretch}{1.3}
-\begin{tabularx}{\linewidth}{@{} p{4.3cm} c >{\RaggedRight\arraybackslash}X @{}}
+\begin{xltabular}{\linewidth}{@{} p{2.9cm} c c >{\RaggedRight\arraybackslash}X @{}}
+\caption{Indikatorbasierte Detailbewertung der Eigenentwicklung in den
+Basis-Kategorien}\label{tab:basis-eigen-details}\\
 \toprule
-\textbf{Kategorie} & \textbf{Score} & \textbf{Details der Eigenentwicklung} \\
+\textbf{Kategorie} & \textbf{I1--I4} & \textbf{Wertung} & \textbf{Details der Eigenentwicklung} \\
 \midrule
-Architekturplanung & 3 &
-Dokumentierte Erprobung und begründete Verwerfung eines
-Kubernetes-Ansatzes zugunsten eines einzelnen gehärteten Apphosts.
-Getrennte Docker-Netzsegmente je Dienstgruppe. Nachgewiesene Abdeckung des
-vorgegebenen Bedrohungsmodells je Angriffsvektor. \\
-\addlinespace
-Services & 3 &
-Über 18 produktive Dienste aus Medien, Dokumenten, Cloud, Hausautomation
-und Entwicklung. Datenbanken und Caches bleiben ohne Veröffentlichung nur im
-jeweiligen Netz erreichbar. Zentrale Anmeldung über Authelia mit \ac{OIDC}
-und Forward-Auth. \\
-\addlinespace
-Konfiguration & 3 &
-Vollständig deklarativer Systemzustand über NixOS-Module und Compose-Dateien
-im Git. Atomare Updates mit Rollback-Generationen. Secrets außerhalb des
-Repositories mit abgeleiteten Argon2id-Hashes. Kontrollierte Updates über
-RenovateBot und wöchentliche Trivy-Scans. \\
-\addlinespace
-Netzwerk / Tor / Zugriff & 3 &
-Kein nach außen geöffneter Port dank \ac{DNS}-01-Zertifikaten. Default-Deny
-über nftables. Traefik als einziger Web-Einstieg mit \ac{TLS} nach
-\ac{BSI} \ac{TR}-02102-2 und zentralen Security-Headern. Tor-Erreichbarkeit
-pro Dienst explizit zuschaltbar. Mehr-Faktor-Anmeldung und Fail2ban. \\
-\addlinespace
-Backup / Monitoring & 2 &
-Konsistente Proxmox-Snapshots des Gesamtzustands mit optionaler
-Verschlüsselung. Vollständiges Monitoring von Host und Containern.
-Alarmkette über selbst gehostetes ntfy bis auf das GrapheneOS-Endgerät.
-Kein dokumentierter Restore-Test und kein umgesetztes Off-Host-Ziel. \\
+\endfirsthead
+\toprule
+\textbf{Kategorie} & \textbf{I1--I4} & \textbf{Wertung} & \textbf{Details der Eigenentwicklung} \\
 \midrule
-\textbf{Gesamt} & \textbf{14 / 15} & Basis-Kategorien ohne Fehleranalyse \\
+\endhead
+\midrule
+\multicolumn{4}{r}{\small\itshape Fortsetzung auf der nächsten Seite} \\
+\endfoot
 \bottomrule
-\end{tabularx}
-\caption{Detailbewertung der Eigenentwicklung in den Basis-Kategorien}
+\endlastfoot
+Architekturplanung & 3/3/2/2 (2{,}50) & 3 &
+I1 (3): Zonenmodell über dedizierte Docker-Netzsegmente je Dienstgruppe
+inklusive eigener \ac{BTC}-Zone (\texttt{finance-network}). Die Abdeckung des vorgegebenen Bedrohungsmodells je Angriffsvektor ist dokumentiert.
+I2 (3): Platzierung aus echtem Abwägungsprozess, inklusive dokumentierter Erprobung und begründeter Verwerfung von Kubernetes/Talos.
+I3 (2): Kommunikationspfade real erzwungen durch \acp{DB} und Caches ohne Traefik-Label nur im eigenen Segment, jedoch keine vollständige Quelle-Ziel-Port-Matrix.
+I4 (2): Admin-Oberflächen bilden keine eigene Zone, sondern liegen hinter Authelia im \texttt{traefik-public}-Netz. \\
+\addlinespace
+Services & 3/3/2/3 (2{,}75) & 3 &
+I1 (3): Über 18 produktive Dienste in themengetrennten Compose-Dateien (\path{compose/}), je Dienst mit Healthcheck.
+I2 (3): Verteilung nach Schutzbedarf über eigene Netzsegmente. Z.\,B. \path{compose/media/immich.yml} mit Postgres/Valkey nur im Medien-Segment.
+I3 (2): Durchgängig \path{cap_drop: [ALL]}, \path{no-new-privileges}, \path{read_only} wo möglich und Ressourcenlimits. Definiert sind funktionsbedingte Ausnahmen wie Collabora mit \texttt{SYS\_ADMIN}, cAdvisor privilegiert und Exporter im Host-Namespace.
+I4 (3): Keine funktionslosen Zusatzdienste, jede Compose-Datei zugeordnet zu einem klaren Zweck. \\
+\addlinespace
+Konfiguration & 3/2/3/3 (2{,}75) & 3 &
+I1 (3): Gehärtete Defaults zentral und deklarativ in vier NixOS-Modulen (\path{security.nix}, \path{networking.nix}, \path{docker.nix}, \path{secureboot.nix}).
+I2 (2): Verwendung von Hashes durch Argon2id über \path{scripts/update-secrets-authelia.sh}, bcrypt für ntfy), \path{secrets/} mit Rechten 0700 außerhalb des Repositories. Die Dienst-Passwörter liegen jedoch systembedingt im Klartext in der \path{.env} auf dem Host.
+I3 (3): Konsistenz zwischen Dokumentation und Dateien nach Review-Abgleich, wobei konkrete Werte im Anhang ausgewiesen sind.
+I4 (3): Reproduzierbar über Flake-Pinning (\path{flake.lock}) und atomare Generationen mit Rollback. \\
+\addlinespace
+Netzwerk / Tor / Zugriff & 3/3/2/3 (2{,}75) & 3 &
+I1 (3): Konfiguriert über nftables mit \texttt{policy drop} auf Input und Forward (\path{modules/networking.nix}). \ac{SSH} ist rate-limitiert und existiert kein nach außen geöffneter Port durch \ac{DNS}-01-Zertifikaten.
+I2 (3): Tor-Erreichbarkeit pro Dienst ist über ein eigenes Label-Set explizit zuschaltbar. Der Tor-Client  ist gehärtet (\path{config/tor/torrc}: \texttt{ClientOnly}, deaktivierter Control- und \ac{SOCKS}-Port).
+I3 (2): Admin-Oberflächen zusätzlich hinter Authelia-Forward-Auth mit optional aktivierbarer \acs{MFA}. Fail2ban-Web-Jail ist eingerichtet
+I4 (3): Die interne Kommunikation wird über Segmentierung und User-Namespace-Remapping begrenzt und Docker-\ac{API} ist nur über den lesenden Socket-Proxy erreichbar. \\
+\addlinespace
+Backup / Monitoring & 1/1/3/3 (2{,}00) & 2 &
+I1 (1): konsistente Proxmox-Snapshots des Gesamtzustands mit optionaler Verschlüsselung, jedoch kein umgesetztes Off-Host-Ziel.
+I2 (1): Restore per Design als einzelner Rückspielschritt, der jedoch nicht dokumentiert durchgespielt wurde.
+I3 (3): Host und Container werden vollständig überwacht (Node-Exporter, cAdvisor, Alloy nach Loki, Prometheus-Alert-Regeln).
+I4 (3): Etablierung einer Alarmkette durch Alertmanager über selbst gehostetes ntfy bis auf das GrapheneOS-Endgerät des Mandanten. \\
+\midrule
+\textbf{Gesamt} & & \textbf{14 / 15} &  \\
+\end{xltabular}
+\caption{Indikatorbasierte Detailbewertung der Eigenentwicklung in den Basis-Kategorien}
 \label{tab:basis-eigen-details}
-\end{table}
+\endgroup
+
+In den nächsten Abschnitten werden die Kategorien einzeln verglichen. Die zugehörigen Einzelbefunde sind in Abschnitt~\ref{sec:einzelbewertung} indikatorweise belegt und werden hier nicht wiederholt. Der Vergleich ordnet sie ein und bezieht die Eigenentwicklung als Referenz mit ein.
 
 \subsection{Architekturplanung}
 \textbf{Eigenentwicklung: 3, A: 2, B: 3.} Alle drei Systeme beruhen auf einem nachvollziehbaren Zonen- und Rollenmodell. Der einzige Unterschied liegt im Umgang mit der eigenen Planung. 
@@ -714,7 +725,8 @@ Szenario A ließ die Architektur während des Aufbaus entstehen und erzwang sie 
 Szenario B legte die Zielstruktur vor der ersten Umsetzung verbindlich fest und validierte die Grenzen anschließend fortlaufend. 
 Die Eigenentwicklung geht darüber hinaus, weil sie konkurrierende Ansätze zunächst ernsthaft erprobt und begründet verworfen hat. Ihre Entscheidung für einen einzelnen gehärteten Host entstand aus einem echten
 Abwägungsprozess und wurde bis in ein produktives System getragen. 
-Szenario B plant insofern auf Augenhöhe, belegt seine Grenzen aber nur an einer leeren Basis. 
+Zu nennen ist, dass Szenario B in einem Aspekt formal sauberer als die Eigententwicklung arbeitet. B's Deny-by-default-Kommunikationsmatrix dokumentiert jeden erlaubten Pfad mit Quelle, Ziel und Port, während die Eigenentwicklung ihre real erzwungenen Pfade nur in einer vereinfachten Netzübersicht ausweist und dementsprechend eine stärkere Dokumentation liefert.
+Szenario B plant insofern auf Augenhöhe, belegt seine Grenzen aber nur an einer leeren Basis.
 Szenario A bleibt hinter beiden zurück, weil sein Modell zwar vergleichbar sinnvoll war, seine Durchsetzung aber nicht nachgewiesen wurde.\cite{runbookA,selfauditA,masterplanB,validatornotesB}
 
 \subsection{Services}
@@ -735,7 +747,7 @@ Szenario A fällt gegenüber beiden ab, weil seine Härtung nachträglich entsta
 
 \subsection{Netzwerk, Tor und Zugriff}
 \textbf{Eigenentwicklung: 3, A: 2, B: 3.} In dieser Kategorie verbindet die Eigenentwicklung die Stärken der beiden Szenarien. Sie erreicht die Zugriffshärte von Szenario B, weil kein Port nach außen geöffnet wird und eingehender Verkehr standardmäßig verworfen wird. Zugleich bietet sie die Breite von Szenario A, da sämtliche Dienste über einen zentralen, mehrfaktorgeschützten Einstiegspunkt und wahlweise über Tor erreichbar sind.
-Szenario B belegt seine Strenge dagegen nur für den einzigen vorhandenen Admin-Pfad. 
+Szenario B belegt seine Strenge dagegen nur für den einzigen vorhandenen Admin-Pfad. Dieser eine Pfad ist dafür formal strenger abgesichert als der Admin-Zugang der Eigenentwicklung, weil er zusätzlich v3-Client-Auth erzwingt. Die Eigenentwicklung hingegen schützt ihre Admin-Oberflächen über die zentrale Authelia-Anmeldung mit optionaler \ac{MFA}, was sich als leicht schwächer darstellt.
 Szenario A publizierte umgekehrt viele Pfade, ohne die Grenzen dahinter technisch zu erzwingen. Der Vergleich zeigt damit, dass Erreichbarkeit und Durchsetzung kein Widerspruch sind. 
 Jedes der beiden \ac{KI}-Szenarien hat nur eine der beiden Hälften eingelöst, die Eigenentwicklung beide gleichzeitig.\cite{runbookA,selfauditA,finalsummaryB,validatornotesB}
 

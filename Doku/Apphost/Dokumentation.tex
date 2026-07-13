@@ -221,36 +221,8 @@ Diese Aufteilung begrenzt die laterale Bewegung eines Angreifers: Selbst wenn
 ein Dienst kompromittiert wird, kann der Angreifer von dort nicht ohne Weiteres
 auf alle anderen Dienste zugreifen.
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lll}
-  \toprule
-  \textbf{Netzwerk} & \textbf{Beispieldienste} & \textbf{Von außen erreichbar} \\
-  \midrule
-  traefik-public        & alle veröffentlichten Dienste & ja, nur über Traefik \\
-  socket-proxy          & Traefik, Homepage              & nein \\
-  media-network         & Jellyfin, Immich, Postgres, Valkey & nein \\
-  documents-network     & Paperless, Bento-\ac{PDF}, Valkey   & nein \\
-  cloud-network         & OpenCloud, Collabora           & nein \\
-  storage-network       & Garage (\acs{S3})                    & nein \\
-  home-network          & Home Assistant, Mosquitto      & nein \\
-  monitoring-network    & Prometheus, Grafana, Loki      & nein \\
-  communication-network & Ntfy, Alertmanager             & nein \\
-  dev-network           & Forgejo                        & nein \\
-  tools-network         & Homepage, Vaultwarden          & nein \\
-  \bottomrule
-\end{tabular}
-\caption{Vereinfachte Übersicht der internen Docker-Netzwerke.}
-\end{table}
-
-Wichtig ist dabei: Datenbanken, Cache-Instanzen und der interne Teil des
-Monitorings (zum Beispiel Loki) haben gar keine Traefik-Labels und sind damit
-von außen überhaupt nicht erreichbar. Sie sind nur für die Dienste sichtbar,
-die sie wirklich brauchen.
 
 \subsubsection{Reverse Proxy mit Traefik}
-
 Traefik ist der einzige Einstiegspunkt für Web-Verkehr. Er terminiert \ac{TLS} und
 verteilt die Anfragen anhand der Subdomain an den jeweiligen Dienst. Die
 Zuordnung passiert über Container-Labels, die Traefik direkt aus Docker liest.
@@ -312,7 +284,7 @@ nicht prüfen kann.
 
 \subsubsection{Zensurresistenter Zugriff über Tor}
 
-Auf ausdrücklichen Kundenwunsch sind alle Dienste zusätzlich über das
+Auf ausdrücklichen Kundenwunsch sind ein großteil der Dienste zusätzlich über das
 Tor-Netzwerk als Onion Service v3 erreichbar. Dafür läuft ein Tor-Container,
 der einen Onion Service bereitstellt und den Verkehr an einen eigenen
 Traefik-Einstiegspunkt weiterreicht. So kann der Mandant auch aus stark
@@ -333,7 +305,10 @@ Tor-Einstiegspunkt. Lässt man dieses Set weg, ist der Dienst schlicht nicht
 kann der Mandant gezielt steuern, welche Dienste anonym von außen verfügbar sein
 sollen und welche bewusst nur im Heimnetz bleiben. Wir nutzen das zum Beispiel
 für Collabora, das aus Sicherheitsgründen standardmäßig nicht über Tor
-freigegeben ist.
+freigegeben ist (siehe Abschnitt zu den Kompromissen). Auch Garage hat bewusst
+keinen Tor-Einstiegspunkt: Als \acs{S3}-kompatibler Objektspeicher im Hintergrund
+der anderen Dienste hat es keine eigenen Endnutzer, die von außerhalb des
+Heimnetzes darauf zugreifen müssten.
 
 \paragraph{Kompatibilität der Anwendungen und \ac{OIDC}.}
 Nicht jede Anwendung kommt mit zwei verschiedenen \ac{URL}s gleich gut zurecht. Manche
@@ -435,9 +410,40 @@ Compose-Dateien und sind damit für den Mandanten nachvollziehbar:
     wer im Container root wird, ist auf dem Host damit ein Benutzer ohne Rechte.
 \end{itemize}
 
-Die einzige nennenswerte Ausnahme von diesem Muster ist Collabora, das für das
-Rendern von Dokumenten erweiterte Rechte benötigt. Wir gehen darauf im Abschnitt
-zu den Kompromissen ein.
+Nicht jeder Container folgt diesem Muster vollständig. Neben Collabora, das für
+das Rendern von Dokumenten erweiterte Rechte benötigt und im Abschnitt zu den
+Kompromissen behandelt wird, brauchen auch einige Monitoring-Komponenten und
+die Docker-Anbindung selbst gezielte Ausnahmen:
+
+\begin{itemize}
+  \item \textbf{cAdvisor} läuft mit \texttt{privileged: true} und
+    \texttt{userns\_mode: host}, weil es zur Erhebung von Container-Metriken
+    lesend auf cgroups, den Kernel-Ringpuffer (\texttt{/dev/kmsg}) und interne
+    Docker-Zustände zugreifen muss, die ohne erweiterte Rechte nicht sichtbar
+    sind.
+  \item \textbf{Node-Exporter} läuft mit Host-PID-, Host-Netzwerk- und
+    Host-User-Namespace (\texttt{pid: host}, \texttt{network\_mode: host},
+    \texttt{userns\_mode: host}), weil es Host-Prozesse und
+    Netzwerkschnittstellen des Hosts selbst vermisst, nicht die eines isolierten
+    Containers.
+  \item \textbf{socket-proxy} läuft mit \texttt{userns\_mode: host} und bindet
+    den Docker-Socket read-only ein, weil der Socket ausschließlich mit den
+    Host-\acp{UID} funktioniert, mit denen der Docker-Daemon selbst läuft; unter
+    User-Namespace-Remapping wären die gemappten \acp{UID} im Container nicht
+    identisch mit denen, die der Socket erwartet. Traefik selbst bekommt dafür
+    im Gegenzug keinen direkten Socket-Zugriff, sondern spricht ausschließlich
+    den lesebeschränkten Socket-Proxy über das Netzwerk an (siehe oben).
+  \item \textbf{Grafana Alloy} bindet den Docker-Socket ebenfalls read-only ein,
+    um Container-Logs einsammeln zu können, läuft dabei aber ohne
+    \texttt{userns\_mode: host} und mit vollständig entfernten Capabilities.
+\end{itemize}
+
+Alle diese Ausnahmen sind eng auf das jeweils benötigte Recht begrenzt und
+betreffen bewusst nur Monitoring- und Infrastrukturkomponenten, die selbst
+keine Nutzdaten des Mandanten verarbeiten, sondern Host- bzw.
+Container-Zustand beobachten oder Anfragen weiterleiten. Die eigentliche
+Angriffsfläche (die produktiven Dienste des Mandanten) bleibt vom vollen
+Härtungsmuster erfasst.
 
 Ergänzt wird die Container-Härtung durch automatische Sicherheitsscans. Ein
 geplanter Job prüft die laufenden Images wöchentlich (montags um 02:00) mit Trivy auf
@@ -458,12 +464,18 @@ jeweiligen Router. Ein neuer Dienst erbt damit automatisch den vollen Schutz,
 sobald er die passende Kette an Middlewares referenziert.
 
 \begin{itemize}
-  \item \textbf{\ac{TLS}-Konfiguration nach \ac{BSI} \ac{TR}-02102-2:} Traefik bevorzugt
-    \ac{TLS}~1.3 und erlaubt als Fallback \ac{TLS}~1.2 nur mit den vom \ac{BSI} empfohlenen
-    \ac{AEAD}-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven X25519,
-    P-256 und P-384. \texttt{sniStrict} sorgt dafür, dass Anfragen ohne
-    passenden Hostnamen abgewiesen werden, statt auf ein Default-Zertifikat
-    auszuweichen.
+  \item \textbf{\ac{TLS}-Konfiguration nach \ac{BSI} \ac{TR}-02102-2:} Aktuell gilt für
+    sämtliche Entrypoints ausschließlich das \texttt{default}-\ac{TLS}-Profil mit
+    \ac{TLS}~1.3. Daneben liegt ein zweites, ebenfalls zu \ac{BSI} \ac{TR}-02102-2 konformes
+    Profil (\texttt{intermediate}) vor, das \ac{TLS}~1.2 nur mit den vom \ac{BSI}
+    empfohlenen \ac{AEAD}-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven
+    X25519, P-256 und P-384 als Fallback erlaubt. Da kein Router explizit auf
+    \texttt{tls.options=intermediate} verweist, bleibt dieses Fallback-Profil
+    derzeit ungenutzt und alle Clients müssen \ac{TLS}~1.3 sprechen; es lässt sich
+    bei Bedarf für einzelne Router aktivieren, etwa falls ein Altgerät des
+    Mandanten kein \ac{TLS}~1.3 unterstützt. \texttt{sniStrict} sorgt in beiden
+    Profilen dafür, dass Anfragen ohne passenden Hostnamen abgewiesen werden,
+    statt auf ein Default-Zertifikat auszuweichen.
   \item \textbf{Erzwungenes \ac{HTTPS} und \ac{HSTS}:} Der \ac{HTTP}-Entrypoint leitet jede
     Anfrage permanent auf \ac{HTTPS} um. Zusätzlich setzt Traefik einen
     \ac{HSTS}-Header mit zwei Jahren Gültigkeit, Preload-Flag für alle
@@ -571,6 +583,10 @@ bereit, von Medien (Jellyfin, Immich) über Dokumente (Paperless, Bento-\ac{PDF}
 Cloud und Office (OpenCloud, Collabora), Hausautomation (Home Assistant,
 Mosquitto), Kommunikation (Ntfy, Bichon) und Entwicklung (Forgejo) bis zu
 Werkzeugen wie dem Passwortmanager Vaultwarden und einer Startseite (Homepage).
+Zusätzlich läuft auf dem Apphost der Hot-Wallet-Stack für den automatisierten
+Bitcoin-Zahlungsverkehr, den wir in Abschnitt~\ref{Krypto} gesondert
+beschreiben. Die vollständige Liste mit Subdomains und Beschreibungen findet
+sich im Anhang.
 Die vollständige Liste mit Subdomains und Beschreibungen findet sich im Anhang.
 
 \subsection{Abdeckung des Bedrohungsmodells} \label{sec:gefahrenmodell}
@@ -671,8 +687,12 @@ offen zu benennen:
     anonymer Zugangsweg davon unberührt.
   \item \textbf{Collabora.} Der Office-Dienst Collabora benötigt für das
     Rendern von Dokumenten erweiterte Rechte (unter anderem die Capability
-    \texttt{SYS\_ADMIN}). Das ist der am wenigsten eingeschränkte Container im
-    Stack. Wir akzeptieren das, weil die Funktion sonst nicht läuft, und
+    \texttt{SYS\_ADMIN}, deaktiviertes Seccomp- und AppArmor-Profil). Unter den
+    für den Mandanten erreichbaren, nutzerdaten-verarbeitenden Diensten ist das
+    der am wenigsten eingeschränkte Container im Stack (die in
+    Abschnitt~\ref{sec:apphost-container} genannten Ausnahmen bei Monitoring
+    und Docker-Anbindung betreffen reine Infrastrukturkomponenten ohne direkten
+    Netzwerkzugriff von außen). Wir akzeptieren das, weil die Funktion sonst nicht läuft, und
     begrenzen das Risiko über die Netzwerksegmentierung und die Anmeldung an OpenCloud. Aus diesem Grund ist Collabora jedoch standardmäßig nicht über Tor erreichbar.
     In den letzten Monaten hat sich \ac{EU}-Office als (\ac{EU}-)Fork von OnlyOffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. \ac{EU}-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von \ac{EU}-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
   \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen Sandbox-Runtimes

@@ -7,8 +7,6 @@
 \usepackage[utf8]{inputenc} % Zeichenkodierung
 \usepackage[ngerman]{babel} % neue deutsche Rechtschreibung
 
-\usepackage[utf8]{inputenc}  % Erlaubt die direkte Eingabe von Umlauten
-\usepackage[T1]{fontenc} 
 
 \usepackage{geometry} % Papierformat und Seitenabstände
 \geometry{a4paper, left=2.8cm, right=2.8cm, top=3cm, bottom=4cm} % Papierformat und Seitenabstände
@@ -181,6 +179,9 @@
 \appendix
 \setcounter{section}{0}
 \renewcommand{\thesection}{A\arabic{section}}
+
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
 
 \include{Doku/Anhang-KI}
 \include{Doku/Apphost/Anhang-Appverzeichnis}
