@@ -193,7 +193,12 @@ else
   warn "  sudo nixos-rebuild boot --flake /opt/monorepo/apphost#apphost"
 fi
 
-MONOREPO_ROOT="$(git -C "$REPO_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+# Das Repo gehört meist dem Nutzer, der es geklont hat (z.B. "nixos"), während dieses
+# Skript per sudo als root läuft. Ohne safe.directory verweigert git seit einigen Versionen
+# jede Operation darauf ("detected dubious ownership"). Live-ISO ist ephemer, daher pauschal statt gezielt. Scheiß egal.
+git config --global --add safe.directory '*'
+
+MONOREPO_ROOT=""
 MONOREPO_REMOTE=""
 [[ -n "$MONOREPO_ROOT" ]] && MONOREPO_REMOTE="$(git -C "$MONOREPO_ROOT" remote get-url origin 2>/dev/null || true)"
 

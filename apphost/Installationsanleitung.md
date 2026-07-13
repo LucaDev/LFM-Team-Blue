@@ -222,7 +222,7 @@ Der Prompt sollte lauten:
 
 1. Repository klonen:
    ```bash
-   git clone <TODO: URL>
+   git clone https://github.com/LucaDev/LFM-Team-Blue.git
    ```
 2. Installationsskript ausführen:
    ```bash
