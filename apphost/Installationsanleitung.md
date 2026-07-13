@@ -407,16 +407,39 @@ vim .env        # TOR_DOMAIN=<adresse>.onion eintragen
 docker compose up -d
 ```
 
-### Immich OIDC (manuell)
+### OIDC-Clients einrichten
 
-Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden:
+`scripts/update-secrets-authelia.sh` (läuft automatisch im Installationsskript, siehe [Abschnitt 6](#6-installation)) richtet Authelia als zentralen SSO/OIDC-Provider ein. Danach sind noch ein paar Schritte nötig, damit die einzelnen Dienste die neuen Secrets übernehmen bzw. sich gegen Authelia registrieren:
 
-_Administration → Settings → OAuth_
+1. **Authelia deployen** (nur nötig, wenn Authelia-Secrets isoliert neu generiert wurden, nicht beim ersten `docker compose up -d`):
+   ```bash
+   docker compose up -d authelia authelia-redis
+   ```
 
-```bash
-# Client Secret anzeigen:
-grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env
-```
+2. **Immich OIDC (manuell):** Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden:
+
+   _Administration → Settings → OAuth_
+
+   | Feld | Wert |
+   | --- | --- |
+   | Issuer URL | `https://${AUTHELIA_SUBDOMAIN}.${DOMAIN}` |
+   | Client ID | `immich` |
+   | Client Secret | siehe unten |
+
+   ```bash
+   # Client Secret anzeigen:
+   grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env
+   ```
+
+3. **Grafana und Paperless neu starten**, damit sie die (neu generierten) OIDC-Secrets übernehmen:
+   ```bash
+   docker compose up -d grafana paperless
+   ```
+
+4. **Forgejo OIDC:** `forgejo-init` richtet den OIDC-Client beim ersten `docker compose up` automatisch ein. Bei Bedarf (z. B. nach einer Secret-Rotation) manuell erneut ausführen:
+   ```bash
+   docker compose run --rm forgejo-init
+   ```
 
 > [!NOTE]
 > **Passwörter ändern:** Nach Änderungen an Passwörtern in der `.env` müssen die Secrets neu generiert und der Stack neu gestartet werden. Details siehe [Abschnitt 11](#11-passwörter-ändern).
