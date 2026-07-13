@@ -1,7 +1,7 @@
 fastapi==0.139.0
 uvicorn[standard]==0.51.0
 httpx==0.28.1
-nats-py==2.8.0
+nats-py==2.15.0
 psycopg[binary]==3.3.4
 embit==0.8.0
 python-json-logger==4.1.0
