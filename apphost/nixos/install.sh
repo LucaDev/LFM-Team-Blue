@@ -198,7 +198,7 @@ fi
 # jede Operation darauf ("detected dubious ownership"). Live-ISO ist ephemer, daher pauschal statt gezielt. Scheiß egal.
 git config --global --add safe.directory '*'
 
-MONOREPO_ROOT=""
+MONOREPO_ROOT="$(git -C "$REPO_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
 MONOREPO_REMOTE=""
 [[ -n "$MONOREPO_ROOT" ]] && MONOREPO_REMOTE="$(git -C "$MONOREPO_ROOT" remote get-url origin 2>/dev/null || true)"
 

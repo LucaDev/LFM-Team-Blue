@@ -226,7 +226,7 @@ Der Prompt sollte lauten:
    ```
 2. Installationsskript ausführen:
    ```bash
-   sudo ./apphost/nixos/install.sh
+   sudo ./LFM-Team-Blue/apphost/nixos/install.sh
    ```
 
 Das Skript partitioniert die Festplatte, installiert NixOS, generiert die Secure-Boot-Schlüssel, installiert den Bootloader, fragt die `.env`-Werte ab (Domain, ACME E-Mail, Cloudflare-Token, Authelia-Zugangsdaten), generiert die restlichen Secrets (MQTT, Ntfy) automatisch und startet das System anschließend neu. Die folgenden Unterabschnitte beschreiben die interaktiven Prompts in der Reihenfolge, in der sie tatsächlich erscheinen.
@@ -412,6 +412,7 @@ docker compose up -d
 `scripts/update-secrets-authelia.sh` (läuft automatisch im Installationsskript, siehe [Abschnitt 6](#6-installation)) richtet Authelia als zentralen SSO/OIDC-Provider ein. Danach sind noch ein paar Schritte nötig, damit die einzelnen Dienste die neuen Secrets übernehmen bzw. sich gegen Authelia registrieren:
 
 1. **Authelia deployen** (nur nötig, wenn Authelia-Secrets isoliert neu generiert wurden, nicht beim ersten `docker compose up -d`):
+
    ```bash
    docker compose up -d authelia authelia-redis
    ```
@@ -420,11 +421,11 @@ docker compose up -d
 
    _Administration → Settings → OAuth_
 
-   | Feld | Wert |
-   | --- | --- |
-   | Issuer URL | `https://${AUTHELIA_SUBDOMAIN}.${DOMAIN}` |
-   | Client ID | `immich` |
-   | Client Secret | siehe unten |
+   | Feld          | Wert                                      |
+   | ------------- | ----------------------------------------- |
+   | Issuer URL    | `https://${AUTHELIA_SUBDOMAIN}.${DOMAIN}` |
+   | Client ID     | `immich`                                  |
+   | Client Secret | siehe unten                               |
 
    ```bash
    # Client Secret anzeigen:
@@ -432,6 +433,7 @@ docker compose up -d
    ```
 
 3. **Grafana und Paperless neu starten**, damit sie die (neu generierten) OIDC-Secrets übernehmen:
+
    ```bash
    docker compose up -d grafana paperless
    ```
@@ -473,8 +475,8 @@ Für häufige Verwaltungsaufgaben sind Shell-Aliase definiert, die nach dem Logi
 
 | Alias          | Beschreibung                                                                                                                                                   |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pull`         | Holt Repo-Updates (`git pull` in `/opt/monorepo`) – nur der `apphost/`-Pfad des Monorepos wird dabei übertragen.                                                |
-| `update`       | `pull`, danach Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden.                                                          |
+| `pull`         | Holt Repo-Updates (`git pull` in `/opt/monorepo`) – nur der `apphost/`-Pfad des Monorepos wird dabei übertragen.                                               |
+| `update`       | `pull`, danach Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden.                                                         |
 | `rebuild`      | System neu bauen und **sofort** aktivieren, ohne Flake-Inputs zu aktualisieren. Nützlich nach Änderungen an Konfigurationsdateien.                             |
 | `rebuild-boot` | System neu bauen, Aktivierung erst **beim nächsten Neustart**. Sinnvoll, wenn Kernel-Updates ein Reboot erfordern, ohne den laufenden Betrieb zu unterbrechen. |
 | `gc`           | Nix-Store aufräumen: löscht Generationen älter als 30 Tage und optimiert den Store (Deduplizierung via Hard-Links).                                            |
