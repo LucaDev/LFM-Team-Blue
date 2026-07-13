@@ -106,7 +106,7 @@ Regeln:
 Über das folgende Skript kann die neueste Version des NixOS-Cold-Wallets heruntergeladen und automatisiert installiert werden. Es wird von der NixOS-Installer-ISO aus ausgeführt:
 
 ```bash
-sudo /home/user/Desktop/scripts/setup/setup.sh
+sudo {REPO_NAME}/profiles/files/setup.sh
 ```
 
 Während der Installation:
@@ -215,7 +215,7 @@ Der Datentransfer erfolgt ausschließlich über ein dediziertes USB-Medium.
 Mounten (Doppelklick auf dem Desktop oder im Terminal):
 
 ```bash
-/home/user/Desktop/scripts/setup/mnt-USB.sh
+/home/user/Desktop/scripts/mnt-USB.sh
 ```
 
 Alternativ manuell:
@@ -227,7 +227,7 @@ sudo mount /dev/disk/by-label/USB /mnt/usb
 Bereinigen/Formatieren des Mediums. Aus Sicherheitsgründen ist hierfür das Zielgerät **explizit** anzugeben (kein Doppelklick), damit nicht versehentlich die falsche Platte gelöscht wird:
 
 ```bash
-sudo /home/user/Desktop/scripts/setup/format-USB.sh /dev/disk/by-id/<DEIN-STICK>
+sudo /home/user/Desktop/scripts/format-USB.sh /dev/disk/by-id/<DEIN-STICK>
 ```
 
 Dieses Skript:
@@ -239,7 +239,7 @@ Dieses Skript:
 Nach jeder Nutzung zwingend aushängen:
 
 ```bash
-/home/user/Desktop/scripts/setup/umnt-USB.sh
+/home/user/Desktop/scripts/umnt-USB.sh
 ```
 
 ***
@@ -266,7 +266,7 @@ Der air-gapped Zustand ist der Standard und wird direkt beim Build aktiviert. F�
 **Online aktivieren** (Netz an, nur zum Registrieren) – Doppelklick oder Terminal:
 
 ```bash
-/home/user/Desktop/scripts/setup/online.sh
+/home/user/Desktop/scripts/online.sh
 ```
 
 Alternativ beim Reboot im systemd-boot-Menü den Eintrag **„NixOS (online)"** wählen.
@@ -274,7 +274,7 @@ Alternativ beim Reboot im systemd-boot-Menü den Eintrag **„NixOS (online)"** 
 **Wieder air-gappen:**
 
 ```bash
-/home/user/Desktop/scripts/setup/airgap.sh
+/home/user/Desktop/scripts/airgap.sh
 ```
 
 Ein normaler Reboot landet immer im air-gapped Standard. Nach Abschluss der Registrierung sollte die VM dauerhaft air-gapped betrieben werden.
@@ -304,7 +304,7 @@ Der Operator wird über ntfy (GrapheneOS) informiert und exportiert die PSBT **a
 Wechselmedium auf Key B einbinden:
 
 ```bash
-/home/user/Desktop/scripts/setup/mnt-USB.sh
+/home/user/Desktop/scripts/mnt-USB.sh
 ```
 
 In Sparrow:
@@ -321,7 +321,7 @@ In Sparrow:
 Danach aushängen:
 
 ```bash
-/home/user/Desktop/scripts/setup/umnt-USB.sh
+/home/user/Desktop/scripts/umnt-USB.sh
 ```
 
 ***
@@ -331,7 +331,7 @@ Danach aushängen:
 Falls benötigt, Medium auf Key C einbinden:
 
 ```bash
-/home/user/Desktop/scripts/setup/mnt-USB.sh
+/home/user/Desktop/scripts/mnt-USB.sh
 ```
 
 In Sparrow:
@@ -344,7 +344,7 @@ In Sparrow:
 Danach aushängen:
 
 ```bash
-/home/user/Desktop/scripts/setup/umnt-USB.sh
+/home/user/Desktop/scripts/umnt-USB.sh
 ```
 
 ***
@@ -363,14 +363,14 @@ Auf dem Hot-System wird die PSBT importiert, finalisiert und über Bitcoin Core 
 * pro Zeitpunkt genau eine Transaktion auf dem Medium
 * jede Signatur erfordert manuelle Verifikation; der Operator trägt die Verantwortung für die vollständige Prüfung der Transaktion
 * keine automatische Freigabe
-* nach jedem Schritt aushängen: `/home/user/Desktop/scripts/setup/umnt-USB.sh`
+* nach jedem Schritt aushängen: `/home/user/Desktop/scripts/umnt-USB.sh`
 * Broadcast erfolgt ausschließlich im Hot-System
 
 ***
 
 # 3. Hilfsprogramme
 
-Die bereitgestellten Skripte unterstützen den operativen Ablauf, ersetzen jedoch keine Sicherheitsentscheidungen. Sie liegen auf dem Desktop unter `scripts/setup/`und sind – mit Ausnahme von `format-USB.sh`– per Doppelklick ausführbar.
+Die bereitgestellten Skripte unterstützen den operativen Ablauf, ersetzen jedoch keine Sicherheitsentscheidungen. Sie liegen auf dem Desktop unter `scripts/` und sind – mit Ausnahme von `format-USB.sh`– per Doppelklick ausführbar.
 
 ***
 

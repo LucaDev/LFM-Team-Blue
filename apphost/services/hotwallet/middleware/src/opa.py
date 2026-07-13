@@ -200,7 +200,7 @@ async def handle_refillDecision(decision: dict):
         pending = get_pending_PSBT()
         if pending is not None:
             log.info("deleting old refill PSBT", extra={"psbt_id": pending.get("psbt_id")})
-            await delete_psbt(pending["psbt_id"])   # COLD_STOPPED + unlink
+            await delete_psbt(pending["psbt_id"])   # unlink
         return None
 
     intent_id = ""
