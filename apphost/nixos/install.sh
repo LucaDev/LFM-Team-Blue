@@ -367,7 +367,8 @@ keys = [
 with open(env_file) as f:
     content = f.read()
 for key in keys:
-    value = os.environ[key]
+    # Escapen von $ -> $$, damit docker-compose die Variablen nicht interpoliert
+    value = os.environ[key].replace('$', '$$')
     pattern = rf'^({re.escape(key)}=).*'
     new, n = re.subn(pattern, lambda m: m.group(1) + value, content, flags=re.MULTILINE)
     content = new if n else content + f'\n{key}={value}'
