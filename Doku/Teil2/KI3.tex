@@ -4,13 +4,13 @@
 
 \section{Zielsetzung und Forschungsfrage}
 
-Der Mandant möchte wissen, ob \acs{LLMs} die Arbeit von Sicherheitsberatern übernehmen können. Konkret soll geprüft werden, ob \acs{LLMs} sowohl konzeptionelle Vorschläge als auch praktische Konfigurations- und Prüfaufgaben zuverlässig bearbeiten können. Dieses Kapitel untersucht deshalb, ob ein \ac{LLM} in der Lage ist, eine sichere Self-Hosted-Infrastruktur zu planen, aufzubauen, zu dokumentieren und anschließend kritisch zu prüfen.
+Der Mandant möchte wissen, ob \acp{LLM} die Arbeit von Sicherheitsberatern übernehmen können. Konkret soll geprüft werden, ob \acp{LLM} sowohl konzeptionelle Vorschläge als auch praktische Konfigurations- und Prüfaufgaben zuverlässig bearbeiten können. Dieses Kapitel untersucht deshalb, ob ein \ac{LLM} in der Lage ist, eine sichere Self-Hosted-Infrastruktur zu planen, aufzubauen, zu dokumentieren und anschließend kritisch zu prüfen.
 
 Dafür wurden zwei Szenarien miteinander verglichen. In Szenario A wurde ein Nutzer ohne vertieftes \ac{IT}-Sicherheitswissen simuliert. Dieser Nutzer formulierte sein Ziel eher alltagsnah und ließ Codex mit vergleichsweise offenen Prompts ein Home-Lab planen und konfigurieren. Die Anforderungen orientierten sich grundsätzlich am selbst entwickelten Home-Lab: mehrere Self-Hosted-Dienste, Zugriff über Tor, Monitoring, Backups und ein \ac{BTC}-Transaktionssystem.
 
 In Szenario B wurde dasselbe Ziel verfolgt, allerdings mit deutlich engerer fachlicher Steuerung durch einen \ac{IT}-Experten. Der Startprompt enthielt hier bereits Sicherheitsregeln, ein Threat Model, klare Verbote, Dokumentationspflichten und Vorgaben zur späteren Prüfung.
 
-Für beide Szenarien wurden getrennte lokale Proxmox-\acs{VM}s bereitgestellt. Das war notwendig, weil Codex für die praktische Umsetzung weitreichende Rechte innerhalb der jeweiligen Zielumgebung benötigte. Ein direkter Einsatz auf der eigentlichen Home-Lab-Umgebung wäre methodisch und sicherheitstechnisch problematisch gewesen. Es hätte das Risiko bestanden, dass Codex globale Einstellungen oder nicht vom Versuch umfasste Systembestandteile unbeabsichtigt verändert. Die getrennten \acs{VM}s ermöglichten dagegen eine realitätsnahe Umsetzung, ohne das eigentliche Projekt zu gefährden.
+Für beide Szenarien wurden getrennte lokale Proxmox-\acp{VM} bereitgestellt. Das war notwendig, weil Codex für die praktische Umsetzung weitreichende Rechte innerhalb der jeweiligen Zielumgebung benötigte. Ein direkter Einsatz auf der eigentlichen Home-Lab-Umgebung wäre methodisch und sicherheitstechnisch problematisch gewesen. Es hätte das Risiko bestanden, dass Codex globale Einstellungen oder nicht vom Versuch umfasste Systembestandteile unbeabsichtigt verändert. Die getrennten \acp{VM} ermöglichten dagegen eine realitätsnahe Umsetzung, ohne das eigentliche Projekt zu gefährden.
 
 \subsection{Forschungsstand}
 
@@ -88,7 +88,7 @@ Hinzu kommt, dass OpenAI-Modelle zu den bekanntesten und am weitesten verbreitet
 
 Der Agent hatte Zugriff auf Dateien, Konfigurationen und Terminalausgaben innerhalb der jeweiligen \acs{VM}. Dadurch konnte er Fehler in der eigenen Planung erkennen, Anpassungen vornehmen und einzelne Bestandteile der Infrastruktur praktisch verbessern. Codex verfügte damit über mehr Kontext zur tatsächlichen Umgebung als ein normaler Chatbot.
 
-Dazu wurden zwei getrennte Proxmox-\acs{VM}s verwendet. Szenario A lief auf \texttt{ailab1}, Szenario B auf \texttt{ailab2}.
+Dazu wurden zwei getrennte Proxmox-\acp{VM} verwendet. Szenario A lief auf \texttt{ailab1}, Szenario B auf \texttt{ailab2}.
 Um die Vergleichbarkeit zu sichern, wurden alle übrigen Faktoren konstant gehalten, wobei beide \acp{VM} identisch dimensioniert waren. Daneben kamen dasselbe Modell und dieselbe Reasoning-Einstellung der \ac{KI} zum Einsatz, beide Läufe folgten demselben Meta-Prompt-Rahmen und erhielten identische Fehlerartefakte für die abschließende Fehleranalyse. 
 Bewusst variiert wurde ausschließlich die fachliche Tiefe der Nutzereingaben. Nicht kontrollierbar waren Umfang und Dauer der Interaktion, die sich aus dem jeweiligen Nutzerverhalten ergaben.
 Diese Asymmetrie wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung
@@ -338,7 +338,7 @@ Dateien und dem geprüften Laufzeitzustand.
 
 \paragraph{Architekturplanung (2 von 3)}
 I1 (2): Die Punktzahl begründet sich daraus, dass ein Rollen- und Zonenmodell vorhanden ist.
-Dabei existieren vier getrennte \ac{LXC}-Rollen bestehend aus (\texttt{201 tor-edge}, \texttt{202 app-core}, \texttt{203 ops} und \texttt{204 btc-node}), welche sich die zwei Bridges \texttt{vmbr1} für Service- und \texttt{vmbr2} für Monitoring-Verkehr, definiert über \path{/etc/network/interfaces.d/homelab-bridges.cfg}, teilen. 
+Dabei existieren vier getrennte \ac{LXC}-Rollen bestehend aus \texttt{201 tor-edge}, \texttt{202 app-core}, \texttt{203 ops} und \texttt{204 btc-node}, welche sich die zwei Bridges \texttt{vmbr1} für Service- und \texttt{vmbr2} für Monitoring-Verkehr, definiert über \path{/etc/network/interfaces.d/homelab-bridges.cfg}, teilen. 
 Explizite
 Schutzbedarfsklassen je Rolle fehlen jedoch, wobei die Zuordnung primär an den
 verfügbaren Ressourcen ausgerichtet wurde.\cite{runbookA}
@@ -432,7 +432,7 @@ Das Testdesign erreicht 2 von 3 Punkten. Für die umgesetzte Node-Schicht existi
 Ein Spend- oder Recovery-Pfad konnte mangels Umsetzung nicht getestet werden. Diese Lücke ist jedoch bereits in den beiden vorgenannten Kriterien abgewertet, während das Testdesign für den tatsächlich vorhandenen Umfang eng gefasst ist.
 
 Härtung, Limitierung und Angriffsflächenreduktion erreichen 2 von 3 Punkten. Die Node-Konfiguration in \path{bitcoin.conf} bindet \ac{RPC} und \ac{P2P} ausschließlich an Loopback, erzwingt Onion-only-Konnektivität, deaktiviert Peer-Discovery und \ac{DNS}-Seeds und begrenzt Verbindungszahl und Speicherbedarf. Dazu kommen vorteilhaft systemd-Sandboxing des Daemons und eine Default-Drop-Firewallkette. 
-Der Punktabzug ergibt sich aus der Installationskette, wobei \ac{BTC}-Core wurde nur gegen die \texttt{SHA256SUMS}-Datei desselben Download-Servers geprüft wird und die Verifikation der zugehörigen Signaturdatei außer Acht gelassen wird. In der geheimnisfreien Testumgebung wurde dies als kleinere Lücke eingestuft.
+Der Punktabzug ergibt sich aus der Installationskette, wobei \ac{BTC}-Core nur gegen die \texttt{SHA256SUMS}-Datei desselben Download-Servers geprüft wird und die Verifikation der zugehörigen Signaturdatei außer Acht gelassen wird. In der geheimnisfreien Testumgebung wurde dies als kleinere Lücke eingestuft.
 
 Recovery, Fehlerfälle und Remediation erhalten 1 von 3 Punkten. Das Backup exportiert Konfigurations- und Wiederanlaufartefakte der Nodes und Alerts für \ac{RPC}-Ausfall und Peer-Verlust sind definiert. 
 Nachteilig findet ein Restore-Test jedoch nicht statt, die Sicherungen lagen ausschließlich lokal auf demselben Host. 
@@ -480,8 +480,7 @@ Der \ac{BTC}-Bereich ist insgesamt sicherheitsorientiert aufgebaut. Die vorgeseh
 Besonders positiv ist, dass produktive Seeds, Wallet-Dateien und Private Keys konsequent außerhalb des Versuchssystems gehalten wurden. 
 
 Gleichzeitig blieb der praktische Nachweis mehrerer Kernmechanismen begrenzt. Weder eine konkrete Watch-only-Implementierung noch eine Signierungsbibliothek, ein vollständiger Multi-Signatur-Aufbau oder ein echter air-gapped Signierer wurden umgesetzt.
-Auch die Simulation des \ac{BTC}-Netzwerks beschränkte sich auf dateibasierte Dummy-Artefakte ohne Regtest-, Testnet- oder vergleichbaren Validierungsansatz. Die als \ac{PSBT} bezeichneten Dateien sind dabei keine \ac{BIP}-174-konformen \acp{PSBT}, sondern reine \ac{
-JSON}-Metadaten ohne Transaktionsstruktur.
+Auch die Simulation des \ac{BTC}-Netzwerks beschränkte sich auf dateibasierte Dummy-Artefakte ohne Regtest-, Testnet- oder vergleichbaren Validierungsansatz. Die als \ac{PSBT} bezeichneten Dateien sind dabei keine \ac{BIP}-174-konformen \acp{PSBT}, sondern reine \ac{JSON}-Metadaten ohne Transaktionsstruktur.
 Dadurch konnten zentrale Abläufe wie Transaktionserstellung, Signierung, Recovery und Broadcast nicht vollständig überprüft werden. 
 
 Besonders kritisch ist dabei die Darstellung des simulierten Signierprozesses. 
@@ -500,11 +499,11 @@ Insgesamt ist die \ac{BTC}-Architektur fachlich plausibel und sicherheitsorienti
 Szenario B zeichnet sich insgesamt durch eine konsistente und sicherheitsorientierte Umsetzung der vorgegebenen Anforderungen aus. 
 Die Architektur wurde entlang klar definierter Rollen, Kommunikationspfade und Schutzgrenzen aufgebaut. Sicherheitsrelevante Entscheidungen wurden früh dokumentiert und durch technische Maßnahmen wie restriktive Firewall-Regeln, eingeschränkte Administrationspfade, zusätzliche Authentifizierungsschichten sowie einen überprüften Backup- und Restore-Prozess abgesichert. 
 Positiv hervorzuheben ist außerdem die konsequente Vermeidung produktiver Geheimnisse. Während des gesamten Builds wurden keine produktiven Seeds, Wallet-Dateien, Private Keys oder \ac{API}-Schlüssel erzeugt oder gespeichert. Die Dokumentation der Sicherheitsgrenzen blieb dabei über die einzelnen Artefakte hinweg konsistent.
-Abgesichert soll dieses System über \path{nftables}, wobei dies einen validen Ansatz darstellt
+Abgesichert werden soll dieses System über \path{nftables}, wobei dies einen validen Ansatz darstellt
 
 Die Analyse der \ac{BTC}-Komponente zeigt, dass mehrere sicherheitskritische Prozesse lediglich konzeptionell beziehungsweise simulativ abgebildet wurden. Dadurch konnte der vollständige Nachweis zentraler Sicherheitsfunktionen nicht erbracht werden. 
 Für eine belastbare Bewertung sicherheitskritischer Transaktionssysteme reicht die Existenz von Prozessartefakten allein nicht aus. Erforderlich ist zusätzlich die nachvollziehbare Ausführung und Prüfung der zugrunde liegenden Kernfunktionen.
-Zudem wäre ein Nutzer durch eine Simulation von einem \ac{BTC}-Setup nicht geholfen und seine eigentliche Anforderung bleibt unerfüllt.
+Zudem wäre einem Nutzer durch eine Simulation von einem \ac{BTC}-Setup nicht geholfen und seine eigentliche Anforderung bleibt unerfüllt.
 
 \subsubsection{Indikatorbasierte Kategorienwertung}
 
@@ -751,7 +750,7 @@ Nach der gewichteten Detailbewertung (siehe Tabelle~\ref{tab:btc-detailbewertung
 Die Eigenentwicklung wurde nach demselben Schema und derselben Skala bewertet wie die beiden \ac{KI}-Szenarien. Der folgende Vergleich stellt die drei Implementierungen je Unterkriterium direkt gegenüber und verwendet die ausführlichen Detail-Analysen für A und B der Einzelbewertung.
 Die Rundung auf ganze Punkte überzeichnet dabei den Abstand der beiden \ac{KI}-Szenarien. Ungerundet trennen Szenario A und B lediglich 0{,}05 Punkte, während die gerundete Darstellung einen vollen Punkt suggeriert. Für die Interpretation sind deshalb die ungerundeten Werte aus Tabelle~\ref{tab:btc-detailbewertung} maßgeblich.
 
-Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen nur kurz in der Tabelle~\ref{tab:btc-eigen-details} aufgelistet. Diese Tabelle begründet die gegebene Bewertung und liefert Vergleichspunkte für die nächsten Absätze. Die genannten Aspekte können in der vorherigen Ausarbeitung nachgelesen werden \ref{Krypto}.
+Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen nur kurz in der Tabelle~\ref{tab:btc-eigen-details} aufgelistet. Diese Tabelle begründet die gegebene Bewertung und liefert Vergleichspunkte für die nächsten Absätze. Die genannten Aspekte können in der vorherigen Ausarbeitung nachgelesen werden (siehe Abschnitt~\ref{Krypto}).
 
 \begin{table}[htbp]
 \centering
@@ -787,12 +786,12 @@ Recovery / Fehlerfälle / Remediation & 3 &
 \end{table}
 
 \subsubsection{Architekturschlüssigkeit}
-\textbf{Eigenentwicklung: 3, A: 2, B: 2.} Die Eigenentwicklung zeichnet sich durch das Entwickeln und Verwerfen verschiedener Ansätze dar und bildet einen durchgehenden finalen Ansatz.
+\textbf{Eigenentwicklung: 3, A: 2, B: 2.} Die Eigenentwicklung zeichnet sich durch das Entwickeln und Verwerfen verschiedener Ansätze aus und bildet einen durchgehenden finalen Ansatz.
 Szenario A legt eine ähnlich stimmige Grundstruktur an, ließ aber zentrale Architekturfragen wie Wallet-Auswahl, Seed-Erzeugung und Multi-Signatur-Modell offen.
 Szenario B im Gegensatz plant konsistent, ersetzte die vorgesehenen \ac{RPC}-Pfade aber ohne dokumentierten Abgleich durch einen dateibasierten Ablauf. Der Unterschied liegt somit weniger im Zonenmodell als im Umgang mit Entscheidungen.
 Die Eigenentwicklung löst offene Architekturfragen auf, begründet Abweichungen, statt sie offenzulassen und setzt sie in einer produktiven Lösung um. Die durchgehende, produktive Umsetzung fehlt in A als auch B.
 Außerdem zeichnen sich die beiden \ac{KI}-Szenarien durch nur sehr oberflächliche Überlegung aus. Die Eigenentwicklung unterstützt die manuelle Nutzer-Verifikation von \acp{PSBT} in der Cold-Wallet durch die automatische Signierung durch Key~A, was dem Operator direkt in der \ac{GUI} angezeigt wird. 
-Eine vergleichbare tiefe Überlegung oder Unterstützung des Operator sucht man in den \ac{KI}-Szenarien vergebens.
+Eine vergleichbare tiefe Überlegung oder Unterstützung des Operators sucht man in den \ac{KI}-Szenarien vergebens.
 
 \subsubsection{Trennung von Schlüsselmaterial und Rollen}
 \textbf{Eigenentwicklung: 3, A: 1, B: 1.} In der Eigenentwicklung ist die Trennung dreifach technisch erzwungen und ein aufwändiges Modell für die Segregation of Duties aufgebaut worden.
@@ -814,8 +813,8 @@ Szenario A bleibt hinter dieser Anforderung zurück, weil der Nutzer den entsche
 Szenario B bleibt in der Wirkung sogar noch weiter zurück, da es einen funktionsfähigen Ablauf lediglich vortäuscht und ein Mandant, der es übernähme, ein System besäße, das Erfolgsmeldungen erzeugt, aber keinen einzigen Satoshi bewegen kann. Da dieses Kriterium mit 20\,\% gewichtet ist und beide Szenarien hier nur einen Punkt erreichen, verfehlen beide den zentralen Nutzen des Auftrags, während allein die Eigenentwicklung den vollständigen Transaktionsweg belastbar bereitstellt.
 
 \subsubsection{Testdesign und praktische Prüfbarkeit}
-\textbf{Eigenentwicklung: 2, A: 2, B: 1.} Die Eigenentwicklung stellt mit der Regtest-Umgebung genau den Validierungsansatz bereit, den die Metrik als Maßstab nennt. Ergänzt wird dies um Simulationsskripte für Spend-, Refill- und Sicherungspfad jedoch werden tatsächliche Laufzeit-Tests vermisst. Dieser Ansatz eines Testens des \ac{BTC}-Netzwerks mit einer realitätsnahen Simulation wird in A und B nicht umgesetzt. Während A noch Regtest evaluiert, wird der mögliche Einsatz nicht von Szenario B erkannt. Stattdessen simuliert B einen eigenen, sehr primitiven, statischen Prozess und bleibt damit weit hinter A zurück. 
-Szenario A prüfte seine Node-Schicht mit einem echten Laufzeit-Prüfskript, kam jedoch nicht über das Scanning der mainnet Blockchain hinaus. Dementsprechend stellt sich A durch einen sehr viel kleineren Umfang, aber dafür mit einem adäquateren Testing dar und erreicht so eine gleiche Wertung.
+\textbf{Eigenentwicklung: 2, A: 2, B: 1.} Die Eigenentwicklung stellt mit der Regtest-Umgebung genau den Validierungsansatz bereit, den die Metrik als Maßstab nennt. Ergänzt wird dies um Simulationsskripte für Spend-, Refill- und Sicherungspfad, jedoch werden tatsächliche Laufzeit-Tests vermisst. Dieser Ansatz eines Testens des \ac{BTC}-Netzwerks mit einer realitätsnahen Simulation wird in A und B nicht umgesetzt. Während A noch Regtest evaluiert, wird der mögliche Einsatz nicht von Szenario B erkannt. Stattdessen simuliert B einen eigenen, sehr primitiven, statischen Prozess und bleibt damit weit hinter A zurück. 
+Szenario A prüfte seine Node-Schicht mit einem echten Laufzeit-Prüfskript, kam jedoch nicht über das Scanning der Mainnet Blockchain hinaus. Dementsprechend stellt sich A durch einen sehr viel kleineren Umfang, aber dafür mit einem adäquateren Testing dar und erreicht so eine gleiche Wertung.
 Szenario B baute das umfangreichste Prüf-Framework, entwertete es jedoch durch tautologische Selbstprüfungen und die fehlende Prüfbarkeit der Kernfunktionen, die nicht praktisch testbar existieren. Es entsteht statt einer tatsächlichen Prüfung eher eine Scheinvalidierung.
 Es zeigt sich ein struktureller Zusammenhang zwischen A und B, wobei Testqualität der Umsetzungstiefe folgt und so mit einem Fortschreiten des allgemeinen Stands weiterentwickelt wird.
 A stellt sich im Vergleich zu B als sehr viel kleiner, aber dafür ehrlicher heraus.
@@ -873,10 +872,10 @@ Home-Lab-Zielumgebung genutzt, sondern zwei lokale Proxmox-Test-\acp{VM}. Bewegg
 \item \textbf{Kein produktives Material:} Produktive Geheimnisse, Offline-Schlüssel und reale \ac{BTC}-Werte blieben bewusst außerhalb des Versuchs. Dies kann beispielsweise durch Nutzung der Testnet Ableitungspfade für \ac{BTC}-Geheimnisse umgangen werden.
 \item \textbf{Keine formale Verifikation:} Die Bewertung stützte sich auf Dateien, Laufzeitbeobachtungen und Prozessdaten.
 \item \textbf{Einzeldurchlauf:} Die Auswertung beruht je Szenario auf einem einzelnen Durchlauf. Da \acs{LLM}-Ausgaben nicht deterministisch sind, lassen sich daraus keine Aussagen über die Streuung der Ergebnisse bei wiederholten Läufen ableiten.
-\item \textbf{Ein System, ein Modell:} Untersucht wurde nur ein einzelnes agentisches System mit einem Modell (Codex mit \texttt{gpt-5.4}). Aussagen über \acs{LLM}s im Allgemeinen sind daraus nur eingeschränkt ableitbar.
+\item \textbf{Ein System, ein Modell:} Untersucht wurde nur ein einzelnes agentisches System mit einem Modell (Codex mit \texttt{gpt-5.4}). Aussagen über \acp{LLM} im Allgemeinen sind daraus nur eingeschränkt ableitbar.
 \item \textbf{Offener Simulationsrahmen:} Die Erwartung einer möglichst vollständigen Simulation war im Prompt bewusst nicht explizit beschrieben. Damit sollte sichtbar werden, ob das \ac{LLM} solche Validierungsansätze eigenständig vorschlägt. Keines der beiden Szenarien hat die naheliegende Regtest-Option von sich aus evaluiert.
 \item \textbf{Doppelrolle der Bewerter:} Die Bewerter waren zugleich die Architekten der Referenzlösung. Insbesondere der Vergleich mit der Eigenentwicklung ist dadurch keine unabhängige Fremdbewertung. Der Grad der Objektivität wurde versucht durch eine Bewertung durch mehrere Personen zu erhöhen.
-\item \textbf{Asymmetrische Beweislage:} Szenario~B musste bereits per Prompt genau die Dokumente erzeugen, die später als Bewertungsnachweise dienten. Dafür erhielt dieser Versuch sowohl mehr Nutzer-Nachrichten, längerer Laufzeit als auch ein größeres Steuerungsbudget. Der Punktabstand misst daher die Kombination aus fachlicher Promptqualität und Steuerungsumfang, nicht die Qualität allein.
+\item \textbf{Asymmetrische Beweislage:} Szenario~B musste bereits per Prompt genau die Dokumente erzeugen, die später als Bewertungsnachweise dienten. Dafür erhielt dieser Versuch sowohl mehr Nutzer-Nachrichten, längere Laufzeit als auch ein größeres Steuerungsbudget. Der Punktabstand misst daher die Kombination aus fachlicher Promptqualität und Steuerungsumfang, nicht die Qualität allein.
 \end{itemize}
 
 Diese Einschränkungen sprechen jedoch nicht zugunsten des \ac{LLM}. In einer echten Produktivumgebung mit realen Werten wären Expertensteuerung, manuelle Freigaben und Gegenprüfungen noch wichtiger.
@@ -904,5 +903,5 @@ Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale H
 
 Zu Beginn der Untersuchung wurde geprüft, ob Codex direkt auf der Serverumgebung des eigenen Home-Labs arbeiten könnte. Aus Sicherheitsgründen wurden die Zugriffsrechte dabei bewusst eingeschränkt, um unbeabsichtigte Änderungen an globalen Einstellungen, Zugriffspfaden oder anderen Bestandteilen zu verhindern. Dadurch war Codex zunächst gezwungen, über die Proxmox-\acs{API} zu arbeiten. Dieser Ansatz war jedoch aufwendig, langsam und der Tokenverbrauch zu hoch. 
 
-Deshalb wurde der Versuchsaufbau auf zwei getrennte lokale Proxmox-\acs{VM}s umgestellt. Codex konnte dadurch praktischer arbeiten, ohne das eigentliche Home-Lab zu gefährden. Rückblickend hätte diese Entscheidung jedoch bereits früher getroffen werden können. Für zukünftige Untersuchungen dieser Art sollte die isolierte Testumgebung daher von Beginn an eingeplant werden, damit der Agent ausreichend Handlungsspielraum erhält, ohne die produktiven Systeme zu gefährden.
+Deshalb wurde der Versuchsaufbau auf zwei getrennte lokale Proxmox-\acp{VM} umgestellt. Codex konnte dadurch praktischer arbeiten, ohne das eigentliche Home-Lab zu gefährden. Rückblickend hätte diese Entscheidung jedoch bereits früher getroffen werden können. Für zukünftige Untersuchungen dieser Art sollte die isolierte Testumgebung daher von Beginn an eingeplant werden, damit der Agent ausreichend Handlungsspielraum erhält, ohne die produktiven Systeme zu gefährden.
 

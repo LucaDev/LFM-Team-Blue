@@ -5,39 +5,39 @@ Das Basis-System ist auf vielen Ebenen stark gehärtet. Anbei eine unvollständi
 \subsection{Boot \& Firmware}
 \begin{itemize}
   \item \textbf{Secure Boot (lanzaboote):} Alle NixOS-Generationen werden beim Build automatisch signiert. Der Boot schlägt fehl, wenn die Signatur nach dem Key-Enrollment ungültig ist.
-  \item \textbf{TPM-Integration:} Der TPM-Chip ist in den Secure-Boot-Prozess eingebunden (\texttt{tpm-eventlog}); ermöglicht Measured Boot.
+  \item \textbf{\acs{TPM}-Integration:} Der \ac{TPM}-Chip ist in den Secure-Boot-Prozess eingebunden (\texttt{tpm-eventlog}); ermöglicht Measured Boot.
   \item \textbf{Bootloader-Editor deaktiviert:} \texttt{systemd-boot.editor = false} verhindert das Umgehen des Passworts über den Boot-Editor.
   \item \textbf{Kernel-Modul-Signatur erzwungen:} \texttt{module.sig\_enforce=1} - nur signierte Kernel-Module dürfen geladen werden.
   \item \textbf{Kernel-Lockdown:} \texttt{lockdown=confidentiality} sperrt privilegierten Zugriff auf Kernel-Speicher.
-  \item \textbf{UEFI-Passwort (Host):} Muss im Mainboard-BIOS gesetzt werden (herstellerspezifisch).
+  \item \textbf{\acs{UEFI}-Passwort (Host):} Muss im Mainboard-\ac{BIOS} gesetzt werden (herstellerspezifisch).
 \end{itemize}
 
 \subsection{Kernel-Härtung}
-\textcolor{OliveGreen}{Oliven-Grüne} Optionen sind unter NixOS 26.05 (Stand 02. Juli 2026) auf den gleichen Wert wie der Standard gesetzt. Ein explizites setzen ist jedoch dennoch sinnvoll, um eine bessere Auditierbarkeit des Systems zu ermöglichen und vor unbeachteten Änderungen des Standards geschützt zu sein.
-Nicht alle Optionen sind für Virtuelle Maschinen relevant - dennoch setzen wir sie, um auch bei Bare-Metal ausführung möglichst viel Sicherheit zu bieten.
+\textcolor{OliveGreen}{Oliven-Grüne} Optionen sind unter NixOS 26.05 (Stand 02. Juli 2026) auf den gleichen Wert wie der Standard gesetzt. Ein explizites Setzen ist jedoch dennoch sinnvoll, um eine bessere Auditierbarkeit des Systems zu ermöglichen und vor unbeachteten Änderungen des Standards geschützt zu sein.
+Nicht alle Optionen sind für Virtuelle Maschinen relevant - dennoch setzen wir sie, um auch bei Bare-Metal Ausführung möglichst viel Sicherheit zu bieten.
 
 \subsubsection*{Spectre/Meltdown/CPU-Mitigationen}
 \begin{itemize}
   \item Page Table Isolation: \texttt{pti=on}
-  \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on} Erzwingt Speculative Store Bypass für alle anwendungen, nicht nur sandboxed. Default: seccomp
+  \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on} Erzwingt Speculative Store Bypass für alle Anwendungen, nicht nur sandboxed. Default: seccomp
   \item TSX deaktiviert + TAA/MDS vollständig mitigiert\\
-  (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt}). Kein Standard. Deaktiviert SMT (Simultaneous Multithreading) und TSX (Transactional Memory) komplett, schützt jedoch vor Exploits ähnlich zu Rebtleed. 
-  \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt} Kein Standard. Deaktiviert SMT 
+  (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt}). Kein Standard. Deaktiviert \ac{SMT} und \ac{TSX} komplett, schützt jedoch vor Exploits ähnlich zu Retbleed. 
+  \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt} Kein Standard. Deaktiviert \ac{SMT} 
 \end{itemize}
 
 \subsubsection*{Speicher- \& Adressraumschutz}
 \begin{itemize}
   \item Vollständiges ASLR: \texttt{\textcolor{OliveGreen}{randomize\_va\_space=2}}, \texttt{\textcolor{OliveGreen}{vm.mmap\_rnd\_bits=32}}. Standardmäßig aktiv, lediglich explizit gesetzt
   \item SLUB-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits. Standardmäßig deaktiviert, da es Performance kostet.
-  \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}. Standardmäßig auf xonly gesetzt. Sehr alte Programme die noch auf vsyscalls setzen verlieren ggf. ihre Funktion. Moderne haben keine Probleme damit.
+  \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}. Standardmäßig auf xonly gesetzt. Sehr alte Programme, die noch auf vsyscalls setzen, verlieren ggf. ihre Funktion. Moderne haben keine Probleme damit.
   \item debugfs deaktiviert: \texttt{debugfs=off}. Standardmäßig aktiviert
 \end{itemize}
 
 \subsubsection*{DMA-Schutz (IOMMU)}
 \begin{itemize}
   \item IOMMU erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \texttt{intel\_iommu=on}. Oftmals automatisch aktiviert, jedoch nicht immer.
-  \item DMA Passthrough deaktiviert: \texttt{iommu.passthrough=0}. Verschlechtert Performance bei Thunderbolt/USB4, schützt aber verlässlich gegen DMA Angriffe
-  \item Early PCI DMA blockiert: \texttt{efi=disable\_early\_pci\_dma}. Schließt mögliches Early-Boot Thunderbolt /USB 4/ Angriffsfenster.
+  \item DMA Passthrough deaktiviert: \texttt{iommu.passthrough=0}. Verschlechtert Performance bei Thunderbolt/USB4, schützt aber verlässlich gegen DMA Angriffe.
+  \item Early PCI DMA blockiert: \texttt{efi=disable\_early\_pci\_dma}. Schließt mögliches Early-Boot Thunderbolt/USB 4/Angriffsfenster.
 \end{itemize}
 
 \subsubsection*{Kernel-Informationslecks}
@@ -81,7 +81,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
   \item Reverse Path Filtering aktiv (\texttt{rp\_filter=1})
   \item Source-Routing, ICMP-Redirects und Router-Advertisements deaktiviert
   \item SYN-Flood-Schutz: \texttt{tcp\_syncookies=1}, \texttt{tcp\_max\_syn\_backlog=4096}
-  \item TCP-Timestamps deaktiviert (verhindert Uptime-Fingerprinting)
+  \item \acs{TCP}-Timestamps deaktiviert (verhindert Uptime-Fingerprinting)
   \item IPv6 Router-Advertisements und Autoconf deaktiviert
   \item Martian-Pakete werden geloggt
   \item eBPF-JIT-Härtung: \texttt{net.core.bpf\_jit\_harden=2}
@@ -106,10 +106,10 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \subsubsection*{SSH-Härtung}
 \begin{itemize}
   \item Nur Public-Key-Authentifizierung (\texttt{PasswordAuthentication=false}, \texttt{PermitRootLogin=no})
-  \item Post-Quanten-KEM: \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
+  \item Post-Quanten-\ac{KEM}: \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
   \item Ciphers: nur ChaCha20-Poly1305 und AES-256/128-GCM
   \item MACs: nur ETM-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
-  \item X11/TCP/Agent-Forwarding und Tunnel deaktiviert
+  \item X11/\acs{TCP}/Agent-Forwarding und Tunnel deaktiviert
   \item \texttt{MaxAuthTries=3}, \texttt{LoginGraceTime=30s}, \texttt{MaxSessions=3}
   \item Rechtlicher Hinweis-Banner bei Login: kein technischer Schutz jedoch rechtliche Absicherung der Auditierungs- und Logging-Maßnahmen. Entzieht
   unbefugten Zugreifenden jegliche Grundlage für eine Berufung auf Unkenntnis der Überwachung und
@@ -173,7 +173,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \subsection{Container-Sicherheit}
 \begin{itemize}
   \item \textbf{User-Namespace-Remapping:} \texttt{userns-remap=default} - Root im Container wird auf UID 100000-165536 auf dem Host gemappt. Ein Container-Ausbruch liefert dem Angreifer keinen root-Zugriff auf den Host.
-  \item \textbf{Docker-Socket nur via Unix-Socket:} kein TCP-Listener \\
+  \item \textbf{Docker-Socket nur via Unix-Socket:} kein \ac{TCP}-Listener \\
   (\texttt{hosts=[\textquotedbl{}unix:///var/run/docker.sock\textquotedbl{}]}), kein Userland-Proxy.
   \item \textbf{Socket-Proxy:} Traefik greift nur über einen eingeschränkten Docker-Socket-Proxy auf die Docker-API zu. Direkter API-Zugriff ist geblockt.
   \item \textbf{Seccomp-Profil:} Standard-Docker-Seccomp-Profil aktiv.

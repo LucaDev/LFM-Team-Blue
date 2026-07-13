@@ -77,13 +77,12 @@
 }
 
 % Abkürzungen 
-\usepackage{acronym}
+\usepackage[printonlyused]{acronym}
 % Ganze Zeile als Absatz
 \usepackage{parskip}
 
 \usepackage{multicol}
 
-\usepackage{listings}
 \definecolor{codebg}{RGB}{245,245,245}
 \definecolor{codeframe}{RGB}{200,200,200}
 \lstset{
@@ -120,7 +119,7 @@
 %Inhaltsverzeichnis
 \sloppy
 \tableofcontents
-\fussy
+
 
 \setcounter{tocdepth}{2}
 %Abbildungsverzeichnis
@@ -128,7 +127,15 @@
 
 %Tabellenverzeichnis
 \listoftables
+\fussy
 
+%%%%%%%%%%%%%%%%%%%%%%%%  Abkürzungsverzeichnis optional  %%%%%%%%%%%%%%%%%%%%%%%%
+\cleardoublepage
+\chapter*{Abkürzungsverzeichnis}
+\addcontentsline{toc}{chapter}{Abkürzungsverzeichnis}
+\input{Doku/Definitionen/Glossar}
+    % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/Abkürzungsverzeichnis/
+    
 \cleardoublepage
 
 %%%%%%%%%%%%%% Anzahl römisch nummerierte Seiten merken
@@ -162,13 +169,6 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%  Literaturverzeichnis  obligatorisch%%%%%%%%%%%%%%%%%%%%%%%%
 	\addcontentsline{toc}{chapter}{Literaturverzeichnis}
     \printbibliography[title={Literaturverzeichnis}]
-	
-%%%%%%%%%%%%%%%%%%%%%%%%  Abkürzungsverzeichnis optional  %%%%%%%%%%%%%%%%%%%%%%%%
-\cleardoublepage
-\chapter*{Abkürzungsverzeichnis}
-\addcontentsline{toc}{chapter}{Abkürzungsverzeichnis}
-\input{Doku/Definitionen/Glossar}
-    % Hilfe: https://latex.hpfsc.de/content/latex_tutorial/Abkürzungsverzeichnis/
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Anhang  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage
