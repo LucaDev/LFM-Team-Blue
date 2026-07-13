@@ -56,7 +56,7 @@
       "cifs" "nfs" "nfsv3" "nfsv4" "gfs2" "ksmbd"
       # Hardware
       "bluetooth" "btusb"
-      "usb-storage"       # Auskommentieren falls USB-Storage jemals gebraucht wird
+      "usb-storage" "uas" # Auskommentieren falls USB-Storage jemals gebraucht wird
       "firewire-core"
     ];
 
