@@ -33,10 +33,9 @@
   # Audit-Daemon für CIS-konformes Audit-Logging
   security.audit = {
     enable = true;
+    # Audit-Backlog-Limit erhöhen (Standard 64 reichte manchmal nicht für Docker-Workloads)
+    backlogLimit = 8192;
     rules  = [
-      # Audit-Backlog-Limit erhöhen (Standard 64 reichte manchmal nicht für Docker-Workloads)
-      "-b 8192"
-
       # Zeitänderungen
       "-a always,exit -F arch=b64 -S clock_settime -k time-change"
       "-a always,exit -F arch=b32 -S clock_settime -k time-change"

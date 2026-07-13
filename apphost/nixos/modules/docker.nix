@@ -24,17 +24,11 @@
           path        = "${pkgs.gvisor}/bin/runsc";
           runtimeArgs = [
             "--platform=kvm"
-            "--host-uds=open"  
+            "--host-uds=open"
             "--network=sandbox"
             "--debug=false"
             "--file-access=exclusive"
           ];
-        };
-
-        # Kata Containers
-        # Docker mit containerd-snapshotter leitet an containerd-shim-kata-v2 weiter
-        kata-runtime = {
-          runtimeType = "io.containerd.kata.v2";
         };
       };
 
@@ -65,7 +59,7 @@
 
       # Metrics lokal exposen (Prometheus)
       metrics-addr  = "127.0.0.1:9323";
-      features."containerd-snapshotter" = true;
+      # containerd-snapshotter ist inkompatibel mit userns-remap (Docker verweigert sonst den Start);
     };
   };
 
