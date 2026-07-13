@@ -207,8 +207,10 @@ if [[ -n "$MONOREPO_REMOTE" ]]; then
   git -C "$CHECKOUT_DIR" remote set-url origin "$MONOREPO_REMOTE"
   git -C "$CHECKOUT_DIR" sparse-checkout init --cone
   git -C "$CHECKOUT_DIR" sparse-checkout set "$APPHOST_SUBDIR"
-  git -C "$CHECKOUT_DIR" checkout "$MONOREPO_BRANCH"
-  ln -s "$CHECKOUT_DIR/$APPHOST_SUBDIR" /mnt/opt/apphost
+  git -C "$CHECKOUT_DIR" reset --hard "$MONOREPO_BRANCH"
+
+  mkdir -p /mnt/opt/apphost
+  nix run "${NIX_FLAGS[@]}" nixpkgs#rsync -- -a "$CHECKOUT_DIR/$APPHOST_SUBDIR"/ /mnt/opt/apphost/
 
   # Maschinenspezifische Dateien sind gitignored (siehe .gitignore) und daher nach dem
   # Sparse-Checkout nicht vorhanden – aus $REPO_DIR nachziehen, wo sie in diesem Lauf
@@ -225,7 +227,8 @@ fi
 # .env konfigurieren
 echo ""
 echo -e "  ${B}Konfiguration${N}"
-echo -e "  MQTT- und Ntfy-Passwörter werden automatisch generiert."
+echo -e "  Alle Dienst-Passwörter und -Secrets (Immich, Paperless, OpenCloud, Collabora,"
+echo -e "  Garage, Grafana, Vaultwarden, Hot-Wallet, MQTT, Ntfy) werden automatisch generiert."
 echo -e "  Alle Werte können nach dem Neustart in /opt/apphost/.env geändert werden."
 echo ""
 
@@ -272,39 +275,99 @@ while true; do
 done
 unset ENV_AUTH_PW2
 
-# Zufällige Passwörter für MQTT und Ntfy
+# Zufällige Passwörter/Secrets für alle Dienste, die eigene Zugangsdaten brauchen.
 # openssl ist auf dem Live-ISO nicht vorinstalliert, daher wie mkpasswd via nix run.
-_randhex() { nix run "${NIX_FLAGS[@]}" nixpkgs#openssl -- rand -hex 16; }
+_randhex() { nix run "${NIX_FLAGS[@]}" nixpkgs#openssl -- rand -hex "${1:-16}"; }
+
 ENV_MQTT_HA="$(_randhex)"
 ENV_MQTT_Z2M="$(_randhex)"
 ENV_MQTT_ESP="$(_randhex)"
 ENV_MQTT_RO="$(_randhex)"
 ENV_NTFY_ADMIN="$(_randhex)"
 ENV_NTFY_ALERT="$(_randhex)"
+ENV_HOTWALLET_NTFY="$(_randhex)"
+
+ENV_IMMICH_DB="$(_randhex)"
+ENV_IMMICH_JWT="$(_randhex 32)"
+ENV_PAPERLESS_SECRET="$(_randhex 32)"
+ENV_OPENCLOUD_ADMIN="$(_randhex)"
+ENV_COLLABORA_ADMIN="$(_randhex)"
+ENV_GARAGE_RPC="$(_randhex 32)"
+ENV_GRAFANA_ADMIN="$(_randhex)"
+ENV_GRAFANA_SECRET="$(_randhex 32)"
+
+ENV_HOTWALLET_POSTGRES="$(_randhex)"
+ENV_HOTWALLET_DB="$(_randhex)"
+ENV_HOTWALLET_RPC_MW="$(_randhex)"
+ENV_HOTWALLET_RPC_TXB="$(_randhex)"
+ENV_HOTWALLET_NATS_MW="$(_randhex)"
+ENV_HOTWALLET_NATS_TXB="$(_randhex)"
+ENV_HOTWALLET_NATS_OPERATOR="$(_randhex)"
+ENV_HOTWALLET_NATS_SETUP="$(_randhex)"
+
+# Vaultwarden ADMIN_TOKEN: Vaultwarden empfiehlt, hier einen Argon2-Hash statt eines
+# Klartext-Tokens zu hinterlegen. Das Klartext-Token (für den /admin-Login) landet
+# separat in secrets/vaultwarden_admin_token.txt, da es aus dem Hash nicht mehr
+# rekonstruierbar ist.
+_argon2_hash() {
+    local password="$1" salt
+    salt="$(_randhex)"
+    printf '%s' "$password" | nix-shell -p libargon2 --run \
+        "argon2 '$salt' -e -id -k 65540 -t 3 -p 4"
+}
+ENV_VAULTWARDEN_TOKEN_PLAIN="$(_randhex 32)"
+ENV_VAULTWARDEN_TOKEN_HASH="$(_argon2_hash "$ENV_VAULTWARDEN_TOKEN_PLAIN")"
 
 ENV_FILE="/mnt/opt/apphost/.env"
 cp "/mnt/opt/apphost/.env.example" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
-# Werte in .env eintragen (Python für sicheres Escaping beliebiger Zeichen)
+# Werte in .env eintragen (Python für sicheres Escaping beliebiger Zeichen).
+# Secrets werden per Umgebungsvariable durchgereicht (nicht als Argv), damit sie nicht
+# über die Prozessliste (ps) einsehbar sind.
 # python3 ist auf dem Live-ISO nicht vorinstalliert, daher wie openssl/mkpasswd via nix run.
-nix run "${NIX_FLAGS[@]}" nixpkgs#python3 -- - "$ENV_FILE" \
-    "$ENV_DOMAIN" "$ENV_ACME_EMAIL" "$ENV_CF_TOKEN" \
-    "$ENV_AUTH_USER" "$ENV_AUTH_EMAIL" "$ENV_AUTH_PW" \
-    "$ENV_MQTT_HA" "$ENV_MQTT_Z2M" "$ENV_MQTT_ESP" "$ENV_MQTT_RO" \
-    "$ENV_NTFY_ADMIN" "$ENV_NTFY_ALERT" << 'PYEOF'
-import re, sys
+DOMAIN="$ENV_DOMAIN" ACME_EMAIL="$ENV_ACME_EMAIL" CF_DNS_API_TOKEN="$ENV_CF_TOKEN" \
+AUTHELIA_ADMIN_USER="$ENV_AUTH_USER" AUTHELIA_ADMIN_EMAIL="$ENV_AUTH_EMAIL" AUTHELIA_ADMIN_PASSWORD="$ENV_AUTH_PW" \
+MQTT_HOMEASSISTANT_PASSWORD="$ENV_MQTT_HA" MQTT_ZIGBEE2MQTT_PASSWORD="$ENV_MQTT_Z2M" \
+MQTT_ESPHOME_PASSWORD="$ENV_MQTT_ESP" MQTT_READONLY_PASSWORD="$ENV_MQTT_RO" \
+NTFY_ADMIN_PASSWORD="$ENV_NTFY_ADMIN" NTFY_ALERTMANAGER_PASSWORD="$ENV_NTFY_ALERT" \
+HOTWALLET_NTFY_PASSWORD="$ENV_HOTWALLET_NTFY" \
+IMMICH_DB_PASSWORD="$ENV_IMMICH_DB" IMMICH_JWT_SECRET="$ENV_IMMICH_JWT" \
+PAPERLESS_SECRET_KEY="$ENV_PAPERLESS_SECRET" \
+OPENCLOUD_ADMIN_PASSWORD="$ENV_OPENCLOUD_ADMIN" \
+COLLABORA_ADMIN_PASSWORD="$ENV_COLLABORA_ADMIN" \
+GARAGE_RPC_SECRET="$ENV_GARAGE_RPC" \
+GRAFANA_ADMIN_PASSWORD="$ENV_GRAFANA_ADMIN" GRAFANA_SECRET_KEY="$ENV_GRAFANA_SECRET" \
+VAULTWARDEN_ADMIN_TOKEN="$ENV_VAULTWARDEN_TOKEN_HASH" \
+HOTWALLET_POSTGRES_PASSWORD="$ENV_HOTWALLET_POSTGRES" HOTWALLET_DB_PASSWORD="$ENV_HOTWALLET_DB" \
+HOTWALLET_RPC_PASS_MW="$ENV_HOTWALLET_RPC_MW" HOTWALLET_RPC_PASS_TXB="$ENV_HOTWALLET_RPC_TXB" \
+HOTWALLET_NATS_MW_PASS="$ENV_HOTWALLET_NATS_MW" HOTWALLET_NATS_TXB_PASS="$ENV_HOTWALLET_NATS_TXB" \
+HOTWALLET_NATS_OPERATOR_PASS="$ENV_HOTWALLET_NATS_OPERATOR" HOTWALLET_NATS_SETUP_PASS="$ENV_HOTWALLET_NATS_SETUP" \
+nix run "${NIX_FLAGS[@]}" nixpkgs#python3 -- - "$ENV_FILE" << 'PYEOF'
+import os, re, sys
 env_file = sys.argv[1]
 keys = [
     'DOMAIN', 'ACME_EMAIL', 'CF_DNS_API_TOKEN',
     'AUTHELIA_ADMIN_USER', 'AUTHELIA_ADMIN_EMAIL', 'AUTHELIA_ADMIN_PASSWORD',
     'MQTT_HOMEASSISTANT_PASSWORD', 'MQTT_ZIGBEE2MQTT_PASSWORD',
     'MQTT_ESPHOME_PASSWORD', 'MQTT_READONLY_PASSWORD',
-    'NTFY_ADMIN_PASSWORD', 'NTFY_ALERTMANAGER_PASSWORD',
+    'NTFY_ADMIN_PASSWORD', 'NTFY_ALERTMANAGER_PASSWORD', 'HOTWALLET_NTFY_PASSWORD',
+    'IMMICH_DB_PASSWORD', 'IMMICH_JWT_SECRET',
+    'PAPERLESS_SECRET_KEY',
+    'OPENCLOUD_ADMIN_PASSWORD',
+    'COLLABORA_ADMIN_PASSWORD',
+    'GARAGE_RPC_SECRET',
+    'GRAFANA_ADMIN_PASSWORD', 'GRAFANA_SECRET_KEY',
+    'VAULTWARDEN_ADMIN_TOKEN',
+    'HOTWALLET_POSTGRES_PASSWORD', 'HOTWALLET_DB_PASSWORD',
+    'HOTWALLET_RPC_PASS_MW', 'HOTWALLET_RPC_PASS_TXB',
+    'HOTWALLET_NATS_MW_PASS', 'HOTWALLET_NATS_TXB_PASS',
+    'HOTWALLET_NATS_OPERATOR_PASS', 'HOTWALLET_NATS_SETUP_PASS',
 ]
 with open(env_file) as f:
     content = f.read()
-for key, value in zip(keys, sys.argv[2:]):
+for key in keys:
+    value = os.environ[key]
     pattern = rf'^({re.escape(key)}=).*'
     new, n = re.subn(pattern, lambda m: m.group(1) + value, content, flags=re.MULTILINE)
     content = new if n else content + f'\n{key}={value}'
@@ -312,14 +375,22 @@ with open(env_file, 'w') as f:
     f.write(content)
 PYEOF
 
-unset ENV_AUTH_PW ENV_CF_TOKEN
+unset ENV_AUTH_PW ENV_CF_TOKEN ENV_VAULTWARDEN_TOKEN_HASH
 info ".env konfiguriert"
+
+# Vaultwarden-Admin-Token: Klartext separat sichern (wird für den /admin-Login benötigt;
+# in .env steht nur der Argon2-Hash, aus dem sich das Token nicht zurückgewinnen lässt).
+mkdir -p /mnt/opt/apphost/secrets
+printf '%s\n' "$ENV_VAULTWARDEN_TOKEN_PLAIN" > /mnt/opt/apphost/secrets/vaultwarden_admin_token.txt
+chmod 600 /mnt/opt/apphost/secrets/vaultwarden_admin_token.txt
+unset ENV_VAULTWARDEN_TOKEN_PLAIN
+info "Vaultwarden Admin-Token gespeichert: /opt/apphost/secrets/vaultwarden_admin_token.txt"
 
 # Secrets generieren (läuft im Live-System, nix ist verfügbar)
 info "Generiere Secrets (lädt benötigte Nix-Pakete, dauert einen Moment...)"
 cd /mnt/opt/apphost
 
-for script in update-secrets-authelia update-secrets-mosquitto update-secrets-ntfy; do
+for script in update-secrets-authelia update-secrets-mosquitto update-secrets-ntfy update-secrets-hotwallet; do
     if bash "scripts/${script}.sh"; then
         info "${script} ✓"
     else
@@ -339,10 +410,11 @@ echo -e "  ${B}1.${N} SSH-Login:     ssh apphost@<IP-ADRESSE>"
 echo -e "  ${B}2.${N} Stack starten: cd /opt/apphost && docker compose up -d"
 echo -e "  ${B}3.${N} Tor-Adresse:   bash /opt/apphost/scripts/show-onion-address.sh"
 echo -e "            TOR_DOMAIN in .env eintragen, danach: docker compose up -d"
+echo -e "  ${B}4.${N} Vaultwarden Admin-Token: cat /opt/apphost/secrets/vaultwarden_admin_token.txt"
 echo ""
 
 for i in 5 4 3 2 1; do
-  echo -ne "\r  ${Y}Neustart in ${i} Sekunden … (Strg+C zum Abbrechen)${N}  "
+  echo -ne "\r  ${Y}Neustart in ${i} Sekunden... (Strg+C zum Abbrechen)${N}  "
   sleep 1
 done
 echo ""
