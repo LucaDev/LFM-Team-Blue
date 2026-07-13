@@ -29,6 +29,9 @@ set +a
 
 tmpfile=$(mktemp)
 trap 'rm -f "$tmpfile"' EXIT
+# mosquitto_passwd -c refuses to write to a file that already exists (see below),
+# aber mktemp legt die Datei zur Reservierung des Namens bereits an.
+rm -f "$tmpfile"
 
 first=true
 for entry in "${MQTT_USERS[@]}"; do

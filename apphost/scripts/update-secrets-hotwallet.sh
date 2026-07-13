@@ -29,10 +29,14 @@ set -a
 source "$ENV_FILE"
 set +a
 
+# openssl ist nicht auf jedem System vorinstalliert (z.B. Live-ISO beim Ersteinrichten
+# via nixos/install.sh), daher via nix-shell statt direktem Aufruf.
+_openssl() { nix-shell -p openssl --run "openssl $*"; }
+
 rpcauth_line() {
     local user="$1" password="$2" salt hmac
-    salt="$(openssl rand -hex 16)"
-    hmac="$(printf '%s' "$password" | openssl dgst -sha256 -hmac "$salt" | sed 's/^.* //')"
+    salt="$(_openssl rand -hex 16)"
+    hmac="$(printf '%s' "$password" | _openssl dgst -sha256 -hmac "$salt" | sed 's/^.* //')"
     printf 'rpcauth=%s:%s$%s\n' "$user" "$salt" "$hmac"
 }
 

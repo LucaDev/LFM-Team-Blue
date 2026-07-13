@@ -56,20 +56,24 @@ fi
 # Hilfsfunktionen
 # ---------------------------------------------------------------------------
 
+# openssl ist nicht auf jedem System vorinstalliert (z.B. Live-ISO beim Ersteinrichten
+# via nixos/install.sh), daher wie das argon2-CLI via nix-shell bezogen.
+_openssl() { nix-shell -p openssl --run "openssl $*"; }
+
 gen_secret() {
     # 64 zufällige Hex-Zeichen (256 Bit Entropie)
-    openssl rand -hex 32
+    _openssl rand -hex 32
 }
 
 gen_client_secret() {
     # 32 zufällige Hex-Zeichen (128 Bit – ausreichend für OIDC)
-    openssl rand -hex 16
+    _openssl rand -hex 16
 }
 
 argon2_hash() {
     local password="$1"
     local salt
-    salt=$(openssl rand -hex 16)
+    salt=$(_openssl rand -hex 16)
     # -v 13  = Argon2 version 1.3 (argon2 CLI uses 13, not the 0x13=19 internal byte)
     # -m 16  = 2^16 KiB = 65536 KiB memory cost (matches Authelia config memory: 65536)
     printf '%s' "$password" | nix-shell -p libargon2 --run \
@@ -88,7 +92,7 @@ read_secret() {
 mkdir -p "$SECRETS_DIR"
 if [[ ! -f "$OUTPUT_JWKS" ]]; then
     echo "Generating RSA-4096 OIDC signing key..."
-    openssl genrsa -out "$OUTPUT_JWKS" 4096 2>/dev/null
+    _openssl genrsa -out "$OUTPUT_JWKS" 4096 2>/dev/null
     chmod 640 "$OUTPUT_JWKS"
     echo "  -> $OUTPUT_JWKS"
 else
