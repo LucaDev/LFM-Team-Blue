@@ -1,4 +1,4 @@
-fastapi==0.116.0
+fastapi==0.139.0
 uvicorn==0.51.0
 embit==0.8.0
 python-json-logger==4.1.0
