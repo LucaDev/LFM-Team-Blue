@@ -1,12 +1,22 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
   "timezone": "Europe/Berlin",
   "labels": ["dependencies", "renovate"],
   "assignees": [],
   "reviewers": [],
 
-  "ignorePaths": ["apphost/.env", "apphost/scripts/**", "apphost/secrets/**", "KI-Evaluaion/**"],
+  "ignorePaths": [
+    "apphost/.env",
+    "apphost/scripts/**",
+    "apphost/secrets/**",
+    "KI-Evaluaion/**"
+  ],
 
   "docker-compose": {
     "managerFilePatterns": [
@@ -17,34 +27,6 @@
 
   "packageRules": [
     {
-      "description": "Automerge patch & digest updates für Monitoring-Stack",
-      "matchManagers": ["docker-compose"],
-      "matchPackageNames": [
-        "prom/prometheus",
-        "prom/alertmanager",
-        "prom/node-exporter",
-        "grafana/grafana-oss",
-        "grafana/loki",
-        "grafana/promtail",
-        "gcr.io/cadvisor/cadvisor"
-      ],
-      "matchUpdateTypes": ["patch", "digest"],
-      "automerge": true,
-      "automergeType": "branch"
-    },
-    {
-      "description": "Kein Auto-Merge für Datenbanken und Storage",
-      "matchManagers": ["docker-compose"],
-      "matchPackageNames": [
-        "postgres",
-        "valkey/valkey",
-        "redis",
-        "dxflrs/garage"
-      ],
-      "automerge": false,
-      "minimumReleaseAge": "7 days"
-    },
-    {
       "description": "Major Updates manuell bestätigen",
       "matchUpdateTypes": ["major"],
       "automerge": false,
@@ -52,17 +34,11 @@
       "minimumReleaseAge": "14 days"
     },
     {
-      "description": "Traefik: vorsichtig updaten (Internet-facing)",
+      "description": "Traefik früher aber dennoch vorsichtig updaten (Internet-facing)",
       "matchManagers": ["docker-compose"],
       "matchPackageNames": ["traefik"],
       "automerge": false,
       "minimumReleaseAge": "7 days"
-    },
-    {
-      "description": "Alpine digest updates automatisch mergen",
-      "matchPackageNames": ["/alpine/"],
-      "matchUpdateTypes": ["digest"],
-      "automerge": true
     }
   ]
 }
