@@ -71,7 +71,7 @@ services:
     labels:
       - "traefik.enable=false"
   hotwallet-opa:
-    image: openpolicyagent/opa:1.17.1
+    image: openpolicyagent/opa:1.18.2@sha256:cba27d3c6af2feba1e4d6e6b5e24df5b53db332420d4148a90acccd12efae6ed
     container_name: hotwallet-opa
     command: ["run", "--watch", "--server", "--addr=0.0.0.0:8181", "/policies", "/data"]
     restart: unless-stopped
