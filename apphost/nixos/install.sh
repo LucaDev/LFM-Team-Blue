@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NIX_FLAGS=(--extra-experimental-features "nix-command flakes")
+APP_DIR=/mnt/opt/monorepo/apphost
 
 # Ein bisschen Farbe tut dem ganzen ja nicht weh. 
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' B='\033[0;34m' N='\033[0m'
@@ -21,7 +22,7 @@ echo "  Repo:    $REPO_DIR"
 echo "  Dieses Skript:"
 echo "  - partitioniert eine Festplatte (GPT + EFI + Swap + Btrfs)"
 echo "  - installiert NixOS mit der AppHost-Hochsicherheitskonfiguration"
-echo "  - legt den AppHost-Stack unter /opt/apphost bereit"
+echo "  - legt den AppHost-Stack unter /opt/monorepo/apphost bereit"
 echo ""
 
 echo ""
@@ -96,7 +97,7 @@ fi
 
 cat > "$REPO_DIR/nixos/ssh-key.nix" << NIXEOF
 # Automatisch von nixos/install.sh gesetzt. Nachträglich änderbar durch Bearbeiten dieser Datei und anschließendes:
-# >  sudo nixos-rebuild switch --flake /opt/apphost#apphost
+# >  sudo nixos-rebuild switch --flake /opt/monorepo/apphost#apphost
 [
   "$SSH_PUBKEY"
 ]
@@ -189,7 +190,7 @@ if nixos-enter --root /mnt -- /nix/var/nix/profiles/system/bin/switch-to-configu
   info "Bootloader installiert"
 else
   warn "Bootloader-Installation fehlgeschlagen – nach dem Neustart manuell:"
-  warn "  sudo nixos-rebuild boot --flake /opt/apphost#apphost"
+  warn "  sudo nixos-rebuild boot --flake /opt/monorepo/apphost#apphost"
 fi
 
 MONOREPO_ROOT="$(git -C "$REPO_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
@@ -199,9 +200,9 @@ MONOREPO_REMOTE=""
 if [[ -n "$MONOREPO_REMOTE" ]]; then
   MONOREPO_BRANCH="$(git -C "$MONOREPO_ROOT" rev-parse --abbrev-ref HEAD)"
   APPHOST_SUBDIR="$(realpath --relative-to="$MONOREPO_ROOT" "$REPO_DIR")"
-  CHECKOUT_DIR="/mnt/opt/.monorepo"
+  CHECKOUT_DIR="/mnt/opt/monorepo"
 
-  info "Richte aktualisierbares Git-Repo unter /opt ein (Sparse-Checkout: $APPHOST_SUBDIR)..."
+  info "Richte aktualisierbares Git-Repo unter /opt/monorepo ein (Sparse-Checkout: $APPHOST_SUBDIR)..."
   mkdir -p /mnt/opt
   git clone --no-checkout --branch "$MONOREPO_BRANCH" "$MONOREPO_ROOT" "$CHECKOUT_DIR"
   git -C "$CHECKOUT_DIR" remote set-url origin "$MONOREPO_REMOTE"
@@ -209,27 +210,33 @@ if [[ -n "$MONOREPO_REMOTE" ]]; then
   git -C "$CHECKOUT_DIR" sparse-checkout set "$APPHOST_SUBDIR"
   git -C "$CHECKOUT_DIR" reset --hard "$MONOREPO_BRANCH"
 
-  mkdir -p /mnt/opt/apphost
-  nix run "${NIX_FLAGS[@]}" nixpkgs#rsync -- -a "$CHECKOUT_DIR/$APPHOST_SUBDIR"/ /mnt/opt/apphost/
-
   # Maschinenspezifische Dateien sind gitignored (siehe .gitignore) und daher nach dem
-  # Sparse-Checkout nicht vorhanden – aus $REPO_DIR nachziehen, wo sie in diesem Lauf
-  # gerade frisch erzeugt wurden.
+  # Sparse-Checkout nicht vorhanden. Aus $REPO_DIR nachziehen, wo sie in diesem Lauf gerade frisch erzeugt wurden.
   for f in nixos/hardware-configuration.nix nixos/ssh-key.nix nixos/disk-encryption.nix; do
-    cp "$REPO_DIR/$f" "/mnt/opt/apphost/$f"
+    cp "$REPO_DIR/$f" "$APP_DIR/$f"
   done
 else
   warn "Kein Git-Remote unter $REPO_DIR gefunden. Wurde die Ursprungskopie heruntergeladen und nicht geklont? Kopiere Repo ohne Versionierung (kein 'git pull' auf dem Server möglich)."
-  mkdir -p /mnt/opt/apphost
-  cp -r "$REPO_DIR"/. /mnt/opt/apphost
+  mkdir -p "$APP_DIR"
+  cp -r "$REPO_DIR"/. "$APP_DIR"
 fi
+
+# data/ und secrets/ sind nicht Teil des Git-Checkouts (siehe .gitignore). Hier mit Besitz/Rechten für den apphost-Nutzer
+# (regen-secrets & so laufen ohne sudo). Namen "apphost"/"docker" lösen nur innerhalb des Ziel-Systems auf, daher via nixos-enter.
+nixos-enter --root /mnt -- bash -c '
+  set -euo pipefail
+  mkdir -p /opt/monorepo/apphost/data /opt/monorepo/apphost/secrets
+  chown -R apphost:docker /opt/monorepo/apphost
+  chmod 0750 /opt/monorepo/apphost /opt/monorepo/apphost/compose /opt/monorepo/apphost/config /opt/monorepo/apphost/data
+  chmod 0700 /opt/monorepo/apphost/secrets
+'
 
 # .env konfigurieren
 echo ""
 echo -e "  ${B}Konfiguration${N}"
 echo -e "  Alle Dienst-Passwörter und -Secrets (Immich, Paperless, OpenCloud, Collabora,"
 echo -e "  Garage, Grafana, Vaultwarden, Hot-Wallet, MQTT, Ntfy) werden automatisch generiert."
-echo -e "  Alle Werte können nach dem Neustart in /opt/apphost/.env geändert werden."
+echo -e "  Alle Werte können nach dem Neustart in /opt/monorepo/apphost/.env geändert werden."
 echo ""
 
 _prompt() {
@@ -318,8 +325,8 @@ _argon2_hash() {
 ENV_VAULTWARDEN_TOKEN_PLAIN="$(_randhex 32)"
 ENV_VAULTWARDEN_TOKEN_HASH="$(_argon2_hash "$ENV_VAULTWARDEN_TOKEN_PLAIN")"
 
-ENV_FILE="/mnt/opt/apphost/.env"
-cp "/mnt/opt/apphost/.env.example" "$ENV_FILE"
+ENV_FILE="$APP_DIR/.env"
+cp "$APP_DIR/.env.example" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 
 # Werte in .env eintragen (Python für sicheres Escaping beliebiger Zeichen).
@@ -381,22 +388,22 @@ info ".env konfiguriert"
 
 # Vaultwarden-Admin-Token: Klartext separat sichern (wird für den /admin-Login benötigt;
 # in .env steht nur der Argon2-Hash, aus dem sich das Token nicht zurückgewinnen lässt).
-mkdir -p /mnt/opt/apphost/secrets
-printf '%s\n' "$ENV_VAULTWARDEN_TOKEN_PLAIN" > /mnt/opt/apphost/secrets/vaultwarden_admin_token.txt
-chmod 600 /mnt/opt/apphost/secrets/vaultwarden_admin_token.txt
+mkdir -p "$APP_DIR/secrets"
+printf '%s\n' "$ENV_VAULTWARDEN_TOKEN_PLAIN" > "$APP_DIR/secrets/vaultwarden_admin_token.txt"
+chmod 600 "$APP_DIR/secrets/vaultwarden_admin_token.txt"
 unset ENV_VAULTWARDEN_TOKEN_PLAIN
-info "Vaultwarden Admin-Token gespeichert: /opt/apphost/secrets/vaultwarden_admin_token.txt"
+info "Vaultwarden Admin-Token gespeichert: /opt/monorepo/apphost/secrets/vaultwarden_admin_token.txt"
 
 # Secrets generieren (läuft im Live-System, nix ist verfügbar)
 info "Generiere Secrets (lädt benötigte Nix-Pakete, dauert einen Moment...)"
-cd /mnt/opt/apphost
+cd "$APP_DIR"
 
 for script in update-secrets-authelia update-secrets-mosquitto update-secrets-ntfy update-secrets-hotwallet; do
     if bash "scripts/${script}.sh"; then
         info "${script} ✓"
     else
         warn "${script} fehlgeschlagen – nach Neustart manuell ausführen:"
-        warn "  bash /opt/apphost/scripts/${script}.sh"
+        warn "  bash /opt/monorepo/apphost/scripts/${script}.sh"
     fi
 done
 
@@ -408,10 +415,10 @@ echo ""
 echo -e "  ${B}Nach dem Neustart:${N}"
 echo ""
 echo -e "  ${B}1.${N} SSH-Login:     ssh apphost@<IP-ADRESSE>"
-echo -e "  ${B}2.${N} Stack starten: cd /opt/apphost && docker compose up -d"
-echo -e "  ${B}3.${N} Tor-Adresse:   bash /opt/apphost/scripts/show-onion-address.sh"
+echo -e "  ${B}2.${N} Stack starten: cd /opt/monorepo/apphost && docker compose up -d"
+echo -e "  ${B}3.${N} Tor-Adresse:   bash /opt/monorepo/apphost/scripts/show-onion-address.sh"
 echo -e "            TOR_DOMAIN in .env eintragen, danach: docker compose up -d"
-echo -e "  ${B}4.${N} Vaultwarden Admin-Token: cat /opt/apphost/secrets/vaultwarden_admin_token.txt"
+echo -e "  ${B}4.${N} Vaultwarden Admin-Token: cat /opt/monorepo/apphost/secrets/vaultwarden_admin_token.txt"
 echo ""
 
 for i in 5 4 3 2 1; do

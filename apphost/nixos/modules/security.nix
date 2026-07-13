@@ -146,7 +146,7 @@
     /usr/bin NORMAL
     /usr/sbin NORMAL
     /boot NORMAL
-    /opt/apphost/config NORMAL
+    /opt/monorepo/apphost/config NORMAL
 
     !/proc
     !/sys

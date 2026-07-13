@@ -346,7 +346,7 @@ Authelia Admin-Passwort (bestätigen):
 ```
 
 > [!NOTE]
-> **MQTT- und Ntfy-Passwörter werden automatisch als zufällige Zeichenketten generiert**, dafür ist keine Eingabe nötig. Alle Werte – auch die hier abgefragten – können jederzeit nachträglich in `/opt/apphost/.env` angepasst werden, siehe [Abschnitt 11](#11-passwörter-ändern).
+> **MQTT- und Ntfy-Passwörter werden automatisch als zufällige Zeichenketten generiert**, dafür ist keine Eingabe nötig. Alle Werte – auch die hier abgefragten – können jederzeit nachträglich in `/opt/monorepo/apphost/.env` angepasst werden, siehe [Abschnitt 11](#11-passwörter-ändern).
 
 Anschließend generiert das Skript die Secrets für Authelia, MQTT und Ntfy und startet automatisch neu.
 
@@ -393,7 +393,7 @@ Das Installationsskript hat die `.env` bereits befüllt und alle Secrets generie
 ### Stack erstmals starten
 
 ```bash
-cd /opt/apphost
+cd /opt/monorepo/apphost
 docker compose up -d
 ```
 
@@ -473,7 +473,8 @@ Für häufige Verwaltungsaufgaben sind Shell-Aliase definiert, die nach dem Logi
 
 | Alias          | Beschreibung                                                                                                                                                   |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `update`       | Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden. Entspricht `nix flake update && nixos-rebuild switch`.                 |
+| `pull`         | Holt Repo-Updates (`git pull` in `/opt/monorepo`) – nur der `apphost/`-Pfad des Monorepos wird dabei übertragen.                                                |
+| `update`       | `pull`, danach Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden.                                                          |
 | `rebuild`      | System neu bauen und **sofort** aktivieren, ohne Flake-Inputs zu aktualisieren. Nützlich nach Änderungen an Konfigurationsdateien.                             |
 | `rebuild-boot` | System neu bauen, Aktivierung erst **beim nächsten Neustart**. Sinnvoll, wenn Kernel-Updates ein Reboot erfordern, ohne den laufenden Betrieb zu unterbrechen. |
 | `gc`           | Nix-Store aufräumen: löscht Generationen älter als 30 Tage und optimiert den Store (Deduplizierung via Hard-Links).                                            |
@@ -500,7 +501,7 @@ Nach dem Mergen eines RenovateBot-PRs genügt `up`, um die aktualisierten Images
 Bei Änderungen von MQTT-, Ntfy-, Authelia- oder anderen Secrets in der `.env` müssen diese neu generiert und der betroffene Dienst neu gestartet werden:
 
 ```bash
-vim /opt/apphost/.env   # Passwort anpassen
+vim /opt/monorepo/apphost/.env   # Passwort anpassen
 regen-secrets           # alle Secrets neu generieren
 up                      # Stack neu starten
 ```
@@ -512,7 +513,7 @@ up                      # Stack neu starten
 Nach der initialen Einrichtung ([Abschnitt 9](#9-aide-initialisieren)) läuft AIDE im Betrieb automatisch:
 
 - Eine **tägliche** automatische Prüfung erfolgt über einen systemd-Service.
-- Überwacht werden u. a. `/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`, `/usr/sbin`, `/boot` und `/opt/apphost/config`.
+- Überwacht werden u. a. `/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`, `/usr/sbin`, `/boot` und `/opt/monorepo/apphost/config`.
 
 Eine manuelle Prüfung ist jederzeit möglich:
 
@@ -544,7 +545,7 @@ less /var/log/docker-security-scan.log
 Die `.onion`-Adresse wird beim ersten Start des Tor-Containers automatisch generiert und ist persistent. Sie kann jederzeit angezeigt werden:
 
 ```bash
-bash /opt/apphost/scripts/show-onion-address.sh
+bash /opt/monorepo/apphost/scripts/show-onion-address.sh
 ```
 
 Beispielausgabe:

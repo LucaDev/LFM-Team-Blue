@@ -91,11 +91,6 @@
   # Docker-Socket nur für docker-Gruppe zugänglich
   systemd.tmpfiles.rules = [
     "d /run/docker 0750 root docker -"
-    "d /opt/apphost 0750 apphost docker -"
-    "d /opt/apphost/compose 0750 apphost docker -"
-    "d /opt/apphost/config 0750 apphost docker -"
-    "d /opt/apphost/data 0750 apphost docker -"
-    "d /opt/apphost/secrets 0700 apphost docker -"
   ];
 
   # Containerd (für Kata Containers)
