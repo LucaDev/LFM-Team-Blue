@@ -65,8 +65,8 @@ NIXEOF
 # Festplattenverschlüsselung
 echo ""
 echo "  Optional kann die Root-Partition zusätzlich mit LUKS2 verschlüsselt werden."
-echo "  Achtung: Danach wird bei JEDEM Boot eine Passphrase über die Server-"
-echo "  Konsole benötigt - kein unbeaufsichtigter Neustart, kein Boot ohne Konsolenzugriff (z. B. über die Proxmox-Konsole)."
+echo "  Achtung: Danach wird bei JEDEM Boot eine Passphrase über die Server-Konsole benötigt"
+echo "  > Kein unbeaufsichtigter Neustart, kein Boot ohne Konsolenzugriff (z.B. über die Proxmox-Konsole)."
 echo ""
 read -rp "  Festplattenverschlüsselung aktivieren? [j/N]: " ENC_ANSWER
 if [[ "$ENC_ANSWER" =~ ^[jJyY] ]]; then
@@ -208,7 +208,7 @@ _prompt() {
     local label="$1" default="${2:-}" silent="${3:-}"
     local val
     if [[ "$silent" == "secret" ]]; then
-        read -rsp "  ${label}: " val; echo ""
+        read -rsp "  ${label}: " val; echo "" >&2
     else
         if [[ -n "$default" ]]; then
             read -rp "  ${label} [${default}]: " val
@@ -248,12 +248,14 @@ done
 unset ENV_AUTH_PW2
 
 # Zufällige Passwörter für MQTT und Ntfy
-ENV_MQTT_HA="$(openssl rand -hex 16)"
-ENV_MQTT_Z2M="$(openssl rand -hex 16)"
-ENV_MQTT_ESP="$(openssl rand -hex 16)"
-ENV_MQTT_RO="$(openssl rand -hex 16)"
-ENV_NTFY_ADMIN="$(openssl rand -hex 16)"
-ENV_NTFY_ALERT="$(openssl rand -hex 16)"
+# openssl ist auf dem Live-ISO nicht vorinstalliert, daher wie mkpasswd via nix run.
+_randhex() { nix run "${NIX_FLAGS[@]}" nixpkgs#openssl -- rand -hex 16; }
+ENV_MQTT_HA="$(_randhex)"
+ENV_MQTT_Z2M="$(_randhex)"
+ENV_MQTT_ESP="$(_randhex)"
+ENV_MQTT_RO="$(_randhex)"
+ENV_NTFY_ADMIN="$(_randhex)"
+ENV_NTFY_ALERT="$(_randhex)"
 
 ENV_FILE="/mnt/opt/apphost/.env"
 cp "/mnt/opt/apphost/.env.example" "$ENV_FILE"
@@ -288,7 +290,7 @@ unset ENV_AUTH_PW ENV_CF_TOKEN
 info ".env konfiguriert"
 
 # Secrets generieren (läuft im Live-System, nix ist verfügbar)
-info "Generiere Secrets – lädt benötigte Nix-Pakete, dauert einen Moment..."
+info "Generiere Secrets (lädt benötigte Nix-Pakete, dauert einen Moment...)"
 cd /mnt/opt/apphost
 
 for script in update-secrets-authelia update-secrets-mosquitto update-secrets-ntfy; do
