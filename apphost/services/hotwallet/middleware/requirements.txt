@@ -5,6 +5,6 @@ nats-py==2.8.0
 psycopg[binary]==3.3.4
 embit==0.8.0
 python-json-logger==4.1.0
-prometheus_client==0.16.0
+prometheus_client==0.25.0
 python-multipart==0.0.32
 requests==2.34.2
