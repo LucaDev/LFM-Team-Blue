@@ -4,8 +4,8 @@ networks:
     external: true
     name: traefik-public
   communication-network:
-    external: true
     name: communication-network
+    driver: bridge
 volumes:
   ntfy_data: {name: apphost_ntfy_data}
 services:

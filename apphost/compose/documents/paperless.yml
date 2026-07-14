@@ -4,8 +4,8 @@ networks:
     external: true
     name: traefik-public
   documents-network:
-    external: true
     name: documents-network
+    driver: bridge
 volumes:
   paperless_data: {name: apphost_paperless_data}
   paperless_media: {name: apphost_paperless_media}

@@ -3,9 +3,6 @@ networks:
   traefik-public:
     external: true
     name: traefik-public
-  media-network:
-    external: true
-    name: media-network
 volumes:
   jellyfin_config: {name: apphost_jellyfin_config}
   jellyfin_cache: {name: apphost_jellyfin_cache}
@@ -16,7 +13,6 @@ services:
     restart: unless-stopped
     runtime: runc
     networks:
-      media-network: {}
       traefik-public: {}
     volumes:
       - jellyfin_config:/config

@@ -4,8 +4,8 @@ networks:
     external: true
     name: traefik-public
   storage-network:
-    external: true
     name: storage-network
+    driver: bridge
 volumes:
   garage_meta: {name: apphost_garage_meta}
   garage_data: {name: apphost_garage_data}

@@ -4,11 +4,8 @@ networks:
     external: true
     name: traefik-public
   cloud-network:
-    external: true
     name: cloud-network
-  storage-network:
-    external: true
-    name: storage-network
+    driver: bridge
 volumes:
   opencloud_config: {name: apphost_opencloud_config}
   opencloud_data: {name: apphost_opencloud_data}
@@ -26,7 +23,6 @@ services:
       cloud-network:
         aliases: [opencloud, ocis]
       traefik-public: {}
-      storage-network: {}
     volumes:
       - opencloud_config:/etc/opencloud
       - opencloud_data:/var/lib/opencloud

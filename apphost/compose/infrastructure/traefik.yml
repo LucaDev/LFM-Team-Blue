@@ -1,11 +1,14 @@
 name: apphost
 networks:
   traefik-public:
-    external: true
     name: traefik-public
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
   socket-proxy:
-    external: true
     name: socket-proxy
+    driver: bridge
 volumes:
   traefik_certs:
     name: apphost_traefik_certs
@@ -61,7 +64,6 @@ services:
       - "80:8081"
       - "443:8443"
       - "443:8443/udp" # HTTP/3 QUIC
-      - "8880:8880" # Tor – HTTP ohne TLS
     volumes:
       # Zertifikate: named volume (persistent, Traefik erstellt acme.json selbst)
       - traefik_certs:/certs

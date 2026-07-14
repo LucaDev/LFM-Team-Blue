@@ -4,8 +4,8 @@ networks:
     external: true
     name: traefik-public
   media-network:
-    external: true
     name: media-network
+    driver: bridge
 volumes:
   immich_upload: {name: apphost_immich_upload}
   immich_postgres: {name: apphost_immich_postgres}

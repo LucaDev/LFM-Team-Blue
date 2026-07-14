@@ -9,21 +9,12 @@ networks:
   media-network:
     external: true
     name: media-network
-  documents-network:
-    external: true
-    name: documents-network
-  cloud-network:
-    external: true
-    name: cloud-network
   home-network:
     external: true
     name: home-network
   storage-network:
     external: true
     name: storage-network
-  communication-network:
-    external: true
-    name: communication-network
 volumes:
   prometheus_data: {name: apphost_prometheus_data}
 services:
@@ -36,11 +27,8 @@ services:
       monitoring-network: {}
       traefik-public: {}
       media-network: {}
-      documents-network: {}
-      cloud-network: {}
       home-network: {}
       storage-network: {}
-      communication-network: {}
     volumes:
       - prometheus_data:/prometheus
       - ../../config/prometheus:/etc/prometheus:ro
