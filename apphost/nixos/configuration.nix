@@ -290,7 +290,7 @@
     logs = "cd /opt/monorepo/apphost && docker compose logs -f";
 
     # Schnellstatus
-    status = "systemctl status docker && docker ps";
+    status = "systemctl status --no-pager docker && docker ps";
 
     # Secrets neu generieren (nach Passwortänderungen in .env)
     regen-secrets = "cd /opt/monorepo/apphost && bash scripts/update-secrets-authelia.sh && bash scripts/update-secrets-mosquitto.sh && bash scripts/update-secrets-ntfy.sh";

@@ -142,7 +142,7 @@ identity_providers:
           - authorization_code
         response_types:
           - code
-        pkce_challenge_method: RS256
+        pkce_challenge_method: S256
         userinfo_signed_response_alg: RS256
       - client_id: paperless
         client_name: Paperless-NGX
