@@ -57,8 +57,10 @@
 
       "containerd" = "/run/containerd/containerd.sock";
 
-      # Metrics lokal exposen (Prometheus)
-      metrics-addr  = "127.0.0.1:9323";
+      # Metrics auf der docker0-Bridge exposen, damit der Prometheus-Container
+      # sie über die Gateway-IP 172.17.0.1 scrapen kann (127.0.0.1 wäre nur
+      # host-lokal und aus dem Container nicht erreichbar).
+      metrics-addr  = "172.17.0.1:9323";
       # containerd-snapshotter ist inkompatibel mit userns-remap (Docker verweigert sonst den Start);
     };
   };

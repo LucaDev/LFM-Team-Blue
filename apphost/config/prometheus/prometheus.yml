@@ -25,9 +25,11 @@ scrape_configs:
       - targets: ["localhost:9090"]
     metrics_path: /metrics
   # Node Exporter – Host-Metriken
+  # node-exporter läuft mit network_mode: host, ist also nicht per Docker-DNS
+  # erreichbar. Scrape daher über die docker0-Bridge-Gateway-IP des Hosts.
   - job_name: "node-exporter"
     static_configs:
-      - targets: ["node-exporter:9100"]
+      - targets: ["172.17.0.1:9100"]
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
@@ -48,23 +50,25 @@ scrape_configs:
     static_configs:
       - targets: ["172.17.0.1:9323"] # Docker Daemon Metrics
     metrics_path: /metrics
-  # Redis/Valkey (via redis-exporter)
+  # Valkey – je ein redis_exporter pro Instanz (immich + paperless)
   - job_name: "redis"
     static_configs:
-      - targets: ["redis-exporter:9121"]
-  # Immich
+      - targets: ["immich-redis-exporter:9121"]
+        labels: {valkey_instance: "immich"}
+      - targets: ["paperless-redis-exporter:9121"]
+        labels: {valkey_instance: "paperless"}
+  # Immich – API-Worker (8081) und Microservices-Worker (8082)
+  # Aktiviert über IMMICH_TELEMETRY_INCLUDE=all am immich-server.
   - job_name: "immich"
     static_configs:
-      - targets: ["immich-server:8081"]
+      - targets: ["immich-server:8081", "immich-server:8082"]
     metrics_path: /metrics
-  # Grafana
+  # Grafana – /metrics ist per Default aktiv und unauthentifiziert
+  # (Basic-Auth ist am Grafana deaktiviert), daher ohne basic_auth scrapen.
   - job_name: "grafana"
     static_configs:
       - targets: ["grafana:3000"]
     metrics_path: /metrics
-    basic_auth:
-      username: "admin"
-      password_file: "/etc/prometheus/secrets/grafana-password"
   # Loki
   - job_name: "loki"
     static_configs:
@@ -80,10 +84,3 @@ scrape_configs:
     static_configs:
       - targets: ["garage:3903"]
     metrics_path: /metrics
-  # Home Assistant
-  - job_name: "homeassistant"
-    static_configs:
-      - targets: ["homeassistant:8123"]
-    metrics_path: /api/prometheus
-    bearer_token_file: "/etc/prometheus/secrets/hass-token"
-    scheme: http
