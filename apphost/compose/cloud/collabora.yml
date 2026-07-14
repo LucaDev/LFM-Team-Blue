@@ -50,7 +50,3 @@ services:
       - "traefik.http.routers.collabora.rule=Host(`${COLLABORA_SUBDOMAIN:-office}.${DOMAIN}`)"
       - "traefik.http.routers.collabora.entrypoints=websecure"
       - "traefik.http.services.collabora.loadbalancer.server.port=9980"
-      - "homepage.group=Cloud"
-      - "homepage.name=Collabora Online"
-      - "homepage.icon=docs-collaboration.png"
-      - "homepage.href=https://${COLLABORA_SUBDOMAIN:-office}.${DOMAIN}"
