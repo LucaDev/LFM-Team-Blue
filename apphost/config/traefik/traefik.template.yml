@@ -74,8 +74,7 @@ entryPoints:
         allowEncodedPercent: true
         allowEncodedQuestionMark: true
         allowEncodedHash: true
-      tls:
-        options: default@file
+      tls: {}
 # Provider
 providers:
   docker:
