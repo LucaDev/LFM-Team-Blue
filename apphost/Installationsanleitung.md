@@ -25,12 +25,9 @@
 16. [Proxmox-Backups einrichten](#16-proxmox-backups-einrichten)
 17. [Hot-Wallet Bitcoin-Custody-Stack](#17-hot-wallet-bitcoin-custody-stack)
 
-**Teil 3 – Referenz und Hintergrund**
+**Anhang**
 
-18. [Sicherheitshärtungen des Systems](#18-sicherheitshärtungen-des-systems)
-19. [Installierte Applikationen](#19-installierte-applikationen)
-20. [Architektonische Hinweise](#20-architektonische-hinweise)
-21. [Zusammenfassung der Mindestanforderungen](#21-zusammenfassung-der-mindestanforderungen)
+- [Quellen](#quellen)
 
 ---
 
@@ -40,11 +37,11 @@
 
 Vor Beginn der Installation müssen folgende Bedingungen erfüllt sein:
 
-- Eine installierte und erreichbare Proxmox-Node.
+- Eine installierte und erreichbare Proxmox-Node [[1]](#quelle-1).
 - Netzwerkzugang zur Proxmox-Weboberfläche und per SSH.
 - Eine eigene Domain mit der Möglichkeit, DNS-Einträge zu verwalten.
 - Zugang zum Router, um statische DHCP-Vergabe einzurichten.
-- Ein Cloudflare-Konto für die DNS-01-ACME-Challenge (kostenlos). Details siehe [Cloudflare API-Token erstellen](#cloudflare-api-token-erstellen) in Abschnitt 6.
+- Ein Cloudflare-Konto für die DNS-01-ACME-Challenge [[7]](#quelle-7) (kostenlos). Details siehe [Cloudflare API-Token erstellen](#cloudflare-api-token-erstellen) in Abschnitt 6.
 - Ein SSH-Schlüsselpaar auf dem lokalen Rechner (Admin-Client). Falls noch keines existiert, siehe [Abschnitt 6, SSH-Key für den Admin-Nutzer](#6-installation).
 
 > [!NOTE]
@@ -229,7 +226,7 @@ Der Prompt sollte lauten:
    sudo ./LFM-Team-Blue/apphost/nixos/install.sh
    ```
 
-Das Skript partitioniert die Festplatte, installiert NixOS, generiert die Secure-Boot-Schlüssel, installiert den Bootloader, fragt die `.env`-Werte ab (Domain, ACME E-Mail, Cloudflare-Token, Authelia-Zugangsdaten), generiert die restlichen Secrets (MQTT, Ntfy) automatisch und startet das System anschließend neu. Die folgenden Unterabschnitte beschreiben die interaktiven Prompts in der Reihenfolge, in der sie tatsächlich erscheinen.
+Das Skript partitioniert die Festplatte, installiert NixOS [[3]](#quelle-3), generiert die Secure-Boot-Schlüssel, installiert den Bootloader, fragt die `.env`-Werte ab (Domain, ACME E-Mail, Cloudflare-Token, Authelia-Zugangsdaten), generiert die restlichen Secrets (MQTT, Ntfy) automatisch und startet das System anschließend neu. Die folgenden Unterabschnitte beschreiben die interaktiven Prompts in der Reihenfolge, in der sie tatsächlich erscheinen.
 
 ### Passwort für den Admin-Nutzer setzen
 
@@ -303,14 +300,16 @@ Nach diesem Prompt partitioniert und formatiert das Skript die Festplatte, insta
 
 #### Warum Cloudflare?
 
-Für gültige TLS-Zertifikate (Let's Encrypt) wird die **ACME DNS-01-Challenge** verwendet. Bei dieser Methode beweist der Server den Besitz einer Domain, indem er einen temporären TXT-Eintrag in der DNS-Zone anlegt. Let's Encrypt prüft den Eintrag und stellt bei Erfolg das Zertifikat aus.
+Für gültige TLS-Zertifikate (Let's Encrypt) wird die **ACME DNS-01-Challenge** [[7]](#quelle-7) verwendet. Bei dieser Methode beweist der Server den Besitz einer Domain, indem er einen temporären TXT-Eintrag in der DNS-Zone anlegt. Let's Encrypt prüft den Eintrag und stellt bei Erfolg das Zertifikat aus.
 
 Der Vorteil: Der Server muss dafür nicht aus dem Internet erreichbar sein. Ports 80/443 können vollständig hinter dem Router verbleiben. Cloudflare dient hier ausschließlich als DNS-Anbieter, der diesen TXT-Eintrag setzen darf. Es fließen **keinerlei sensible Inhalte** an Cloudflare.
 
 > [!NOTE]
-> **Andere DNS-Anbieter sind ebenfalls möglich** (z.B. Hetzner DNS, Namecheap, Porkbun). Cloudflare wurde gewählt, weil es registrar-unabhängig ist: Die DNS-Verwaltung kann auf Cloudflare umgezogen werden, unabhängig davon, wo die Domain registriert ist. Alle von Traefik unterstützten Anbieter sind unter `https://doc.traefik.io/traefik/https/acme/#providers` gelistet. Bei Verwendung eines anderen Anbieters muss `ACME_DNS_PROVIDER` in der `.env` entsprechend gesetzt und der passende API-Key-Variablenname verwendet werden.
+> **Andere DNS-Anbieter sind ebenfalls möglich** (z.B. Hetzner DNS, Namecheap, Porkbun). Cloudflare wurde gewählt, weil es registrar-unabhängig ist: Die DNS-Verwaltung kann auf Cloudflare umgezogen werden, unabhängig davon, wo die Domain registriert ist. Alle von Traefik unterstützten Anbieter sind in der Traefik-Dokumentation zu den ACME-DNS-Providern gelistet [[9]](#quelle-9). Bei Verwendung eines anderen Anbieters muss `ACME_DNS_PROVIDER` in der `.env` entsprechend gesetzt und der passende API-Key-Variablenname verwendet werden.
 
 #### Cloudflare API-Token generieren
+
+Die folgenden Schritte orientieren sich an der offiziellen Cloudflare-Dokumentation zum Erstellen von API-Tokens [[8]](#quelle-8).
 
 1. Unter **dash.cloudflare.com** einloggen.
 2. Oben rechts auf das Profilbild klicken → **My Profile** → Reiter **API Tokens**.
@@ -363,6 +362,8 @@ ssh apphost@<IP-ADRESSE>
 
 ## 7. Secure Boot einrichten
 
+Secure Boot wird über `sbctl` [[5]](#quelle-5) verwaltet, das mittels des NixOS-Moduls `lanzaboote` [[6]](#quelle-6) in die Konfiguration eingebunden ist.
+
 1. Secure-Boot-Schlüssel eintragen:
    ```bash
    sudo sbctl enroll-keys --tpm-eventlog
@@ -409,7 +410,7 @@ docker compose up -d
 
 ### OIDC-Clients einrichten
 
-`scripts/update-secrets-authelia.sh` (läuft automatisch im Installationsskript, siehe [Abschnitt 6](#6-installation)) richtet Authelia als zentralen SSO/OIDC-Provider ein. Danach sind noch ein paar Schritte nötig, damit die einzelnen Dienste die neuen Secrets übernehmen bzw. sich gegen Authelia registrieren:
+`scripts/update-secrets-authelia.sh` (läuft automatisch im Installationsskript, siehe [Abschnitt 6](#6-installation)) richtet Authelia [[10]](#quelle-10) als zentralen SSO/OIDC-Provider ein. Danach sind noch ein paar Schritte nötig, damit die einzelnen Dienste die neuen Secrets übernehmen bzw. sich gegen Authelia registrieren:
 
 1. **Authelia deployen** (nur nötig, wenn Authelia-Secrets isoliert neu generiert wurden, nicht beim ersten `docker compose up -d`):
 
@@ -417,7 +418,7 @@ docker compose up -d
    docker compose up -d authelia authelia-redis
    ```
 
-2. **Immich OIDC (manuell):** Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden:
+2. **Immich OIDC (manuell):** Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden (siehe Immich-Dokumentation zu OAuth [[11]](#quelle-11)):
 
    _Administration → Settings → OAuth_
 
@@ -450,7 +451,7 @@ docker compose up -d
 
 ## 9. AIDE initialisieren
 
-AIDE (Advanced Intrusion Detection Environment) überwacht die Integrität des Dateisystems und erkennt unbefugte Änderungen. Direkt nach der Installation wird die Referenzdatenbank einmalig angelegt.
+AIDE (Advanced Intrusion Detection Environment) [[12]](#quelle-12) überwacht die Integrität des Dateisystems und erkennt unbefugte Änderungen. Direkt nach der Installation wird die Referenzdatenbank einmalig angelegt.
 
 1. Datenbank initialisieren:
    ```bash
@@ -534,7 +535,7 @@ aide --check
 
 ## 13. Container-Sicherheitsbericht
 
-Ein automatischer Container-Sicherheitsbericht wird jeden **Montag um 02:00 Uhr** mit dem Security-Scanner **Trivy** erstellt und unter `/var/log/docker-security-scan.log` abgelegt. Trivy prüft alle laufenden Images auf HIGH/CRITICAL-Schwachstellen.
+Ein automatischer Container-Sicherheitsbericht wird jeden **Montag um 02:00 Uhr** mit dem Security-Scanner **Trivy** [[13]](#quelle-13) erstellt und unter `/var/log/docker-security-scan.log` abgelegt. Trivy prüft alle laufenden Images auf HIGH/CRITICAL-Schwachstellen.
 
 ```bash
 less /var/log/docker-security-scan.log
@@ -544,7 +545,7 @@ less /var/log/docker-security-scan.log
 
 ## 14. Tor-Onion-Adresse anzeigen
 
-Die `.onion`-Adresse wird beim ersten Start des Tor-Containers automatisch generiert und ist persistent. Sie kann jederzeit angezeigt werden:
+Die `.onion`-Adresse (Onion Service v3 [[15]](#quelle-15)) wird beim ersten Start des Tor-Containers automatisch generiert und ist persistent. Sie kann jederzeit angezeigt werden:
 
 ```bash
 bash /opt/monorepo/apphost/scripts/show-onion-address.sh
@@ -567,7 +568,7 @@ https://<26-stellige-adresse>.onion
 
 ## 15. Automatische Container-Updates mit RenovateBot
 
-Alle Container-Image-Updates erfolgen automatisiert über RenovateBot direkt im GitHub-Repository. Es ist keine manuelle Versionspflege erforderlich.
+Alle Container-Image-Updates erfolgen automatisiert über RenovateBot [[14]](#quelle-14) direkt im GitHub-Repository. Es ist keine manuelle Versionspflege erforderlich.
 
 ### Wie es funktioniert
 
@@ -587,7 +588,7 @@ RenovateBot überwacht kontinuierlich das Repository und erkennt neue Versionen 
 
 ## 16. Proxmox-Backups einrichten
 
-Damit die komplette `apphost`-VM im Notfall wiederhergestellt werden kann, sollten regelmäßige Backups auf Ebene von Proxmox eingerichtet werden. Proxmox bringt dafür ein eigenes Werkzeug mit, das sich vollständig über die Weboberfläche steuern lässt. Es sichert die komplette VM (also Festplatten, Konfiguration, TPM, etc.), nicht nur einzelne Dateien.
+Damit die komplette `apphost`-VM im Notfall wiederhergestellt werden kann, sollten regelmäßige Backups auf Ebene von Proxmox eingerichtet werden [[2]](#quelle-2). Proxmox bringt dafür ein eigenes Werkzeug mit, das sich vollständig über die Weboberfläche steuern lässt. Es sichert die komplette VM (also Festplatten, Konfiguration, TPM, etc.), nicht nur einzelne Dateien.
 
 ### Backup-Speicher festlegen
 
@@ -626,7 +627,7 @@ _VM `apphost` → Backup → Backup now_
 
 ## 17. Hot-Wallet Bitcoin-Custody-Stack
 
-Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-Transaktionen über eine Policy-Engine (OPA), inklusive Cold-Refill-Workflow über eine air-gapped Signer-VM. Die Container liegen unter `services/hotwallet/`, der Compose-Service unter `compose/finance/hotwallet.yml`, operative Skripte unter `scripts/hotwallet/`.
+Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-Transaktionen über eine Policy-Engine (OPA) [[17]](#quelle-17), inklusive Cold-Refill-Workflow über eine air-gapped Signer-VM. Die Container liegen unter `services/hotwallet/`, der Compose-Service unter `compose/finance/hotwallet.yml`, operative Skripte unter `scripts/hotwallet/`.
 
 ### Einrichtung
 
@@ -644,8 +645,8 @@ Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-T
    ```bash
    docker compose up -d hotwallet-postgres hotwallet-nats hotwallet-opa hotwallet-btc-core hotwallet-tx-builder hotwallet-middleware
    ```
-5. Bitcoin-Core-Wallets initialisieren (einmalig, regtest) – siehe `services/hotwallet/btc-core/.demo/wallet_init_oneTime.sh` als Vorlage.
-6. WireGuard-Tunnel zur Signer-VM einrichten (separat, siehe oben) – ohne diesen Schritt bleibt der Stack auf den Aufbau von PSBTs beschränkt, eine Signatur ist nicht möglich.
+5. Bitcoin-Core-Wallets initialisieren (einmalig, regtest) – siehe `services/hotwallet/btc-core/.demo/wallet_init_oneTime.sh` als Vorlage sowie die Bitcoin-Core-RPC-Referenz [[18]](#quelle-18).
+6. WireGuard-Tunnel [[16]](#quelle-16) zur Signer-VM einrichten (separat, siehe oben) – ohne diesen Schritt bleibt der Stack auf den Aufbau von PSBTs [[19]](#quelle-19) beschränkt, eine Signatur ist nicht möglich.
 7. Hot-/Cold-/externe Wallets registrieren:
    ```bash
    sudo bash scripts/hotwallet/ops/setup/wallet_import.sh
@@ -657,11 +658,13 @@ Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-T
 Die air-gapped Signer-/Cold-VMs tauschen Dateien (WG/HMAC-Daten, Refill-PSBTs, signierte TX) ausschließlich über ein USB-Medium mit dem Operator-PC aus; zwischen Operator-PC und dem Apphost läuft der Transfer per SSH. Die Ops-Skripte lesen bzw. schreiben dabei im Staging-Verzeichnis `secrets/hotwallet/` des Apphosts (kein direkter USB-Mount auf dem Apphost).
 
 **In den Apphost (Import, z. B. WG/HMAC oder signierte Cold-TX):**
+
 1. Auf der Signer-/Cold-VM die Datei per Export-Skript auf das USB-Medium schreiben.
 2. USB an den Operator-PC stecken, Datei herunterkopieren.
 3. Per SSH in das Staging-Verzeichnis kopieren:
    ```bash
    scp <datei> apphost:/opt/monorepo/apphost/secrets/hotwallet/
+   ```
 
 ### Betrieb
 
@@ -669,3 +672,31 @@ Die air-gapped Signer-/Cold-VMs tauschen Dateien (WG/HMAC-Daten, Refill-PSBTs, s
 - **Cold-Refill (Export/Broadcast):** `scripts/hotwallet/ops/refill/psbt_export.sh` bzw. `psbt_broadcast.sh`
 - **Regtest-Simulation:** Skripte unter `scripts/hotwallet/testing/` (Wallets laden, Über-/Unterdeckung simulieren, Testzahlungen über die API anstoßen)
 - Vollständige Beschreibung von Architektur, Policies, PSBT-Zuständen und Secret-Handling: `services/hotwallet/README.md`
+
+---
+
+# Anhang
+
+## Quellen
+
+Im Fließtext wird mit `[[n]]` auf die folgenden externen Quellen verwiesen. Die Nummerierung folgt der Reihenfolge der ersten Erwähnung im Dokument. Dieselben Quellen sind zusätzlich als BibTeX-Einträge in `Doku/Definitionen/literatur.bib` hinterlegt (Schlüssel jeweils in Klammern), damit sie bei Bedarf auch aus der LaTeX-Dokumentation zitiert werden können.
+
+1. <a id="quelle-1"></a>Proxmox Server Solutions GmbH: _Proxmox VE Documentation_. https://pve.proxmox.com/pve-docs/ (`proxmoxve_docs`)
+2. <a id="quelle-2"></a>Proxmox Server Solutions GmbH: _Backup and Restore (vzdump)_. https://pve.proxmox.com/pve-docs/chapter-vzdump.html (`proxmox_vzdump`)
+3. <a id="quelle-3"></a>NixOS Foundation: _NixOS Manual_. https://nixos.org/manual/nixos/stable/ (`nixos_manual`)
+4. <a id="quelle-4"></a>NixOS Foundation: _Release Channels_. https://channels.nixos.org/ (`nixos_channels`)
+5. <a id="quelle-5"></a>Foxboron: _sbctl – Secure Boot Key Manager_. https://github.com/Foxboron/sbctl (`sbctl_github`)
+6. <a id="quelle-6"></a>nix-community: _lanzaboote – Secure Boot for NixOS_. https://github.com/nix-community/lanzaboote (`lanzaboote_github`)
+7. <a id="quelle-7"></a>Let's Encrypt (ISRG): _DNS-01 Challenge_. https://letsencrypt.org/docs/challenge-types/#dns-01-challenge (`letsencrypt_dns01`)
+8. <a id="quelle-8"></a>Cloudflare: _Create an API Token_. https://developers.cloudflare.com/fundamentals/api/get-started/create-token/ (`cloudflare_api_token`)
+9. <a id="quelle-9"></a>Traefik Labs: _ACME – Supported DNS Providers_. https://doc.traefik.io/traefik/https/acme/#providers (`traefik_acme_providers`)
+10. <a id="quelle-10"></a>Authelia: _Documentation_. https://www.authelia.com/overview/prologue/introduction/ (`authelia_docs`)
+11. <a id="quelle-11"></a>Immich: _OAuth/OIDC Configuration_. https://immich.app/docs/administration/oauth (`immich_oauth`)
+12. <a id="quelle-12"></a>AIDE Project: _Advanced Intrusion Detection Environment_. https://aide.github.io/ (`aide_project`)
+13. <a id="quelle-13"></a>Aqua Security: _Trivy Documentation_. https://trivy.dev/ (`trivy_docs`)
+14. <a id="quelle-14"></a>Mend.io: _RenovateBot Documentation_. https://docs.renovatebot.com/ (`renovatebot_docs`)
+15. <a id="quelle-15"></a>The Tor Project: _Onion Services_. https://community.torproject.org/onion-services/ (`tor_onion_services`)
+16. <a id="quelle-16"></a>WireGuard: _WireGuard: Fast, Modern, Secure VPN Tunnel_. https://www.wireguard.com/ (`wireguard_website`)
+17. <a id="quelle-17"></a>Open Policy Agent: _Documentation_. https://www.openpolicyagent.org/docs/latest/ (`opa_docs`)
+18. <a id="quelle-18"></a>Bitcoin Core Developers: _walletcreatefundedpsbt – RPC API Reference_. https://developer.bitcoin.org/reference/rpc/walletcreatefundedpsbt.html (`bitcoincore_walletcreatefundedpsbt`)
+19. <a id="quelle-19"></a>Bitcoin Improvement Proposals: _BIP-174 – Partially Signed Bitcoin Transactions_. https://github.com/bitcoin/bips/blob/master/bip-0174.mediawiki (`bip174`)
