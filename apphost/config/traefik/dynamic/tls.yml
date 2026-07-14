@@ -24,6 +24,12 @@ tls:
     default:
       minVersion: "VersionTLS13"
       sniStrict: true
+    # Tor / Onion – SNI ist die .onion-Adresse und kann nie ein ACME-Cert matchen.
+    # sniStrict daher aus, damit Traefik das (self-signed) Default-Cert des Stores
+    # ausliefert. Vertraulichkeit/Authentizität stellt bereits der Onion-Circuit sicher.
+    tor:
+      minVersion: "VersionTLS13"
+      sniStrict: false
   # Default Store
   stores:
     default: {}

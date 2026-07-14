@@ -73,7 +73,8 @@ entryPoints:
         allowEncodedPercent: true
         allowEncodedQuestionMark: true
         allowEncodedHash: true
-      tls: {}
+      tls:
+        options: tor
 # Provider
 providers:
   docker:
