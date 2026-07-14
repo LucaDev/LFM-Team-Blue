@@ -31,11 +31,6 @@ services:
       resources:
         limits: {cpus: "1.0", memory: 128M}
         reservations: {memory: 32M}
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 1883 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     labels:
       - "traefik.enable=true"
       - "traefik.tcp.routers.mqtt-tls.rule=HostSNI(`${MOSQUITTO_SUBDOMAIN:-mqtt}.${DOMAIN}`)"

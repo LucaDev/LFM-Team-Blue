@@ -65,9 +65,6 @@ services:
     volumes:
       - alloy_data:/var/lib/alloy/data
     entrypoint: ["chown", "-R", "0:0", "/var/lib/alloy/data"]
-    security_opt: ['no-new-privileges:true']
-    cap_drop: [ALL]
-    cap_add: [CHOWN]
     labels:
       - "traefik.enable=false"
   alloy:
