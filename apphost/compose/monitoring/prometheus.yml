@@ -1,20 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  monitoring-network:
-    name: monitoring-network
-    driver: bridge
-  media-network:
-    external: true
-    name: media-network
-  home-network:
-    external: true
-    name: home-network
-  storage-network:
-    external: true
-    name: storage-network
 volumes:
   prometheus_data: {name: apphost_prometheus_data}
 services:

@@ -1,8 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
 volumes:
   bichon_data: {name: apphost_bichon_data}
 services:

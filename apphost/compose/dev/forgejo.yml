@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  dev-network:
-    name: dev-network
-    driver: bridge
 volumes:
   forgejo_data: {name: apphost_forgejo_data}
 services:

@@ -1,8 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
 volumes:
   vaultwarden_data: {name: apphost_vaultwarden_data}
 services:

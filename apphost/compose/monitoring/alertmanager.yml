@@ -1,14 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  monitoring-network:
-    external: true
-    name: monitoring-network
-  communication-network:
-    external: true
-    name: communication-network
 volumes:
   alertmanager_data: {name: apphost_alertmanager_data}
 services:

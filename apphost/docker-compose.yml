@@ -1,6 +1,44 @@
 # AppHost – Haupt-Einstiegspunkt
 name: apphost
 
+networks:
+  traefik-public:
+    name: traefik-public
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+  socket-proxy:
+    name: socket-proxy
+    driver: bridge
+  monitoring-network:
+    name: monitoring-network
+    driver: bridge
+  communication-network:
+    name: communication-network
+    driver: bridge
+  storage-network:
+    name: storage-network
+    driver: bridge
+  home-network:
+    name: home-network
+    driver: bridge
+  media-network:
+    name: media-network
+    driver: bridge
+  cloud-network:
+    name: cloud-network
+    driver: bridge
+  documents-network:
+    name: documents-network
+    driver: bridge
+  dev-network:
+    name: dev-network
+    driver: bridge
+  finance-network:
+    name: finance-network
+    driver: bridge
+
 include:
   # Infrastructure
   - compose/infrastructure/traefik.yml

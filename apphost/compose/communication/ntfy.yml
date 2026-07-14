@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  communication-network:
-    name: communication-network
-    driver: bridge
 volumes:
   ntfy_data: {name: apphost_ntfy_data}
 services:

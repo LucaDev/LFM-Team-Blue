@@ -1,8 +1,4 @@
 name: apphost
-networks:
-  monitoring-network:
-    external: true
-    name: monitoring-network
 volumes:
   alloy_data: {name: apphost_alloy_data}
 services:

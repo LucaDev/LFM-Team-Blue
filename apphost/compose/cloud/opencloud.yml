@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  cloud-network:
-    name: cloud-network
-    driver: bridge
 volumes:
   opencloud_config: {name: apphost_opencloud_config}
   opencloud_data: {name: apphost_opencloud_data}

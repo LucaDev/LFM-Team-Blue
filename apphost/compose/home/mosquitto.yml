@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  home-network:
-    name: home-network
-    driver: bridge
 volumes:
   mosquitto_data: {name: apphost_mosquitto_data}
   mosquitto_logs: {name: apphost_mosquitto_logs}

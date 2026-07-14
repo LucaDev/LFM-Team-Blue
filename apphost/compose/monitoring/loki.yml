@@ -1,8 +1,4 @@
 name: apphost
-networks:
-  monitoring-network:
-    external: true
-    name: monitoring-network
 volumes:
   loki_data: {name: apphost_loki_data}
 services:

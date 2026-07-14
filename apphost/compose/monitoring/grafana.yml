@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  monitoring-network:
-    external: true
-    name: monitoring-network
 volumes:
   grafana_data: {name: apphost_grafana_data}
 services:

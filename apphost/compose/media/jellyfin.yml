@@ -1,8 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
 volumes:
   jellyfin_config: {name: apphost_jellyfin_config}
   jellyfin_cache: {name: apphost_jellyfin_cache}

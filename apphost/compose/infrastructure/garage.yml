@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  storage-network:
-    name: storage-network
-    driver: bridge
 volumes:
   garage_meta: {name: apphost_garage_meta}
   garage_data: {name: apphost_garage_data}

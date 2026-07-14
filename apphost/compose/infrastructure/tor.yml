@@ -1,8 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
 volumes:
   tor_data:
     name: apphost_tor_data
