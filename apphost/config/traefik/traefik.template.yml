@@ -14,6 +14,14 @@ entryPoints:
   web:
     address: ":8081"
     http:
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedBackSlash: true
+        allowEncodedNullCharacter: true
+        allowEncodedSemicolon: true
+        allowEncodedPercent: true
+        allowEncodedQuestionMark: true
+        allowEncodedHash: true
       redirections:
         entryPoint:
           to: websecure
@@ -28,6 +36,14 @@ entryPoints:
     http3:
       advertisedPort: 443
     http:
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedBackSlash: true
+        allowEncodedNullCharacter: true
+        allowEncodedSemicolon: true
+        allowEncodedPercent: true
+        allowEncodedQuestionMark: true
+        allowEncodedHash: true
       tls:
         certResolver: letsencrypt
         domains:
@@ -49,6 +65,14 @@ entryPoints:
   tor-http:
     address: ":8880"
     http:
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedBackSlash: true
+        allowEncodedNullCharacter: true
+        allowEncodedSemicolon: true
+        allowEncodedPercent: true
+        allowEncodedQuestionMark: true
+        allowEncodedHash: true
       tls: {}
 # Provider
 providers:
@@ -70,7 +94,8 @@ certificatesResolvers:
       # DNS-01 Challenge
       dnsChallenge:
         provider: ${ACME_DNS_PROVIDER}
-        delayBeforeCheck: "30s"
+        propagation:
+          delayBeforeChecks: "30s"
         resolvers:
           - "1.1.1.1:53"
           - "9.9.9.9:53"
@@ -83,7 +108,8 @@ certificatesResolvers:
       # DNS-01 Challenge
       dnsChallenge:
         provider: ${ACME_DNS_PROVIDER}
-        delayBeforeCheck: "30s"
+        propagation:
+          delayBeforeChecks: "30s"
         resolvers: ["1.1.1.1:53", "9.9.9.9:53"]
 # Logging
 log:
