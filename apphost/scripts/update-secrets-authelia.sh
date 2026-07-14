@@ -109,7 +109,7 @@ HMAC_SECRET="${HMAC_SECRET:-$(gen_secret)}"
 echo "Loading/generating OIDC client secrets..."
 
 GRAFANA_SECRET=$(read_secret "$SECRETS_DIR/oidc-grafana.env" "GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET")
-GRAFANA_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_GRAFANA_SECRET_HASH")
+GRAFANA_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_GRAFANA_SECRET_HASH")
 if [[ -z "$GRAFANA_SECRET" ]] || [[ -z "$GRAFANA_SECRET_HASH" ]]; then
     GRAFANA_SECRET=$(gen_client_secret)
     echo "  Hashing Grafana secret..."
@@ -117,7 +117,7 @@ if [[ -z "$GRAFANA_SECRET" ]] || [[ -z "$GRAFANA_SECRET_HASH" ]]; then
 fi
 
 IMMICH_SECRET=$(read_secret "$SECRETS_DIR/oidc-immich.env" "AUTHELIA_OIDC_IMMICH_SECRET")
-IMMICH_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_IMMICH_SECRET_HASH")
+IMMICH_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_IMMICH_SECRET_HASH")
 if [[ -z "$IMMICH_SECRET" ]] || [[ -z "$IMMICH_SECRET_HASH" ]]; then
     IMMICH_SECRET=$(gen_client_secret)
     echo "  Hashing Immich secret..."
@@ -125,7 +125,7 @@ if [[ -z "$IMMICH_SECRET" ]] || [[ -z "$IMMICH_SECRET_HASH" ]]; then
 fi
 
 PAPERLESS_SECRET=$(read_secret "$SECRETS_DIR/oidc-paperless.env" "AUTHELIA_OIDC_PAPERLESS_SECRET")
-PAPERLESS_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_PAPERLESS_SECRET_HASH")
+PAPERLESS_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_PAPERLESS_SECRET_HASH")
 if [[ -z "$PAPERLESS_SECRET" ]] || [[ -z "$PAPERLESS_SECRET_HASH" ]]; then
     PAPERLESS_SECRET=$(gen_client_secret)
     echo "  Hashing Paperless secret..."
@@ -133,7 +133,7 @@ if [[ -z "$PAPERLESS_SECRET" ]] || [[ -z "$PAPERLESS_SECRET_HASH" ]]; then
 fi
 
 FORGEJO_SECRET=$(read_secret "$SECRETS_DIR/oidc-forgejo.env" "AUTHELIA_OIDC_FORGEJO_SECRET")
-FORGEJO_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_FORGEJO_SECRET_HASH")
+FORGEJO_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_FORGEJO_SECRET_HASH")
 if [[ -z "$FORGEJO_SECRET" ]] || [[ -z "$FORGEJO_SECRET_HASH" ]]; then
     FORGEJO_SECRET=$(gen_client_secret)
     echo "  Hashing Forgejo secret..."
@@ -154,13 +154,14 @@ AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET='${JWT_SECRET}'
 AUTHELIA_SESSION_SECRET='${SESSION_SECRET}'
 AUTHELIA_STORAGE_ENCRYPTION_KEY='${STORAGE_KEY}'
 AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET='${HMAC_SECRET}'
-AUTHELIA_SUBDOMAIN='${AUTHELIA_SUBDOMAIN}'
 
-# OIDC client secret hashes (used by Authelia configuration.yml template)
-AUTHELIA_OIDC_GRAFANA_SECRET_HASH='${GRAFANA_SECRET_HASH}'
-AUTHELIA_OIDC_IMMICH_SECRET_HASH='${IMMICH_SECRET_HASH}'
-AUTHELIA_OIDC_PAPERLESS_SECRET_HASH='${PAPERLESS_SECRET_HASH}'
-AUTHELIA_OIDC_FORGEJO_SECRET_HASH='${FORGEJO_SECRET_HASH}'
+# OIDC client secret hashes (used by Authelia configuration.yml template).
+# Kein AUTHELIA_-Präfix: template-only, sonst versucht Authelia sie als Config-Key
+# zu mappen ("configuration environment variable not expected"-Warnung).
+OIDC_GRAFANA_SECRET_HASH='${GRAFANA_SECRET_HASH}'
+OIDC_IMMICH_SECRET_HASH='${IMMICH_SECRET_HASH}'
+OIDC_PAPERLESS_SECRET_HASH='${PAPERLESS_SECRET_HASH}'
+OIDC_FORGEJO_SECRET_HASH='${FORGEJO_SECRET_HASH}'
 EOF
 chmod 600 "$OUTPUT_ENV"
 echo "  -> $OUTPUT_ENV"

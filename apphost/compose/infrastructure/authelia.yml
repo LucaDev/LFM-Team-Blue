@@ -7,6 +7,11 @@ services:
     container_name: authelia
     restart: unless-stopped
     runtime: runc
+    # Authelias eigenes Entrypoint chownt nur /config, nicht /data.
+    # Auf einem frischen (root:root) Volume kann der auf PUID/PGID
+    # gedroppte Prozess sonst weder db.sqlite3 noch notification.txt anlegen.
+    # Deshalb /data selbst chownen und dann an das Original-Entrypoint übergeben.
+    entrypoint: ["/bin/sh", "-c", "chown -R $${PUID:-1000}:$${PGID:-1000} /data && exec /app/entrypoint.sh"]
     networks:
       traefik-public: {}
     volumes:
@@ -21,10 +26,12 @@ services:
       PUID: "1000"
       PGID: "1000"
       X_AUTHELIA_CONFIG_FILTERS: template
-      # Für Template-Auflösung in configuration.yml
+      # Für Template-Auflösung in configuration.yml.
+      # Nur X_AUTHELIA_* und nicht-AUTHELIA_*-Variablen: alles mit AUTHELIA_-Präfix
+      # versucht Authelia auf einen Config-Key zu mappen ("not expected"-Warnung).
       DOMAIN: ${DOMAIN}
       TOR_DOMAIN: ${TOR_DOMAIN:-}
-      AUTHELIA_SUBDOMAIN: ${AUTHELIA_SUBDOMAIN:-auth}
+      AUTH_SUBDOMAIN: ${AUTHELIA_SUBDOMAIN:-auth}
       GRAFANA_SUBDOMAIN: ${GRAFANA_SUBDOMAIN:-grafana}
       IMMICH_SUBDOMAIN: ${IMMICH_SUBDOMAIN:-photos}
       HOMEPAGE_SUBDOMAIN: ${HOMEPAGE_SUBDOMAIN:-dashboard}
