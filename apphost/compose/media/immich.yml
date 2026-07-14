@@ -38,7 +38,7 @@ services:
       MACHINE_LEARNING_URL: http://immich-machine-learning:3003
       LOG_LEVEL: warn
       TZ: Europe/Berlin
-      IMMICH_METRICS: "true"
+      IMMICH_TELEMETRY_INCLUDE: all
     security_opt: ['no-new-privileges:true']
     cap_drop: [ALL]
     tmpfs:
