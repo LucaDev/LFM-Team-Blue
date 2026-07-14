@@ -257,10 +257,20 @@ Verbindung über Tor bereits Ende-zu-Ende verschlüsselt ist. Dort verwenden wir
 deshalb ein selbstsigniertes Zertifikat, was im Tor-Browser unkritisch ist.
 Auch wenn ein Zertifikat nicht notwendig wäre, da Tor die Verschlüsselung übernimmt, ist es dennoch sinnvoll, weil es eine zusätzliche Schutzschicht gegen Angreifer bildet, sollte das Tor-Netzwerk kompromittiert werden, oder Sicherheitsschwächen im Tor-Protokoll selbst auftreten.
 
+Nicht nur \ac{HTTP}(S)-Verkehr profitiert von dieser Zertifikatsverwaltung: Auch
+\ac{MQTT} (in usnerem Fall Mosquitto) wird nicht mehr über einen eigenen \ac{TLS}-Listener nach außen exponiert, sondern über einen
+zusätzlichen \ac{TCP}-Entrypoint von Traefik getunnelt. Traefik
+terminiert dabei das \ac{TLS} anhand des in der \ac{TLS}-ClientHello
+mitgesendeten Hostnamens (\ac{SNI}) mit demselben Let's-Encrypt-Zertifikat, das
+auch für den regulären Web-Zugriff verwendet wird, und reicht die entschlüsselten
+Daten unverschlüsselt innerhalb des Docker-Netzes an den internen,
+unverschlüsselten \ac{MQTT}-Listener von Mosquitto weiter. Damit muss auf dem
+Apphost kein separates Zertifikat mehr für Mosquitto erzeugt, verteilt und
+erneuert werden. Alle Geräte des Mandanten sollten diesem öffentlich signierten
+Zertifikat (ähnlich wie im Browser) von Haus aus vertrauen.
 
 \subsubsection{Single Sign-On mit Authelia}
 \label{sec:apphost-authelia}
-
 Authelia ist unser zentraler Authentifizierungsdienst und schützt die Dienste,
 die keine ausreichend starke eigene Anmeldung mitbringen. Wir nutzen zwei
 Mechanismen, je nachdem, was der jeweilige Dienst unterstützt:
@@ -517,7 +527,7 @@ Alle Geheimnisse (Passwörter, Token, Schlüssel) liegen in einer
 \texttt{.env}-Datei und einem \texttt{secrets/}-Verzeichnis, die beide nicht im
 Git eingecheckt werden. Aus den Klartextwerten der \texttt{.env} erzeugen kleine
 Skripte die tatsächlich benötigten gehashten Werte, etwa die Argon2id-Hashes
-für Authelia, die bcrypt-Hashes für ntfy und die Passwortdatei für Mosquitto.
+für Authelia, die bcrypt-Hashes für ntfy, die Passwortdatei für Mosquitto sowie die \texttt{rpcauth}-Hashes für den Bitcoin-Core-Node des Hot-Wallet-Stacks.
 Das Verzeichnis \texttt{secrets/} ist auf Dateisystemebene strikt geschützt
 (Zugriff nur für den \texttt{apphost}-Benutzer). Ändert der Mandant ein
 Passwort, generiert er die Hashes mit einem einzigen Befehl neu.
@@ -600,8 +610,7 @@ Mosquitto), Kommunikation (Ntfy, Bichon) und Entwicklung (Forgejo) bis zu
 Werkzeugen wie dem Passwortmanager Vaultwarden und einer Startseite (Homepage).
 Zusätzlich läuft auf dem Apphost der Hot-Wallet-Stack für den automatisierten
 Bitcoin-Zahlungsverkehr, den wir in Abschnitt~\ref{Krypto} gesondert
-beschreiben. Die vollständige Liste mit Subdomains und Beschreibungen findet
-sich im Anhang.
+beschreiben.
 Die vollständige Liste mit Subdomains und Beschreibungen findet sich im Anhang.
 
 \subsection{Abdeckung des Bedrohungsmodells} \label{sec:gefahrenmodell}
@@ -839,4 +848,6 @@ größere Schwierigkeiten gestoßen sind und wie wir damit umgegangen sind.
     ("nixos/apparmor: fix lsm loading order"). Das eigentliche Kernproblem: Der
     upstream Fix war erst kurz vor Abgabe verfügbar.
   \item \textbf{Lange Wartezeiten für die Erprobung von Neuinstallationen.} Durch den umfangreichen Setup-Prozess (VM Reset -> LiveCD Booten -> Repository Klonen -> NixOS Installation -> Secure Boot Konfiguration -> Docker UP) ist das Testen von Änderungen am Installationsprozess mitunter sehr langwierig und zeitintensiv.
+  \item \textbf{Traefik ignoriert \texttt{\$\{ACME\_EMAIL\}} und \texttt{\$\{DOMAIN\}}
+    aus der \texttt{.env}.} Traefik ist nicht in der Lage werte aus der statischen Konfiguration mit Umgebungsvariablen zu ersetzen. Um eine saubere und einfache Installation zu ermöglichen, mussten wir daher die traefik.yaml templaten
 \end{itemize}
