@@ -1,34 +1,9 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  monitoring-network:
-    name: monitoring-network
-    driver: bridge
-  media-network:
-    external: true
-    name: media-network
-  documents-network:
-    external: true
-    name: documents-network
-  cloud-network:
-    external: true
-    name: cloud-network
-  home-network:
-    external: true
-    name: home-network
-  storage-network:
-    external: true
-    name: storage-network
-  communication-network:
-    external: true
-    name: communication-network
 volumes:
   prometheus_data: {name: apphost_prometheus_data}
 services:
   prometheus:
-    image: prom/prometheus:v3.12.0
+    image: prom/prometheus:v3.12.0@sha256:69f5241418838263316593f7274a304b095c40bcf22e57272865da91bd60a8ac
     container_name: prometheus
     restart: unless-stopped
     runtime: runc
@@ -36,11 +11,8 @@ services:
       monitoring-network: {}
       traefik-public: {}
       media-network: {}
-      documents-network: {}
-      cloud-network: {}
       home-network: {}
       storage-network: {}
-      communication-network: {}
     volumes:
       - prometheus_data:/prometheus
       - ../../config/prometheus:/etc/prometheus:ro

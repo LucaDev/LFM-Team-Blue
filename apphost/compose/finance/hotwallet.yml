@@ -1,21 +1,10 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  communication-network:
-    external: true
-    name: communication-network
-  # Rein interne Verbindung zwischen den Hot-Wallet-Diensten. Nur die Middleware hängt zusätzlich an traefik-public/communication-network.
-  finance-network:
-    name: finance-network
-    driver: bridge
 volumes:
   hotwallet_postgres_data: {name: apphost_hotwallet_postgres_data}
   hotwallet_btccore_data: {name: apphost_hotwallet_btccore_data}
 services:
   hotwallet-postgres:
-    image: postgres:16
+    image: postgres:16@sha256:be01cf82fc7dbba824acf0a82e150b4b360f3ff93c6631d7844af431e841a95c
     container_name: hotwallet-postgres
     restart: unless-stopped
     runtime: runc
@@ -47,7 +36,7 @@ services:
     labels:
       - "traefik.enable=false"
   hotwallet-nats:
-    image: nats:2.10
+    image: nats:2.14@sha256:7ff2e641c33dbdb0dd13a943ba0b70d841b71275c607baa53ef9b8661f0b2d8c
     container_name: hotwallet-nats
     command: ["-c", "/etc/nats/nats-server.conf"]
     restart: unless-stopped
@@ -71,7 +60,7 @@ services:
     labels:
       - "traefik.enable=false"
   hotwallet-opa:
-    image: openpolicyagent/opa:1.17.1
+    image: openpolicyagent/opa:1.18.2@sha256:cba27d3c6af2feba1e4d6e6b5e24df5b53db332420d4148a90acccd12efae6ed
     container_name: hotwallet-opa
     command: ["run", "--watch", "--server", "--addr=0.0.0.0:8181", "/policies", "/data"]
     restart: unless-stopped

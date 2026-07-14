@@ -222,11 +222,11 @@ Der Prompt sollte lauten:
 
 1. Repository klonen:
    ```bash
-   git clone <TODO: URL>
+   git clone https://github.com/LucaDev/LFM-Team-Blue.git
    ```
 2. Installationsskript ausführen:
    ```bash
-   sudo ./apphost/nixos/install.sh
+   sudo ./LFM-Team-Blue/apphost/nixos/install.sh
    ```
 
 Das Skript partitioniert die Festplatte, installiert NixOS, generiert die Secure-Boot-Schlüssel, installiert den Bootloader, fragt die `.env`-Werte ab (Domain, ACME E-Mail, Cloudflare-Token, Authelia-Zugangsdaten), generiert die restlichen Secrets (MQTT, Ntfy) automatisch und startet das System anschließend neu. Die folgenden Unterabschnitte beschreiben die interaktiven Prompts in der Reihenfolge, in der sie tatsächlich erscheinen.
@@ -346,7 +346,7 @@ Authelia Admin-Passwort (bestätigen):
 ```
 
 > [!NOTE]
-> **MQTT- und Ntfy-Passwörter werden automatisch als zufällige Zeichenketten generiert**, dafür ist keine Eingabe nötig. Alle Werte – auch die hier abgefragten – können jederzeit nachträglich in `/opt/apphost/.env` angepasst werden, siehe [Abschnitt 11](#11-passwörter-ändern).
+> **MQTT- und Ntfy-Passwörter werden automatisch als zufällige Zeichenketten generiert**, dafür ist keine Eingabe nötig. Alle Werte – auch die hier abgefragten – können jederzeit nachträglich in `/opt/monorepo/apphost/.env` angepasst werden, siehe [Abschnitt 11](#11-passwörter-ändern).
 
 Anschließend generiert das Skript die Secrets für Authelia, MQTT und Ntfy und startet automatisch neu.
 
@@ -393,7 +393,7 @@ Das Installationsskript hat die `.env` bereits befüllt und alle Secrets generie
 ### Stack erstmals starten
 
 ```bash
-cd /opt/apphost
+cd /opt/monorepo/apphost
 docker compose up -d
 ```
 
@@ -407,16 +407,41 @@ vim .env        # TOR_DOMAIN=<adresse>.onion eintragen
 docker compose up -d
 ```
 
-### Immich OIDC (manuell)
+### OIDC-Clients einrichten
 
-Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden:
+`scripts/update-secrets-authelia.sh` (läuft automatisch im Installationsskript, siehe [Abschnitt 6](#6-installation)) richtet Authelia als zentralen SSO/OIDC-Provider ein. Danach sind noch ein paar Schritte nötig, damit die einzelnen Dienste die neuen Secrets übernehmen bzw. sich gegen Authelia registrieren:
 
-_Administration → Settings → OAuth_
+1. **Authelia deployen** (nur nötig, wenn Authelia-Secrets isoliert neu generiert wurden, nicht beim ersten `docker compose up -d`):
 
-```bash
-# Client Secret anzeigen:
-grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env
-```
+   ```bash
+   docker compose up -d authelia authelia-redis
+   ```
+
+2. **Immich OIDC (manuell):** Der Immich-OIDC-Client kann nicht automatisch konfiguriert werden und muss einmalig in der Immich Admin-UI eingetragen werden:
+
+   _Administration → Settings → OAuth_
+
+   | Feld          | Wert                                      |
+   | ------------- | ----------------------------------------- |
+   | Issuer URL    | `https://${AUTHELIA_SUBDOMAIN}.${DOMAIN}` |
+   | Client ID     | `immich`                                  |
+   | Client Secret | siehe unten                               |
+
+   ```bash
+   # Client Secret anzeigen:
+   grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env
+   ```
+
+3. **Grafana und Paperless neu starten**, damit sie die (neu generierten) OIDC-Secrets übernehmen:
+
+   ```bash
+   docker compose up -d grafana paperless
+   ```
+
+4. **Forgejo OIDC:** `forgejo-init` richtet den OIDC-Client beim ersten `docker compose up` automatisch ein. Bei Bedarf (z. B. nach einer Secret-Rotation) manuell erneut ausführen:
+   ```bash
+   docker compose run --rm forgejo-init
+   ```
 
 > [!NOTE]
 > **Passwörter ändern:** Nach Änderungen an Passwörtern in der `.env` müssen die Secrets neu generiert und der Stack neu gestartet werden. Details siehe [Abschnitt 11](#11-passwörter-ändern).
@@ -450,7 +475,8 @@ Für häufige Verwaltungsaufgaben sind Shell-Aliase definiert, die nach dem Logi
 
 | Alias          | Beschreibung                                                                                                                                                   |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `update`       | Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden. Entspricht `nix flake update && nixos-rebuild switch`.                 |
+| `pull`         | Holt Repo-Updates (`git pull` in `/opt/monorepo`) – nur der `apphost/`-Pfad des Monorepos wird dabei übertragen.                                               |
+| `update`       | `pull`, danach Flake-Inputs aktualisieren (zieht neue NixOS-Channel-Version) **und** sofort rebuilden.                                                         |
 | `rebuild`      | System neu bauen und **sofort** aktivieren, ohne Flake-Inputs zu aktualisieren. Nützlich nach Änderungen an Konfigurationsdateien.                             |
 | `rebuild-boot` | System neu bauen, Aktivierung erst **beim nächsten Neustart**. Sinnvoll, wenn Kernel-Updates ein Reboot erfordern, ohne den laufenden Betrieb zu unterbrechen. |
 | `gc`           | Nix-Store aufräumen: löscht Generationen älter als 30 Tage und optimiert den Store (Deduplizierung via Hard-Links).                                            |
@@ -477,7 +503,7 @@ Nach dem Mergen eines RenovateBot-PRs genügt `up`, um die aktualisierten Images
 Bei Änderungen von MQTT-, Ntfy-, Authelia- oder anderen Secrets in der `.env` müssen diese neu generiert und der betroffene Dienst neu gestartet werden:
 
 ```bash
-vim /opt/apphost/.env   # Passwort anpassen
+vim /opt/monorepo/apphost/.env   # Passwort anpassen
 regen-secrets           # alle Secrets neu generieren
 up                      # Stack neu starten
 ```
@@ -489,7 +515,7 @@ up                      # Stack neu starten
 Nach der initialen Einrichtung ([Abschnitt 9](#9-aide-initialisieren)) läuft AIDE im Betrieb automatisch:
 
 - Eine **tägliche** automatische Prüfung erfolgt über einen systemd-Service.
-- Überwacht werden u. a. `/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`, `/usr/sbin`, `/boot` und `/opt/apphost/config`.
+- Überwacht werden u. a. `/etc`, `/bin`, `/sbin`, `/lib*`, `/usr/bin`, `/usr/sbin`, `/boot` und `/opt/monorepo/apphost/config`.
 
 Eine manuelle Prüfung ist jederzeit möglich:
 
@@ -521,7 +547,7 @@ less /var/log/docker-security-scan.log
 Die `.onion`-Adresse wird beim ersten Start des Tor-Containers automatisch generiert und ist persistent. Sie kann jederzeit angezeigt werden:
 
 ```bash
-bash /opt/apphost/scripts/show-onion-address.sh
+bash /opt/monorepo/apphost/scripts/show-onion-address.sh
 ```
 
 Beispielausgabe:

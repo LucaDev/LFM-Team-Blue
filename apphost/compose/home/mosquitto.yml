@@ -1,17 +1,10 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  home-network:
-    external: true
-    name: home-network
 volumes:
   mosquitto_data: {name: apphost_mosquitto_data}
   mosquitto_logs: {name: apphost_mosquitto_logs}
 services:
   mosquitto:
-    image: eclipse-mosquitto:2.1.2-alpine
+    image: eclipse-mosquitto:2.1.2-alpine@sha256:6f8d8a947c506f8a2290ec65cd4bd2bc7cb4d43fb5f6271f861cb013e2ef9797
     container_name: mosquitto
     restart: unless-stopped
     runtime: runc
@@ -21,11 +14,9 @@ services:
       traefik-public: {}
     ports:
       - "127.0.0.1:1883:1883" # MQTT intern (nur lokal!)
-      - "8883:8883" # MQTT+TLS extern
     volumes:
       - ../../config/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - ../../config/mosquitto/acl:/mosquitto/config/acl:ro
-      - ../../config/mosquitto/certs:/mosquitto/certs:ro
       - ../../secrets/mosquitto.passwd:/mosquitto/config/passwd:ro
       - mosquitto_data:/mosquitto/data
     environment:
@@ -40,13 +31,14 @@ services:
       resources:
         limits: {cpus: "1.0", memory: 128M}
         reservations: {memory: 32M}
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 1883 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     labels:
       - "traefik.enable=true"
+      - "traefik.tcp.routers.mqtt-tls.rule=HostSNI(`${MOSQUITTO_SUBDOMAIN:-mqtt}.${DOMAIN}`)"
+      - "traefik.tcp.routers.mqtt-tls.entrypoints=mqtt-tls"
+      - "traefik.tcp.routers.mqtt-tls.tls=true"
+      - "traefik.tcp.routers.mqtt-tls.tls.options=strict@file"
+      - "traefik.tcp.routers.mqtt-tls.tls.certresolver=letsencrypt"
+      - "traefik.tcp.services.mqtt-tls.loadbalancer.server.port=1883"
       - "traefik.http.routers.mqtt-ws.rule=Host(`${MOSQUITTO_SUBDOMAIN:-mqtt}.${DOMAIN}`)"
       - "traefik.http.routers.mqtt-ws.entrypoints=websecure"
       - "traefik.http.services.mqtt-ws.loadbalancer.server.port=9001"

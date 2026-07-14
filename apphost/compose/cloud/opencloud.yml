@@ -1,20 +1,10 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  cloud-network:
-    external: true
-    name: cloud-network
-  storage-network:
-    external: true
-    name: storage-network
 volumes:
   opencloud_config: {name: apphost_opencloud_config}
   opencloud_data: {name: apphost_opencloud_data}
 services:
   opencloud:
-    image: opencloudeu/opencloud-rolling:7.0.0
+    image: opencloudeu/opencloud-rolling:7.0.0@sha256:ecc240e0df7802e6e6517762009890a3aa36e566d9e6309b80ee2f3dd040e235
     container_name: opencloud
     restart: unless-stopped
     runtime: runc
@@ -26,7 +16,6 @@ services:
       cloud-network:
         aliases: [opencloud, ocis]
       traefik-public: {}
-      storage-network: {}
     volumes:
       - opencloud_config:/etc/opencloud
       - opencloud_data:/var/lib/opencloud
@@ -81,7 +70,7 @@ services:
       - "homepage.icon=owncloud.png"
       - "homepage.href=https://${OPENCLOUD_SUBDOMAIN:-cloud}.${DOMAIN}"
   collaboration:
-    image: opencloudeu/opencloud-rolling:7.0.0
+    image: opencloudeu/opencloud-rolling:7.0.0@sha256:ecc240e0df7802e6e6517762009890a3aa36e566d9e6309b80ee2f3dd040e235
     container_name: collaboration
     restart: always
     security_opt: ['no-new-privileges:true']

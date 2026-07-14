@@ -1,21 +1,13 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  tools-network:
-    external: true
-    name: tools-network
 volumes:
   vaultwarden_data: {name: apphost_vaultwarden_data}
 services:
   vaultwarden:
-    image: vaultwarden/server:1.32.4
+    image: vaultwarden/server:1.32.4@sha256:7271b8ceb729f9b46144c800125813dcc8d16bb6874217c48e59b22b45e47d7d
     container_name: vaultwarden
     restart: unless-stopped
     runtime: runc
     networks:
-      tools-network: {}
       traefik-public: {}
     volumes:
       - vaultwarden_data:/data

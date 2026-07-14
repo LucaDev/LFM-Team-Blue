@@ -78,6 +78,12 @@
           # HTTP/HTTPS (für Traefik)
           tcp dport { 80, 443 } accept
 
+          # HTTP/3 QUIC (Traefik, siehe compose/infrastructure/traefik.yml)
+          udp dport 443 accept
+
+          # MQTT+TLS extern (Mosquitto, siehe compose/home/mosquitto.yml)
+          tcp dport 8883 accept
+
           # Prometheus Node-Exporter (nur von Monitoring-Netz)
           # ip saddr 172.20.0.0/24 tcp dport 9100 accept
 

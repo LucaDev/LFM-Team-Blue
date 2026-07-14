@@ -20,8 +20,6 @@ OUTPUT_JWKS="$ROOT_DIR/secrets/authelia_oidc_jwks.pem"
 OUTPUT_USERS="$ROOT_DIR/secrets/authelia_users.yml"
 SECRETS_DIR="$ROOT_DIR/secrets"
 
-# ---------------------------------------------------------------------------
-
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERROR: $ENV_FILE not found. Copy .env.example to .env first." >&2
     exit 1
@@ -52,24 +50,22 @@ if [[ -z "$AUTHELIA_ADMIN_EMAIL" ]]; then
     exit 1
 fi
 
-# ---------------------------------------------------------------------------
-# Hilfsfunktionen
-# ---------------------------------------------------------------------------
+_openssl() { nix-shell -p openssl --run "openssl $*"; }
 
 gen_secret() {
     # 64 zufällige Hex-Zeichen (256 Bit Entropie)
-    openssl rand -hex 32
+    _openssl rand -hex 32
 }
 
 gen_client_secret() {
     # 32 zufällige Hex-Zeichen (128 Bit – ausreichend für OIDC)
-    openssl rand -hex 16
+    _openssl rand -hex 16
 }
 
 argon2_hash() {
     local password="$1"
     local salt
-    salt=$(openssl rand -hex 16)
+    salt=$(_openssl rand -hex 16)
     # -v 13  = Argon2 version 1.3 (argon2 CLI uses 13, not the 0x13=19 internal byte)
     # -m 16  = 2^16 KiB = 65536 KiB memory cost (matches Authelia config memory: 65536)
     printf '%s' "$password" | nix-shell -p libargon2 --run \
@@ -88,7 +84,7 @@ read_secret() {
 mkdir -p "$SECRETS_DIR"
 if [[ ! -f "$OUTPUT_JWKS" ]]; then
     echo "Generating RSA-4096 OIDC signing key..."
-    openssl genrsa -out "$OUTPUT_JWKS" 4096 2>/dev/null
+    _openssl genrsa -out "$OUTPUT_JWKS" 4096 2>/dev/null
     chmod 640 "$OUTPUT_JWKS"
     echo "  -> $OUTPUT_JWKS"
 else
@@ -113,7 +109,7 @@ HMAC_SECRET="${HMAC_SECRET:-$(gen_secret)}"
 echo "Loading/generating OIDC client secrets..."
 
 GRAFANA_SECRET=$(read_secret "$SECRETS_DIR/oidc-grafana.env" "GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET")
-GRAFANA_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_GRAFANA_SECRET_HASH")
+GRAFANA_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_GRAFANA_SECRET_HASH")
 if [[ -z "$GRAFANA_SECRET" ]] || [[ -z "$GRAFANA_SECRET_HASH" ]]; then
     GRAFANA_SECRET=$(gen_client_secret)
     echo "  Hashing Grafana secret..."
@@ -121,7 +117,7 @@ if [[ -z "$GRAFANA_SECRET" ]] || [[ -z "$GRAFANA_SECRET_HASH" ]]; then
 fi
 
 IMMICH_SECRET=$(read_secret "$SECRETS_DIR/oidc-immich.env" "AUTHELIA_OIDC_IMMICH_SECRET")
-IMMICH_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_IMMICH_SECRET_HASH")
+IMMICH_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_IMMICH_SECRET_HASH")
 if [[ -z "$IMMICH_SECRET" ]] || [[ -z "$IMMICH_SECRET_HASH" ]]; then
     IMMICH_SECRET=$(gen_client_secret)
     echo "  Hashing Immich secret..."
@@ -129,7 +125,7 @@ if [[ -z "$IMMICH_SECRET" ]] || [[ -z "$IMMICH_SECRET_HASH" ]]; then
 fi
 
 PAPERLESS_SECRET=$(read_secret "$SECRETS_DIR/oidc-paperless.env" "AUTHELIA_OIDC_PAPERLESS_SECRET")
-PAPERLESS_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_PAPERLESS_SECRET_HASH")
+PAPERLESS_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_PAPERLESS_SECRET_HASH")
 if [[ -z "$PAPERLESS_SECRET" ]] || [[ -z "$PAPERLESS_SECRET_HASH" ]]; then
     PAPERLESS_SECRET=$(gen_client_secret)
     echo "  Hashing Paperless secret..."
@@ -137,7 +133,7 @@ if [[ -z "$PAPERLESS_SECRET" ]] || [[ -z "$PAPERLESS_SECRET_HASH" ]]; then
 fi
 
 FORGEJO_SECRET=$(read_secret "$SECRETS_DIR/oidc-forgejo.env" "AUTHELIA_OIDC_FORGEJO_SECRET")
-FORGEJO_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "AUTHELIA_OIDC_FORGEJO_SECRET_HASH")
+FORGEJO_SECRET_HASH=$(read_secret "$OUTPUT_ENV" "OIDC_FORGEJO_SECRET_HASH")
 if [[ -z "$FORGEJO_SECRET" ]] || [[ -z "$FORGEJO_SECRET_HASH" ]]; then
     FORGEJO_SECRET=$(gen_client_secret)
     echo "  Hashing Forgejo secret..."
@@ -158,21 +154,19 @@ AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET='${JWT_SECRET}'
 AUTHELIA_SESSION_SECRET='${SESSION_SECRET}'
 AUTHELIA_STORAGE_ENCRYPTION_KEY='${STORAGE_KEY}'
 AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET='${HMAC_SECRET}'
-AUTHELIA_SUBDOMAIN='${AUTHELIA_SUBDOMAIN}'
 
-# OIDC client secret hashes (used by Authelia configuration.yml template)
-AUTHELIA_OIDC_GRAFANA_SECRET_HASH='${GRAFANA_SECRET_HASH}'
-AUTHELIA_OIDC_IMMICH_SECRET_HASH='${IMMICH_SECRET_HASH}'
-AUTHELIA_OIDC_PAPERLESS_SECRET_HASH='${PAPERLESS_SECRET_HASH}'
-AUTHELIA_OIDC_FORGEJO_SECRET_HASH='${FORGEJO_SECRET_HASH}'
+# OIDC client secret hashes (used by Authelia configuration.yml template).
+# Kein AUTHELIA_-Präfix: template-only, sonst versucht Authelia sie als Config-Key
+# zu mappen ("configuration environment variable not expected"-Warnung).
+OIDC_GRAFANA_SECRET_HASH='${GRAFANA_SECRET_HASH}'
+OIDC_IMMICH_SECRET_HASH='${IMMICH_SECRET_HASH}'
+OIDC_PAPERLESS_SECRET_HASH='${PAPERLESS_SECRET_HASH}'
+OIDC_FORGEJO_SECRET_HASH='${FORGEJO_SECRET_HASH}'
 EOF
 chmod 600 "$OUTPUT_ENV"
 echo "  -> $OUTPUT_ENV"
 
-# ---------------------------------------------------------------------------
 # 5b. Per-service OIDC secret files (only the secret each service needs)
-# ---------------------------------------------------------------------------
-
 cat > "$SECRETS_DIR/oidc-grafana.env" <<EOF
 # Generated by scripts/update-secrets-authelia.sh. Do not edit manually.
 # Loaded by Grafana container only.
@@ -207,9 +201,7 @@ EOF
 chmod 600 "$SECRETS_DIR/oidc-paperless.env"
 echo "  -> $SECRETS_DIR/oidc-paperless.env"
 
-# ---------------------------------------------------------------------------
 # 6. secrets/authelia_users.yml schreiben
-# ---------------------------------------------------------------------------
 cat > "$OUTPUT_USERS" <<EOF
 # Generated by scripts/update-secrets-authelia.sh. Do not edit manually!
 # Authelia user database (file-backend).
@@ -227,25 +219,17 @@ EOF
 chmod 640 "$OUTPUT_USERS"
 echo "  -> $OUTPUT_USERS"
 
-# ---------------------------------------------------------------------------
-# 7. Ownership – Authelia-Container-User (UID/GID 1000) muss Secrets lesen können.
-#    Authelia 4.38 läuft im Container als non-root (UID 1000), weshalb der
-#    chown-Schritt des Entrypoints nur klappt, wenn die Dateien bereits UID 1000 gehören.
-# ---------------------------------------------------------------------------
-if [ "$(id -u)" -eq 0 ]; then
-    chown 1000:1000 "$OUTPUT_ENV" "$OUTPUT_JWKS" "$OUTPUT_USERS"
-    echo "  -> Ownership 1000:1000 gesetzt (Authelia-Container-User)"
+SUBUID_FILE="/etc/subuid"
+[[ "$ROOT_DIR" == /mnt/* ]] && SUBUID_FILE="/mnt/etc/subuid"
+REMAP_BASE="$(awk -F: '$1=="dockremap"{print $2}' "$SUBUID_FILE" 2>/dev/null || true)"
+
+if [[ -n "$REMAP_BASE" ]]; then
+    chown "$((REMAP_BASE + 1000)):$((REMAP_BASE + 1000))" "$OUTPUT_ENV" "$OUTPUT_JWKS" "$OUTPUT_USERS"
+    echo "  -> Ownership $((REMAP_BASE + 1000)):$((REMAP_BASE + 1000)) gesetzt (userns-remap-UID für Container-UID 1000)"
+else
+    echo "WARNING: dockremap nicht in /etc/subuid gefunden. Ownership nicht gesetzt" >&2
 fi
 
 echo ""
 echo "Done!"
 echo ""
-echo "Next steps:"
-echo "  1. Deploy Authelia:  docker compose up -d authelia authelia-redis"
-echo "  2. Immich OIDC:     Configure via Immich Admin-UI (Administration -> Settings -> OAuth)"
-echo "     Issuer URL:      https://${AUTHELIA_SUBDOMAIN}.${DOMAIN}"
-echo "     Client ID:       immich"
-echo "     Client Secret:   \$(grep AUTHELIA_OIDC_IMMICH_SECRET secrets/oidc-immich.env)"
-echo "  3. Restart Grafana and Paperless to pick up OIDC secrets."
-echo "  4. Forgejo OIDC: forgejo-init runs automatically on first 'docker compose up'."
-echo "     To re-run manually: docker compose run --rm forgejo-init"

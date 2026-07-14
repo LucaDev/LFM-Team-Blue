@@ -59,7 +59,7 @@ unseren Anwendungsfall schlicht überdimensioniert waren:
     einrichten, passt damit besser zu unserem Infrastructure-as-Code-Ansatz und
     ist für einen einzelnen Nutzer mit einer Handvoll Diensten deutlich
     angemessener. Authelia deckt sowohl klassisches Forward-Auth als auch \ac{OIDC}
-    ab, was uns alle benötigten Fälle abdeckt.
+    ab, was uns alle benötigten Fälle abdeckt.\cite{keyCloak}
   \item \textbf{Dragonfly zu Valkey.} Als In-Memory-Cache hatten wir zuerst
     Dragonfly vorgesehen. Wir sind auf Valkey gewechselt, weil es unter dem
     Dach der Linux Foundation steht, offener lizenziert ist und damit besser zu
@@ -257,10 +257,20 @@ Verbindung über Tor bereits Ende-zu-Ende verschlüsselt ist. Dort verwenden wir
 deshalb ein selbstsigniertes Zertifikat, was im Tor-Browser unkritisch ist.
 Auch wenn ein Zertifikat nicht notwendig wäre, da Tor die Verschlüsselung übernimmt, ist es dennoch sinnvoll, weil es eine zusätzliche Schutzschicht gegen Angreifer bildet, sollte das Tor-Netzwerk kompromittiert werden, oder Sicherheitsschwächen im Tor-Protokoll selbst auftreten.
 
+Nicht nur \ac{HTTP}(S)-Verkehr profitiert von dieser Zertifikatsverwaltung: Auch
+\ac{MQTT} (in usnerem Fall Mosquitto) wird nicht mehr über einen eigenen \ac{TLS}-Listener nach außen exponiert, sondern über einen
+zusätzlichen \ac{TCP}-Entrypoint von Traefik getunnelt. Traefik
+terminiert dabei das \ac{TLS} anhand des in der \ac{TLS}-ClientHello
+mitgesendeten Hostnamens (\ac{SNI}) mit demselben Let's-Encrypt-Zertifikat, das
+auch für den regulären Web-Zugriff verwendet wird, und reicht die entschlüsselten
+Daten unverschlüsselt innerhalb des Docker-Netzes an den internen,
+unverschlüsselten \ac{MQTT}-Listener von Mosquitto weiter. Damit muss auf dem
+Apphost kein separates Zertifikat mehr für Mosquitto erzeugt, verteilt und
+erneuert werden. Alle Geräte des Mandanten sollten diesem öffentlich signierten
+Zertifikat (ähnlich wie im Browser) von Haus aus vertrauen.
 
 \subsubsection{Single Sign-On mit Authelia}
 \label{sec:apphost-authelia}
-
 Authelia ist unser zentraler Authentifizierungsdienst und schützt die Dienste,
 die keine ausreichend starke eigene Anmeldung mitbringen. Wir nutzen zwei
 Mechanismen, je nachdem, was der jeweilige Dienst unterstützt:
@@ -517,7 +527,7 @@ Alle Geheimnisse (Passwörter, Token, Schlüssel) liegen in einer
 \texttt{.env}-Datei und einem \texttt{secrets/}-Verzeichnis, die beide nicht im
 Git eingecheckt werden. Aus den Klartextwerten der \texttt{.env} erzeugen kleine
 Skripte die tatsächlich benötigten gehashten Werte, etwa die Argon2id-Hashes
-für Authelia, die bcrypt-Hashes für ntfy und die Passwortdatei für Mosquitto.
+für Authelia, die bcrypt-Hashes für ntfy, die Passwortdatei für Mosquitto sowie die \texttt{rpcauth}-Hashes für den Bitcoin-Core-Node des Hot-Wallet-Stacks.
 Das Verzeichnis \texttt{secrets/} ist auf Dateisystemebene strikt geschützt
 (Zugriff nur für den \texttt{apphost}-Benutzer). Ändert der Mandant ein
 Passwort, generiert er die Hashes mit einem einzigen Befehl neu.
@@ -541,6 +551,21 @@ haben wir einen kontrollierten und nachvollziehbaren Update-Prozess geschaffen:
   \item Major-Updates mit möglichen Breaking Changes warten länger und werden
     immer von Hand geprüft.
 \end{itemize}
+
+Die genannte Wartezeit setzen wir konkret über die Renovate-Option
+\texttt{minimumReleaseAge} um: Für Major-Updates beträgt sie 14~Tage, für das
+Internet-exponierte Traefik-Image 7~Tage. Renovate öffnet den Update-Pull-Request
+zwar sofort, markiert den zugehörigen Status-Check aber als ausstehend, bis die
+konfigurierte Zeit seit dem Release verstrichen ist.
+Der Sicherheitsgewinn dieser scheinbar simplen Verzögerung ist beträchtlich, denn wer ein Release sofort übernimmt,
+bringt ungeprüften Code direkt in Produktion. Kompromittierte Releases werden in der Praxis dagegen meist
+innerhalb von Stunden bis wenigen Tagen von der Community entdeckt und vom
+jeweiligen Registry-Betreiber zurückgezogen, sodass eine kurze Wartezeit sie
+in aller Regel bereits abfängt. Ein anschauliches Beispiel dafür lieferte der
+Vorfall um das NPM-Paket \texttt{ua-parser-js} im Oktober 2021. Nach der
+Übernahme des Maintainer-Accounts wurden drei bösartige Versionen
+veröffentlicht, die auf Windows- und Linux-Systemen Zugangsdaten stahlen und
+einen Krypto-Miner nachluden \cite{cisa_ua_parser_js_2021}.
 
 Nach dem Mergen eines Pull Requests genügt auf dem Server ein einziger Befehl,
 um die neuen Images zu ziehen und die Container neu zu starten. Ergänzt wird das
@@ -585,8 +610,7 @@ Mosquitto), Kommunikation (Ntfy, Bichon) und Entwicklung (Forgejo) bis zu
 Werkzeugen wie dem Passwortmanager Vaultwarden und einer Startseite (Homepage).
 Zusätzlich läuft auf dem Apphost der Hot-Wallet-Stack für den automatisierten
 Bitcoin-Zahlungsverkehr, den wir in Abschnitt~\ref{Krypto} gesondert
-beschreiben. Die vollständige Liste mit Subdomains und Beschreibungen findet
-sich im Anhang.
+beschreiben.
 Die vollständige Liste mit Subdomains und Beschreibungen findet sich im Anhang.
 
 \subsection{Abdeckung des Bedrohungsmodells} \label{sec:gefahrenmodell}
@@ -798,4 +822,32 @@ größere Schwierigkeiten gestoßen sind und wie wir damit umgegangen sind.
     stark in Details verrannt, vor allem in der Kubernetes-Phase. Die wichtigste
     Lehre daraus ist, frühzeitiger zu hinterfragen, ob ein gewählter Ansatz
     wirklich zum Kern der Aufgabe passt, statt ihn aus Prinzip zu Ende zu bringen.
+  \item\textbf{Kata Containers vs. \texttt{userns-remap} (erst mit NixOS 26.05
+    aufgetreten).} Nach dem Versionssprung auf \texttt{26.05} startete
+    \texttt{docker.service} nicht mehr: \texttt{dockerd} verweigerte den Start
+    mit der Meldung \textit{"containerd-snapshotter is explicitly enabled, but
+    is not compatible with userns remapping"}. Grund war, dass Kata Containers 3.x
+    keine klassische OCI-Runtime-Binary mehr mitliefert, sondern ausschließlich
+    über den containerd-v2-Shim (\texttt{containerd-shim-kata-v2}) angesprochen
+    wird und genau das erfordert Dockers containerd-Snapshotter-Integration,
+    die wiederum mit \texttt{userns-remap} inkompatibel ist. Da uns das
+    UID/GID-Remapping zunächst wichtiger war als die direkte Ansprache von Kata über den Docker-Daemon, haben wir den
+    \texttt{kata-runtime}-Eintrag aus der Docker-Konfiguration entfernt und
+    \texttt{containerd-snapshotter} deaktiviert. Kata Containers bleiben über
+    \texttt{virtualisation.containerd} (CRI) weiterhin konfiguriert und nutzbar,
+    nur eben nicht mehr direkt via \texttt{docker run --runtime=kata-runtime}.
+  \item \textbf{AppArmor blockiert Audit-Regeln. Upstream-Fix erst wenige Tage
+    vor Abgabe.} Mit \texttt{security.audit.enable} und
+    \texttt{security.apparmor.enable} gleichzeitig aktiv scheiterte
+    \texttt{audit-rules-nixos.service} bei jedem \texttt{nixos-rebuild switch}
+    mit \textit{"There was an error in line 2 [...] audit.rules"} unabhängig vom Inhalt 
+    der Regeln. Ursache war ein Fehler in der Ladereihenfolge der Linux-Security-Module,
+    sobald AppArmor aktiviert ist
+    (\href{https://github.com/NixOS/nixpkgs/issues/483085}{nixpkgs Issue \#483085}),
+    behoben in \href{https://github.com/NixOS/nixpkgs/pull/535329}{nixpkgs PR \#535329}
+    ("nixos/apparmor: fix lsm loading order"). Das eigentliche Kernproblem: Der
+    upstream Fix war erst kurz vor Abgabe verfügbar.
+  \item \textbf{Lange Wartezeiten für die Erprobung von Neuinstallationen.} Durch den umfangreichen Setup-Prozess (VM Reset -> LiveCD Booten -> Repository Klonen -> NixOS Installation -> Secure Boot Konfiguration -> Docker UP) ist das Testen von Änderungen am Installationsprozess mitunter sehr langwierig und zeitintensiv.
+  \item \textbf{Traefik ignoriert \texttt{\$\{ACME\_EMAIL\}} und \texttt{\$\{DOMAIN\}}
+    aus der \texttt{.env}.} Traefik ist nicht in der Lage werte aus der statischen Konfiguration mit Umgebungsvariablen zu ersetzen. Um eine saubere und einfache Installation zu ermöglichen, mussten wir daher die traefik.yaml templaten
 \end{itemize}

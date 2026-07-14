@@ -20,13 +20,12 @@ tls:
         - "X25519"
         - "CurveP256"
         - "CurveP384"
-    # Default (falls kein TLS-Profil angegeben: intermediate nutzen)
-    default:
+    strict:
       minVersion: "VersionTLS13"
       sniStrict: true
+    default:
+      minVersion: "VersionTLS13"
+      sniStrict: false
   # Default Store
   stores:
-    default:
-      defaultCertificate:
-        certFile: "/certs/default.crt"
-        keyFile: "/certs/default.key"
+    default: {}

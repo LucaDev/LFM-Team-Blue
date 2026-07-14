@@ -1,16 +1,9 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  dev-network:
-    name: dev-network
-    driver: bridge
 volumes:
   forgejo_data: {name: apphost_forgejo_data}
 services:
   forgejo:
-    image: codeberg.org/forgejo/forgejo:15.0.2
+    image: codeberg.org/forgejo/forgejo:15.0.2@sha256:db04c7114b656f896e206ba3873fe8d3a7adf2daa44907037f0274f4ba653fb9
     container_name: forgejo
     restart: unless-stopped
     runtime: runc
@@ -83,7 +76,7 @@ services:
       - "homepage.icon=gitea.png"
       - "homepage.href=https://${FORGEJO_SUBDOMAIN:-git}.${DOMAIN}"
   forgejo-init:
-    image: codeberg.org/forgejo/forgejo:15.0.2
+    image: codeberg.org/forgejo/forgejo:15.0.2@sha256:db04c7114b656f896e206ba3873fe8d3a7adf2daa44907037f0274f4ba653fb9
     container_name: forgejo-init
     restart: "no"
     runtime: runc

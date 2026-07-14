@@ -14,6 +14,14 @@ entryPoints:
   web:
     address: ":8081"
     http:
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedBackSlash: true
+        allowEncodedNullCharacter: true
+        allowEncodedSemicolon: true
+        allowEncodedPercent: true
+        allowEncodedQuestionMark: true
+        allowEncodedHash: true
       redirections:
         entryPoint:
           to: websecure
@@ -28,14 +36,21 @@ entryPoints:
     http3:
       advertisedPort: 443
     http:
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedBackSlash: true
+        allowEncodedNullCharacter: true
+        allowEncodedSemicolon: true
+        allowEncodedPercent: true
+        allowEncodedQuestionMark: true
+        allowEncodedHash: true
       tls:
+        options: strict@file
         certResolver: letsencrypt
-        # Platzhalter – wird über DOMAIN aus der .env per Umgebungsvariable
-        # überschrieben, siehe compose/infrastructure/traefik.yml.
         domains:
-          - main: "example.com"
+          - main: "${DOMAIN}"
             sans:
-              - "*.example.com"
+              - "*.${DOMAIN}"
     forwardedHeaders:
       insecure: false
       trustedIPs: ["127.0.0.1/8", "::1/128", "172.16.0.0/12", "192.168.0.0/16"]
@@ -44,11 +59,21 @@ entryPoints:
         readTimeout: "30s"
         writeTimeout: "30s"
         idleTimeout: "120s"
+  mqtt-tls:
+    address: ":8883"
   traefik-internal:
     address: ":8080"
   tor-http:
     address: ":8880"
     http:
+      encodedCharacters:
+        allowEncodedSlash: true
+        allowEncodedBackSlash: true
+        allowEncodedNullCharacter: true
+        allowEncodedSemicolon: true
+        allowEncodedPercent: true
+        allowEncodedQuestionMark: true
+        allowEncodedHash: true
       tls: {}
 # Provider
 providers:
@@ -64,26 +89,28 @@ certificatesResolvers:
   # Produktions-Zertifikat (Let's Encrypt Prod)
   letsencrypt:
     acme:
-      email: "admin@example.com" # Platzhalter, siehe ACME_EMAIL in .env
+      email: "${ACME_EMAIL}"
       storage: "/certs/acme.json"
       caServer: "https://acme-v02.api.letsencrypt.org/directory"
       # DNS-01 Challenge
       dnsChallenge:
-        provider: cloudflare
-        delayBeforeCheck: "30s"
+        provider: ${ACME_DNS_PROVIDER}
+        propagation:
+          delayBeforeChecks: "30s"
         resolvers:
           - "1.1.1.1:53"
           - "9.9.9.9:53"
   # Staging (zum Testen ohne Rate-Limits bei LE)
   letsencrypt_staging:
     acme:
-      email: "admin@example.com" # Platzhalter, siehe ACME_EMAIL in .env
+      email: "${ACME_EMAIL}"
       storage: "/certs/acme-staging.json"
       caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
       # DNS-01 Challenge
       dnsChallenge:
-        provider: cloudflare
-        delayBeforeCheck: "30s"
+        provider: ${ACME_DNS_PROVIDER}
+        propagation:
+          delayBeforeChecks: "30s"
         resolvers: ["1.1.1.1:53", "9.9.9.9:53"]
 # Logging
 log:

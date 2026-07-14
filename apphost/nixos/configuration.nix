@@ -43,6 +43,19 @@
       "vhost_vsock"   # Kata Containers braucht vsock
       "kvm_amd"       # oder kvm_intel je nach CPU
       "dm_crypt"
+      "wireguard"
+      # seit 26.05 müssen wir diese module scheinbar manuell laden, sonst funktioniert docker-compose up nicht mehr (er kann die nftables nicht erzeugen)
+      "nf_nat"
+      "iptable_nat"
+      "iptable_filter"
+      "ip6table_nat"
+      "ip6table_filter"
+      "xt_nat"
+      "xt_MASQUERADE"
+      "xt_addrtype"
+      "xt_conntrack"
+      "xt_multiport"
+      "xt_tcpudp"
     ];
 
     # Ungenutzte/gefährliche Module blacklisten (CIS Benchmark)
@@ -258,26 +271,29 @@
 
   # Shell-Aliase
   environment.shellAliases = {
-    # NixOS rebuilden
-    rebuild      = "sudo nixos-rebuild switch --flake path:/opt/apphost#apphost";
-    rebuild-boot = "sudo nixos-rebuild boot   --flake path:/opt/apphost#apphost";
+    # Updates aus dem Repo holen (nur apphost/-Pfad, siehe install.sh)
+    pull = "cd /opt/monorepo && sudo git pull";
 
-    # Flake-Inputs aktualisieren + sofort rebuilden
-    update = "cd /opt/apphost && sudo nix flake update && sudo nixos-rebuild switch --flake path:/opt/apphost#apphost";
+    # NixOS rebuilden
+    rebuild      = "sudo nixos-rebuild switch --flake path:/opt/monorepo/apphost#apphost";
+    rebuild-boot = "sudo nixos-rebuild boot   --flake path:/opt/monorepo/apphost#apphost";
+
+    # Updates holen, Flake-Inputs aktualisieren + sofort rebuilden
+    update = "pull && cd /opt/monorepo/apphost && sudo nix flake update && sudo nixos-rebuild switch --flake path:/opt/monorepo/apphost#apphost";
 
     # Nix-Store aufräumen
     gc = "sudo nix-collect-garbage --delete-older-than 30d && sudo nix store optimise";
 
     # Docker-Stack
-    up   = "cd /opt/apphost && docker compose up -d";
-    down = "cd /opt/apphost && docker compose down";
-    logs = "cd /opt/apphost && docker compose logs -f";
+    up   = "cd /opt/monorepo/apphost && docker compose up -d";
+    down = "cd /opt/monorepo/apphost && docker compose down";
+    logs = "cd /opt/monorepo/apphost && docker compose logs -f";
 
     # Schnellstatus
-    status = "systemctl status docker && docker ps";
+    status = "systemctl status --no-pager docker && docker ps";
 
     # Secrets neu generieren (nach Passwortänderungen in .env)
-    regen-secrets = "cd /opt/apphost && bash scripts/update-secrets-authelia.sh && bash scripts/update-secrets-mosquitto.sh && bash scripts/update-secrets-ntfy.sh";
+    regen-secrets = "cd /opt/monorepo/apphost && bash scripts/update-secrets-authelia.sh && bash scripts/update-secrets-mosquitto.sh && bash scripts/update-secrets-ntfy.sh";
   };
 
   # SSH – maximale Härtung
@@ -346,7 +362,7 @@
   # Automatische Updates (flake-basiert, zieht vom lokalen Repository)
   system.autoUpgrade = {
     enable        = true;
-    flake         = "/opt/apphost";
+    flake         = "/opt/monorepo/apphost";
     allowReboot   = false;            # Manueller Reboot nach Kernel-Updates
     dates         = "04:30";
     flags         = [ "--no-build-output" ];

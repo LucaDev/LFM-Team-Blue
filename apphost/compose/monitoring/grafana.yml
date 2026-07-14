@@ -1,16 +1,9 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  monitoring-network:
-    external: true
-    name: monitoring-network
 volumes:
   grafana_data: {name: apphost_grafana_data}
 services:
   grafana:
-    image: grafana/grafana-oss:13.0.1
+    image: grafana/grafana-oss:13.0.1@sha256:0f86bada30d65ef9d0183b90c1e2682ac92d53d95da8bed322b984ea78a4a73a
     container_name: grafana
     restart: unless-stopped
     runtime: runc
@@ -23,6 +16,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ../../config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../config/grafana/dashboards:/etc/grafana/dashboards:ro
     env_file:
       - ../../secrets/oidc-grafana.env
     environment:

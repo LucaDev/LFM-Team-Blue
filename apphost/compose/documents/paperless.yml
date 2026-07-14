@@ -1,11 +1,4 @@
 name: apphost
-networks:
-  traefik-public:
-    external: true
-    name: traefik-public
-  documents-network:
-    external: true
-    name: documents-network
 volumes:
   paperless_data: {name: apphost_paperless_data}
   paperless_media: {name: apphost_paperless_media}
@@ -14,7 +7,7 @@ volumes:
   paperless_redis: {name: apphost_paperless_redis}
 services:
   paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.15@sha256:6c86cad803970ea782683a8e80e7403444c5bf3cf70de63b4d3c8e87500db92f
     container_name: paperless
     restart: unless-stopped
     runtime: runc
@@ -45,7 +38,7 @@ services:
       # IP-Whitelist für diesen Header (siehe Security-Hinweis im Review).
       PAPERLESS_ENABLE_HTTP_REMOTE_USER: "true"
       PAPERLESS_HTTP_REMOTE_USER_HEADER_NAME: "HTTP_REMOTE_USER"
-      PAPERLESS_OCR_LANGUAGE: -deu+eng
+      PAPERLESS_OCR_LANGUAGE: deu+eng
       PAPERLESS_SESSION_COOKIE_SECURE: "true"
       PAPERLESS_CSRF_COOKIE_SECURE: "true"
       PAPERLESS_ENABLE_UPDATE_CHECK: "false"
@@ -84,7 +77,7 @@ services:
       - "homepage.icon=paperless-ngx.png"
       - "homepage.href=https://paperless.${DOMAIN}"
   paperless-redis:
-    image: valkey/valkey:8-alpine
+    image: valkey/valkey:8-alpine@sha256:cfe71288f087704b06be45e270afa7a2abbf820093d6b11a23762081f5ff321d
     container_name: paperless-redis
     restart: unless-stopped
     runtime: runc

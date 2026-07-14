@@ -29,7 +29,7 @@ authentication_backend:
         key_length: 32
         salt_length: 16
 storage:
-  encryption_key: 'you_must_generate_a_random_string_of_more_than_twenty_chars_and_configure_this'
+  # encryption_key kommt aus dem Env AUTHELIA_STORAGE_ENCRYPTION_KEY
   local:
     path: /data/db.sqlite3
 notifier:
@@ -45,10 +45,10 @@ access_control:
   default_policy: deny
   rules:
     # Authelia-Portal selbst: kein Auth
-    - domain: '{{ env "AUTHELIA_SUBDOMAIN" }}.{{ env "DOMAIN" }}'
+    - domain: '{{ env "AUTH_SUBDOMAIN" }}.{{ env "DOMAIN" }}'
       policy: bypass
 {{- if env "TOR_DOMAIN" }}
-    - domain: '{{ env "AUTHELIA_SUBDOMAIN" }}.{{ env "TOR_DOMAIN" }}'
+    - domain: '{{ env "AUTH_SUBDOMAIN" }}.{{ env "TOR_DOMAIN" }}'
       policy: bypass
 {{- end }}
     # ForwardAuth-geschützte Services (kein eigenes OIDC)
@@ -104,13 +104,10 @@ identity_providers:
         - userinfo
       allowed_origins_from_client_redirect_uris: true
     clients:
-      # -----------------------------------------------------------------------
       # Grafana (OIDC nativ)
-      # Env: GF_AUTH_GENERIC_OAUTH_* in compose/monitoring/monitoring.yml
-      # -----------------------------------------------------------------------
       - client_id: grafana
         client_name: Grafana
-        client_secret: '{{ env "AUTHELIA_OIDC_GRAFANA_SECRET_HASH" }}'
+        client_secret: '{{ env "OIDC_GRAFANA_SECRET_HASH" }}'
         authorization_policy: one_factor
         token_endpoint_auth_method: client_secret_post
         scopes:
@@ -128,7 +125,7 @@ identity_providers:
         userinfo_signed_response_alg: none
       - client_id: immich
         client_name: Immich
-        client_secret: '{{ env "AUTHELIA_OIDC_IMMICH_SECRET_HASH" }}'
+        client_secret: '{{ env "OIDC_IMMICH_SECRET_HASH" }}'
         authorization_policy: one_factor
         scopes:
           - openid
@@ -142,11 +139,11 @@ identity_providers:
           - authorization_code
         response_types:
           - code
-        pkce_challenge_method: RS256
+        pkce_challenge_method: S256
         userinfo_signed_response_alg: RS256
       - client_id: paperless
         client_name: Paperless-NGX
-        client_secret: '{{ env "AUTHELIA_OIDC_PAPERLESS_SECRET_HASH" }}'
+        client_secret: '{{ env "OIDC_PAPERLESS_SECRET_HASH" }}'
         authorization_policy: one_factor
         scopes:
           - openid
@@ -162,7 +159,7 @@ identity_providers:
         userinfo_signed_response_alg: none
       - client_id: forgejo
         client_name: Forgejo
-        client_secret: '{{ env "AUTHELIA_OIDC_FORGEJO_SECRET_HASH" }}'
+        client_secret: '{{ env "OIDC_FORGEJO_SECRET_HASH" }}'
         authorization_policy: one_factor
         token_endpoint_auth_method: client_secret_post
         scopes:
@@ -179,18 +176,18 @@ identity_providers:
         pkce_challenge_method: S256
         userinfo_signed_response_alg: none
 session:
-  secret: 'insecure_session_secret'
+  # secret kommt aus dem Env AUTHELIA_SESSION_SECRET
   cookies:
     - name: 'authelia_session'
       domain: '{{ env "DOMAIN" }}'
-      authelia_url: 'https://{{ env "AUTHELIA_SUBDOMAIN" }}.{{ env "DOMAIN" }}'
+      authelia_url: 'https://{{ env "AUTH_SUBDOMAIN" }}.{{ env "DOMAIN" }}'
       expiration: '1 hour'
       inactivity: '15 minutes'
       default_redirection_url: 'https://{{env "HOMEPAGE_SUBDOMAIN"}}.{{ env "DOMAIN" }}'
 {{- if env "TOR_DOMAIN" }}
     - name: 'authelia_session'
       domain: '{{ env "TOR_DOMAIN" }}'
-      authelia_url: 'https://{{ env "AUTHELIA_SUBDOMAIN" }}.{{ env "TOR_DOMAIN" }}'
+      authelia_url: 'https://{{ env "AUTH_SUBDOMAIN" }}.{{ env "TOR_DOMAIN" }}'
       expiration: '1 hour'
       inactivity: '15 minutes'
       default_redirection_url: 'https://{{ env "HOMEPAGE_SUBDOMAIN" }}.{{ env "TOR_DOMAIN" }}'

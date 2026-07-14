@@ -130,8 +130,9 @@ BROADCASTED/BROADCAST\_FAILED & Erfolgreiches bzw.\ fehlgeschlagenes Broadcastin
 
 \endlastfoot
 
-\multicolumn{3}{@{}l}{\textit{Basis-System (Hot-Wallet, \path{scripts/ops/})}}\\
-refill\slash psbt\_export.sh & Basis & Wartende Cold-\ac{PSBT} auf das Wechselmedium exportieren (Zustand COLD\_STARTED). \\
+\multicolumn{3}{@{}l}{\textit{Basis-System (Hot-Wallet, \path{scripts/hotwallet/ops/})}}\\
+psbt\_submit.sh                 & Basis & Fertige Operator-\ac{PSBT} über \ac{NATS} (\texttt{psbt.submit.requested}) einreichen. \\
+refill\slash psbt\_export.sh    & Basis & Wartende Cold-\ac{PSBT} auf das Wechselmedium exportieren (Zustand COLD\_STARTED). \\
 refill\slash psbt\_broadcast.sh & Basis & Signierte Cold-\ac{PSBT} vom Medium importieren, finalisieren und über Bitcoin Core broadcasten. \\
 setup\slash wallet\_import.sh   & Basis & Cold-\path{wsh}-Deskriptor in Bitcoin Core und PostgreSQL registrieren. \\
 setup\slash wgHMAC\_import.sh   & Basis & \ac{HMAC}-Geheimnis und \ac{WG}-Konfiguration vom Medium einspielen. \\

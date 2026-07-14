@@ -113,7 +113,17 @@ if [[ -f "$TRANSFER_DIR/communication/signer-hmac.secret" ]]; then
     cp "$TRANSFER_DIR/communication/signer-hmac.secret" \
        "$SECRETS_DIR/signer-hmac.secret"
     chmod 600 "$SECRETS_DIR/signer-hmac.secret"
-    chown 1000:1000 "$SECRETS_DIR/signer-hmac.secret" 
+    # hotwallet-middleware läuft im Container als UID 1000, aber Docker's userns-remap
+    # (dockremap, siehe nixos/modules/docker.nix) verschiebt Container-UIDs auf dem Host
+    # um einen festen Offset
+    if [[ "$(id -u)" -eq 0 ]]; then
+        REMAP_BASE="$(awk -F: '$1=="dockremap"{print $2}' /etc/subuid 2>/dev/null || true)"
+        if [[ -n "$REMAP_BASE" ]]; then
+            chown "$((REMAP_BASE + 1000)):$((REMAP_BASE + 1000))" "$SECRETS_DIR/signer-hmac.secret"
+        else
+            echo "WARNING: dockremap nicht in /etc/subuid gefunden – Ownership nicht gesetzt (userns-remap aktiv?)" >&2
+        fi
+    fi
     echo "Imported: signer-hmac.secret"
 else
     echo "Skipping: signer-hmac.secret "
