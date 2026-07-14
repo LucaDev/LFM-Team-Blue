@@ -44,25 +44,26 @@ ersetzt, da sie ohne Cluster keinen Mehrwert boten oder für den Anwendungsfall
 
 \begin{itemize}
   \item \textbf{Envoy Gateway zu Traefik.} Envoy Gateway ist eng an die
-    Kubernetes Gateway \ac{API} gekoppelt. Ohne Kubernetes fällt diese
-    Integration weg. Traefik passt deutlich besser, weil es Container-Labels
-    direkt aus Docker liest und von Haus aus die \ac{ACME}-Zertifikatsverwaltung
-    (Let's Encrypt) inklusive der \ac{DNS}-01-Challenge mitbringt. Damit bekommen
-    wir gültige Zertifikate, ohne dass der Server aus dem Internet erreichbar
-    sein muss.
+    Kubernetes Gateway \ac{API} gekoppelt, sodass diese Integration ohne
+    Kubernetes entfällt. Traefik liest Container-Labels direkt aus Docker und
+    bringt die \ac{ACME}-Zertifikatsverwaltung (Let's Encrypt) einschließlich
+    der \ac{DNS}-01-Challenge mit. Dadurch lassen sich gültige Zertifikate
+    beziehen, ohne dass der Server aus dem Internet erreichbar sein muss.
   \item \textbf{Keycloak zu Authelia.} Keycloak ist ein vollwertiger
-    Identity-Provider für große Organisationen und entsprechend schwergewichtig.
-    Authelia lässt sich vollständig deklarativ über Konfigurationsdateien
-    einrichten, passt damit besser zu unserem Infrastructure-as-Code-Ansatz und
-    ist für einen einzelnen Nutzer mit einer Handvoll Diensten deutlich
-    angemessener. Authelia deckt sowohl klassisches Forward-Auth als auch \ac{OIDC}
-    ab, was uns alle benötigten Fälle abdeckt.\cite{keyCloak}
-  \item \textbf{Dragonfly zu Valkey.} Als In-Memory-Cache hatten wir zuerst
-    Dragonfly vorgesehen. Wir sind auf Valkey gewechselt, weil es unter dem
-    Dach der Linux Foundation steht, offener lizenziert ist und damit besser zu
-    einem datenschutz- und unabhängigkeitsorientierten Setup passt. Valkey ist
-    in reinen Benchmarks etwas langsamer als Dragonfly, das spielt in unserem
-    Anwendungsfall (Caching für Immich und Paperless) aber keine Rolle. Der Hauptgrund für Dragonfly war die Verfügbarkeit eines Dragonfly Operators.
+    Identity-Provider für große Organisationen und entsprechend
+    schwergewichtig. Authelia lässt sich vollständig deklarativ über
+    Konfigurationsdateien einrichten und fügt sich damit besser in den
+    Infrastructure-as-Code-Ansatz ein. Für einen einzelnen Nutzer mit wenigen
+    Diensten ist es zudem angemessener dimensioniert. Authelia deckt sowohl
+    klassisches Forward-Auth als auch \ac{OIDC} ab und erfüllt damit alle
+    benötigten Fälle.\cite{keyCloak}
+  \item \textbf{Dragonfly zu Valkey.} Ausschlaggebend für Dragonfly war
+    ursprünglich die Verfügbarkeit eines Kubernetes-Operators. Valkey steht
+    unter dem Dach der Linux Foundation und ist offener lizenziert. Es passt
+    damit besser zu einem auf Datenschutz und Unabhängigkeit ausgerichteten
+    System. In reinen Benchmarks ist Valkey etwas langsamer als Dragonfly.
+    Für den vorliegenden Anwendungsfall, das Caching für Immich und
+    Paperless, ist dieser Unterschied ohne Bedeutung.
 \end{itemize}
 
 \subsubsection*{Ein einziger gehärteter Apphost statt \ac{VM} pro Dienst}
@@ -72,22 +73,21 @@ abgesicherten virtuellen Maschine zu betreiben, statt jeden Dienst in eine
 eigene \ac{VM} zu legen. Dafür gab es mehrere Gründe:
 
 \begin{itemize}
-  \item \textbf{Geringere Komplexität.} Eine \ac{VM} pro Dienst hätte schnell zu
-    einem unübersichtlichen Wildwuchs geführt. Bei über 18 Diensten wären
-    das über 18 Betriebssysteme, die alle einzeln aktualisiert, gehärtet und
-    überwacht werden müssten. Das ist gerade für den Endanwender kaum noch
-    handhabbar.
-  \item \textbf{Kein internes Routing nötig.} Mit vielen \acp{VM} bräuchte man ein
-    internes Routing zwischen ihnen. Auf einem Host übernimmt das Docker mit
-    seinen internen Netzwerken, und wir können die Segmentierung sauber und an
-    einer Stelle definieren (siehe Abschnitt~\ref{sec:apphost-netze}).
-  \item \textbf{Kein Vendor-Lock-in auf Proxmox.} Wir haben bewusst auf die
-    \ac{SDN}- und Netzwerk-Features von Proxmox verzichtet. Man sieht an Beispielen
-    wie \textbf{VMware}, wohin eine starke Abhängigkeit von einem einzelnen Hersteller
-    führen kann. Indem die gesamte Netzwerksegmentierung innerhalb des Apphosts
-    in Docker stattfindet, bleibt der Apphost portabel. Er ließe sich theoretisch
-    auch direkt auf Bare Metal oder unter einem anderen Hypervisor betreiben, ohne
-    dass etwas an der Konfiguration geändert werden muss.
+  \item \textbf{Geringere Komplexität.} Bei über 18 Diensten wären ebenso
+    viele Betriebssysteme einzeln zu aktualisieren, zu härten und zu
+    überwachen. Für den Endanwender ist das kaum handhabbar.
+  \item \textbf{Kein internes Routing nötig.} Bei vielen \acp{VM} wäre ein
+    internes Routing zwischen ihnen erforderlich. Auf einem einzelnen Host
+    übernimmt Docker diese Aufgabe mit seinen internen Netzwerken. Die
+    Segmentierung lässt sich dadurch an einer Stelle definieren (siehe
+    Abschnitt~\ref{sec:apphost-netze}).
+  \item \textbf{Kein Vendor-Lock-in auf Proxmox.} Auf die \ac{SDN}- und
+    Netzwerk-Features von Proxmox wurde bewusst verzichtet, denn Beispiele
+    wie VMware zeigen, wohin eine starke Bindung an einen einzelnen
+    Hersteller führen kann. Da die gesamte Netzwerksegmentierung innerhalb
+    des Apphosts in Docker stattfindet, bleibt dieser portabel. Er ließe sich
+    ohne Änderung der Konfiguration auch direkt auf Bare Metal oder unter
+    einem anderen Hypervisor betreiben.
 \end{itemize}
 
 Die Isolation zwischen den Diensten wird folglich nicht über viele \acp{VM}
@@ -166,23 +166,23 @@ in mehreren Punkten mit den Anforderungen der Aufgabe:
 
 \begin{itemize}
   \item \textbf{Vollständig deklarativ.} Der gesamte Systemzustand, von den
-    installierten Paketen über die Firewall bis hin zu jeder einzelnen
-    Sicherheitseinstellung, ist in Konfigurationsdateien beschrieben. Das ist
-    genau das, was die Aufgabe mit Infrastructure-as-Code meint: Der Mandant kann
-    den kompletten Aufbau vor der Ausführung im Repository prüfen.
-  \item \textbf{Reproduzierbar.} Aus derselben Konfiguration entsteht immer das
-    gleiche System. Es gibt keinen Konfigurations-Drift, der sich über die Zeit
-    einschleicht. Der Mandant kann die Installation auf seiner eigenen Hardware
+    installierten Paketen über die Firewall bis zu jeder einzelnen
+    Sicherheitseinstellung, ist in Konfigurationsdateien beschrieben. Genau
+    das ist mit Infrastructure-as-Code gemeint, denn der Mandant kann den
+    kompletten Aufbau vor der Ausführung im Repository prüfen.
+  \item \textbf{Reproduzierbar.} Aus derselben Konfiguration entsteht stets
+    dasselbe System, sodass sich über die Zeit kein Konfigurations-Drift
+    einschleicht. Der Mandant kann die Installation auf eigener Hardware
     durchführen und erhält exakt dasselbe Ergebnis.
-  \item \textbf{Atomare Updates und Rollbacks.} Jede Änderung erzeugt eine neue
-    Generation. Geht ein Update schief, kann man beim nächsten Neustart einfach
-    eine ältere Generation aus dem Bootmenü auswählen. Das ist ein großer
-    Sicherheitsgewinn für die Wartbarkeit.
-  \item \textbf{Härtung an einer Stelle.} Alle Härtungsmaßnahmen liegen
-    zentral in wenigen Nix-Modulen (\texttt{security.nix},
-    \texttt{networking.nix}, \texttt{docker.nix}, \texttt{secureboot.nix}). Das
-    macht den Sicherheitsstand nachvollziehbar und überprüfbar, statt ihn über
-    viele manuelle Schritte zu verteilen.
+  \item \textbf{Atomare Updates und Rollbacks.} Jede Änderung erzeugt eine
+    neue Generation. Schlägt ein Update fehl, kann beim nächsten Neustart
+    eine ältere Generation aus dem Bootmenü ausgewählt werden. Das erhöht die
+    Wartbarkeit deutlich.
+  \item \textbf{Härtung an einer Stelle.} Alle Härtungsmaßnahmen sind zentral
+    in wenigen Nix-Modulen (\texttt{security.nix}, \texttt{networking.nix},
+    \texttt{docker.nix}, \texttt{secureboot.nix}) zusammengefasst. Der
+    Sicherheitsstand bleibt dadurch nachvollziehbar und überprüfbar, statt
+    sich über viele manuelle Schritte zu verteilen.
 \end{itemize}
 
 Die Festplatte wird über das Modul \texttt{disko} ebenfalls deklarativ
@@ -294,15 +294,15 @@ die keine ausreichend starke eigene Anmeldung mitbringen. Je nach
 Unterstützung des jeweiligen Dienstes kommen zwei Mechanismen zum Einsatz.
 
 \begin{itemize}
-  \item \textbf{\ac{OIDC}} für Dienste, die das nativ können, zum
+  \item \textbf{\ac{OIDC}} für Dienste mit nativer Unterstützung, zum
     Beispiel Grafana, Immich, Paperless und Forgejo. Diese Dienste leiten zur
     Anmeldung an Authelia weiter und vertrauen anschließend dem ausgestellten
-    Token. Der Vorteil ist, dass die Benutzeridentität sauber in den Dienst
-    übernommen wird.
+    Token. Die Benutzeridentität wird dadurch sauber in den Dienst
+    übernommen.
   \item \textbf{Forward-Auth} für Dienste ohne brauchbare eigene
-    Zugriffskontrolle, zum Beispiel Prometheus, Alertmanager und die Homepage.
-    Hier prüft Traefik bei jeder Anfrage zuerst bei Authelia, ob der Nutzer
-    angemeldet ist, bevor die Anfrage überhaupt den Dienst erreicht.
+    Zugriffskontrolle, zum Beispiel Prometheus, Alertmanager und die
+    Homepage. Traefik prüft dabei bei jeder Anfrage zuerst bei Authelia, ob
+    der Nutzer angemeldet ist, bevor die Anfrage den Dienst erreicht.
 \end{itemize}
 
 Die Benutzer und ihre Passwörter liegen in einer Datei mit Argon2id-Hashes,
@@ -398,16 +398,18 @@ Monitoring-Konzept musste daher nicht verworfen werden:
 
 \begin{itemize}
   \item \textbf{Pull-basiert und einfach.} Prometheus holt die Metriken
-    selbstständig von den Exportern ab. Wir müssen nichts an einen externen
-    Dienst pushen, alle Daten bleiben auf dem Host.
+    selbstständig von den Exportern ab. Es muss nichts an einen externen
+    Dienst übertragen werden und alle Daten bleiben auf dem Host.
   \item \textbf{Geringer Ressourcenbedarf.} Gerade Loki ist bewusst
-    leichtgewichtig (es indexiert nur Metadaten, nicht den vollen Text wie z.B. Elastic/OpenSearch) und passt damit gut zu einem einzelnen, sparsam ausgelegten Host.
-  \item \textbf{Alles aus einer Oberfläche.} Grafana führt Metriken und Logs in
-    einer einzigen Oberfläche zusammen, sodass der Mandant nicht mehrere
+    leichtgewichtig gehalten. Es indexiert nur Metadaten statt des vollen
+    Textes wie etwa Elastic oder OpenSearch und passt damit gut zu einem
+    einzelnen, sparsam ausgelegten Host.
+  \item \textbf{Alles aus einer Oberfläche.} Grafana führt Metriken und Logs
+    in einer einzigen Oberfläche zusammen, sodass der Mandant nicht mehrere
     Werkzeuge bedienen muss.
   \item \textbf{Flexible Alarmierung.} Der Alertmanager trennt die Auswertung
-    der Alarme sauber von deren Zustellung und kann frei konfiguriert werden, in
-    unserem Fall in Richtung des selbst gehosteten ntfy.
+    der Alarme von deren Zustellung und lässt sich frei konfigurieren, in
+    diesem Fall in Richtung des selbst gehosteten ntfy.
 \end{itemize}
 
 Besonders wichtig für das Bedrohungsmodell ist die Alarmierung. Die Aufgabe
@@ -415,7 +417,7 @@ verlangt ausdrücklich, dass Push-Benachrichtigungen nicht über fremde
 Cloud-Dienste laufen, die Metadaten abgreifen könnten. Deshalb kommt das
 selbst gehostete \texttt{ntfy} zum Einsatz. Der Alertmanager schickt seine
 Alarme per Webhook an \texttt{ntfy}. Der Mandant empfängt sie sowohl am Desktop als
-auch auf seinem \texttt{GrapheneOS}-Smartphone. Da \texttt{ selbst gehostet ist, verlassen
+auch auf seinem \texttt{GrapheneOS}-Smartphone. Da \texttt{ntfy} selbst gehostet ist, verlassen
 die Benachrichtigungen die eigene Infrastruktur nicht. Definierte Alarme
 betreffen unter anderem hohe \ac{CPU}-Last, knappen Speicherplatz,
 ausgefallene Container und ein nicht erreichbares Backend hinter \texttt{Traefik}.
@@ -431,26 +433,28 @@ nachvollziehbar:
 
 \begin{itemize}
   \item \textbf{Keine neuen Privilegien.} Jeder Container läuft mit\\
-    \texttt{no-new-privileges:true}. Damit kann ein Prozess im Container seine
-    Rechte nicht nachträglich erhöhen, etwa über setuid-Binaries.
-  \item \textbf{Capabilities auf null und gezielt zurück.} Wir entfernen mit
-    \texttt{cap\_drop: ALL} zunächst sämtliche Linux-Capabilities und geben
-    anschließend pro Dienst nur die wenigen wieder frei, die er wirklich
-    braucht. Typischerweise sind das SETUID oder SETGID, wenn der Container selbst intern den Benutzer wechselt. 
-  \item \textbf{Read-only Dateisystem.} Wo es der Dienst zulässt (z.B. Traefik,
-    Tor, Garage, Node-Exporter, Homepage, ntfy und Mosquitto), wird das
-    Wurzeldateisystem des Containers schreibgeschützt eingebunden. Für die
-    wenigen Stellen, die echten Schreibzugriff brauchen, dient ein kleines,
-    nicht ausführbares tmpfs im \ac{RAM}.
-  \item \textbf{Ressourcenlimits.} Jeder Container hat \ac{CPU}- und
-    Speicherobergrenzen. Das verhindert, dass ein einzelner (möglicherweise
-    kompromittierter) Dienst den ganzen Host lahmlegt.
-  \item \textbf{Seccomp und AppArmor.} Es gilt das Standard-Seccomp-Profil von
-    Docker, das gefährliche Syscalls blockiert, und auf Host-Ebene erzwingt
+    \texttt{no-new-privileges:true}. Ein Prozess im Container kann seine
+    Rechte damit nicht nachträglich erhöhen, etwa über setuid-Binaries.
+  \item \textbf{Capabilities auf null und gezielt zurück.} Mit
+    \texttt{cap\_drop: ALL} werden zunächst sämtliche Linux-Capabilities
+    entfernt. Anschließend werden pro Dienst nur die wenigen wieder
+    freigegeben, die er tatsächlich benötigt. Typischerweise sind das SETUID
+    oder SETGID, wenn der Container intern den Benutzer wechselt.
+  \item \textbf{Read-only Dateisystem.} Wo der Dienst es zulässt (etwa
+    Traefik, Tor, Garage, Node-Exporter, Homepage, ntfy und Mosquitto), wird
+    das Wurzeldateisystem des Containers schreibgeschützt eingebunden. Für
+    die wenigen Stellen mit echtem Schreibbedarf dient ein kleines, nicht
+    ausführbares tmpfs im \ac{RAM}.
+  \item \textbf{Ressourcenlimits.} Jeder Container besitzt \ac{CPU}- und
+    Speicherobergrenzen. Ein einzelner, möglicherweise kompromittierter
+    Dienst kann den Host dadurch nicht lahmlegen.
+  \item \textbf{Seccomp und AppArmor.} Es gilt das Standard-Seccomp-Profil
+    von Docker, das gefährliche Syscalls blockiert. Auf Host-Ebene erzwingt
     AppArmor zusätzliche Mandatory-Access-Control-Profile.
   \item \textbf{User-Namespace-Remapping.} Auf Daemon-Ebene wird root im
-    Container auf einen unprivilegierten Bereich auf dem Host abgebildet. Selbst
-    wer im Container root wird, ist auf dem Host damit ein Benutzer ohne Rechte.
+    Container auf einen unprivilegierten Bereich auf dem Host abgebildet.
+    Selbst wer im Container root wird, bleibt auf dem Host ein Benutzer ohne
+    Rechte.
 \end{itemize}
 
 Nicht jeder Container folgt diesem Muster vollständig. Neben Collabora, das für
@@ -461,23 +465,24 @@ die Docker-Anbindung selbst gezielte Ausnahmen:
 \begin{itemize}
   \item \textbf{cAdvisor} läuft mit \texttt{privileged: true} und
     \texttt{userns\_mode: host}, weil es zur Erhebung von Container-Metriken
-    lesend auf cgroups, den Kernel-Ringpuffer (\texttt{/dev/kmsg}) und interne
-    Docker-Zustände zugreifen muss, die ohne erweiterte Rechte nicht sichtbar
-    sind.
+    lesend auf cgroups, den Kernel-Ringpuffer (\texttt{/dev/kmsg}) und
+    interne Docker-Zustände zugreifen muss. Ohne erweiterte Rechte sind diese
+    nicht sichtbar.
   \item \textbf{Node-Exporter} läuft mit Host-PID-, Host-Netzwerk- und
     Host-User-Namespace (\texttt{pid: host}, \texttt{network\_mode: host},
-    \texttt{userns\_mode: host}), weil es Host-Prozesse und
-    Netzwerkschnittstellen des Hosts selbst vermisst, nicht die eines isolierten
-    Containers.
-  \item \textbf{socket-proxy} läuft mit \texttt{userns\_mode: host} und bindet
-    den Docker-Socket read-only ein, weil der Socket ausschließlich mit den
-    Host-\acp{UID} funktioniert, mit denen der Docker-Daemon selbst läuft; unter
-    User-Namespace-Remapping wären die gemappten \acp{UID} im Container nicht
-    identisch mit denen, die der Socket erwartet. Traefik selbst bekommt dafür
-    im Gegenzug keinen direkten Socket-Zugriff, sondern spricht ausschließlich
-    den lesebeschränkten Socket-Proxy über das Netzwerk an (siehe oben).
-  \item \textbf{Grafana Alloy} bindet den Docker-Socket ebenfalls read-only ein,
-    um Container-Logs einsammeln zu können, läuft dabei aber ohne
+    \texttt{userns\_mode: host}), weil er Prozesse und
+    Netzwerkschnittstellen des Hosts selbst vermisst und nicht die eines
+    isolierten Containers.
+  \item \textbf{socket-proxy} läuft mit \texttt{userns\_mode: host} und
+    bindet den Docker-Socket read-only ein. Der Socket funktioniert
+    ausschließlich mit den Host-\acp{UID}, mit denen der Docker-Daemon selbst
+    läuft. Unter User-Namespace-Remapping wären die gemappten \acp{UID} im
+    Container nicht identisch mit denen, die der Socket erwartet. Traefik
+    selbst erhält im Gegenzug keinen direkten Socket-Zugriff und spricht
+    ausschließlich den lesebeschränkten Socket-Proxy über das Netzwerk an
+    (siehe oben).
+  \item \textbf{Grafana Alloy} bindet den Docker-Socket ebenfalls read-only
+    ein, um Container-Logs einsammeln zu können. Es läuft dabei ohne
     \texttt{userns\_mode: host} und mit vollständig entfernten Capabilities.
 \end{itemize}
 
@@ -506,48 +511,56 @@ Router gebunden. Ein neuer Dienst erbt damit automatisch den vollen Schutz,
 sobald er die passende Kette an Middlewares referenziert.
 
 \begin{itemize}
-  \item \textbf{\ac{TLS}-Konfiguration nach \ac{BSI} \ac{TR}-02102-2:} Aktuell gilt für
-    sämtliche Entrypoints ausschließlich das \texttt{default}-\ac{TLS}-Profil mit
-    \ac{TLS}~1.3. Daneben liegt ein zweites, ebenfalls zu \ac{BSI} \ac{TR}-02102-2 konformes
-    Profil (\texttt{intermediate}) vor, das \ac{TLS}~1.2 nur mit den vom \ac{BSI}
-    empfohlenen \ac{AEAD}-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven
-    X25519, P-256 und P-384 als Fallback erlaubt. Da kein Router explizit auf
+  \item \textbf{\ac{TLS}-Konfiguration nach \ac{BSI} \ac{TR}-02102-2.}
+    Aktuell gilt für sämtliche Entrypoints ausschließlich das
+    \texttt{default}-\ac{TLS}-Profil mit \ac{TLS}~1.3. Daneben liegt ein
+    zweites, ebenfalls konformes Profil (\texttt{intermediate}) vor. Es
+    erlaubt \ac{TLS}~1.2 nur mit den vom \ac{BSI} empfohlenen
+    \ac{AEAD}-Cipher-Suites (AES-GCM, ChaCha20-Poly1305) sowie den Kurven
+    X25519, P-256 und P-384 als Fallback. Da kein Router explizit auf
     \texttt{tls.options=intermediate} verweist, bleibt dieses Fallback-Profil
-    derzeit ungenutzt und alle Clients müssen \ac{TLS}~1.3 sprechen; es lässt sich
-    bei Bedarf für einzelne Router aktivieren, etwa falls ein Altgerät des
-    Mandanten kein \ac{TLS}~1.3 unterstützt. \texttt{sniStrict} sorgt in beiden
-    Profilen dafür, dass Anfragen ohne passenden Hostnamen abgewiesen werden,
-    statt auf ein Default-Zertifikat auszuweichen.
-  \item \textbf{Erzwungenes \ac{HTTPS} und \ac{HSTS}:} Der \ac{HTTP}-Entrypoint leitet jede
-    Anfrage permanent auf \ac{HTTPS} um. Zusätzlich setzt Traefik einen
-    \ac{HSTS}-Header mit zwei Jahren Gültigkeit, Preload-Flag für alle
-    Subdomains, damit Browser gar nicht erst versuchen, sich unverschlüsselt zu verbinden.
-    Browser haben zwar in den letzten Jahren aufgrund der hohen Verbreitung von \ac{HTTPS} auf ein \ac{HTTPS} by default Modell gewechselt, \ac{HSTS} erzwingt \ac{HTTPS} jedoch permanent im Browser.
-    Das Eintragen in die Preload-Listen der Browser erfordert jedoch einen öffentlich erreichbaren Webserver nach außen und das Beantragen auf \texttt{hstspreload.org}. Das Preload-Flag hat daher momentan keine Wirkung und stellt lediglich eine Vorbereitung dar.
-  \item \textbf{Security-Header für alle Dienste:} Über die Middleware\\
+    derzeit ungenutzt und alle Clients müssen \ac{TLS}~1.3 sprechen. Bei
+    Bedarf lässt es sich für einzelne Router aktivieren, etwa falls ein
+    Altgerät des Mandanten kein \ac{TLS}~1.3 unterstützt. Die Option
+    \texttt{sniStrict} sorgt in beiden Profilen dafür, dass Anfragen ohne
+    passenden Hostnamen abgewiesen werden, statt auf ein Default-Zertifikat
+    auszuweichen.
+  \item \textbf{Erzwungenes \ac{HTTPS} und \ac{HSTS}.} Der
+    \ac{HTTP}-Entrypoint leitet jede Anfrage permanent auf \ac{HTTPS} um.
+    Zusätzlich setzt Traefik einen \ac{HSTS}-Header mit zwei Jahren
+    Gültigkeit und Preload-Flag für alle Subdomains, damit Browser gar nicht
+    erst versuchen, sich unverschlüsselt zu verbinden. Browser sind in den
+    letzten Jahren zwar auf ein \ac{HTTPS}-by-default-Modell gewechselt,
+    \ac{HSTS} erzwingt \ac{HTTPS} jedoch dauerhaft. Das Eintragen in die
+    Preload-Listen der Browser erfordert einen öffentlich erreichbaren
+    Webserver und einen Antrag auf \texttt{hstspreload.org}. Das
+    Preload-Flag hat daher momentan keine Wirkung und stellt eine
+    Vorbereitung dar.
+  \item \textbf{Security-Header für alle Dienste.} Über die Middleware\\
     \texttt{security-headers} setzt Traefik sicherheitsrelevante Header wie
-    \texttt{Content-Security-Policy}, \texttt{X-Frame-Options} \\
+    \texttt{Content-Security-Policy}, \texttt{X-Frame-Options},\\
     \texttt{X-Content-Type-Options: nosniff}, eine restriktive Referrer- und
-    Permissions-Policy (deaktiviert u.a. Kamera, Mikrofon, Standort) sowie
-    Cross-Origin-Opener/Embedder/Resource-Policy. Gleichzeitig werden
-    \texttt{Server}- und \texttt{X-Powered-By}-Header geleert, damit
-    Angreifer aus einer Antwort nicht ableiten können, welche Software und
-    Version dahintersteckt. Ein \texttt{X-Robots-Tag: noindex} verhindert
-    außerdem unter Umständen, dass interne Dienste in Suchmaschinen landen.
-  \item \textbf{Schutz vor gefälschten Auth-Headern.} Dienste wie Grafana oder
-    Paperless vertrauen im Onion-Pfad einem \texttt{Remote-User}-Header, den
-    Authelia nach erfolgreicher Prüfung setzt. Über das Clearnet darf dieser
-    Header niemals vom Client selbst kommen. Die Middleware
-    \texttt{strip-remote-user} entfernt deshalb auf allen normalen Routern
-    jeden vom Client mitgeschickten \texttt{Remote-*}-Header, bevor die
-    Anfrage den Dienst erreicht, sodass sich niemand durch einen gefälschten
-    Header als anderer Benutzer ausgeben kann.
-  \item \textbf{Auswertbare Logs.} Das Access-Log läuft im
-    \ac{JSON}-Format und wird an Loki weitergereicht. Sensible Header wie
+    Permissions-Policy (deaktiviert unter anderem Kamera, Mikrofon und
+    Standort) sowie Cross-Origin-Opener-, Embedder- und Resource-Policy.
+    Gleichzeitig werden \texttt{Server}- und \texttt{X-Powered-By}-Header
+    geleert, damit Angreifer aus einer Antwort nicht ableiten können, welche
+    Software in welcher Version dahintersteht. Ein
+    \texttt{X-Robots-Tag: noindex} verringert außerdem das Risiko, dass
+    interne Dienste in Suchmaschinen erscheinen.
+  \item \textbf{Schutz vor gefälschten Auth-Headern.} Dienste wie Grafana
+    oder Paperless vertrauen im Onion-Pfad einem
+    \texttt{Remote-User}-Header, den Authelia nach erfolgreicher Prüfung
+    setzt. Über das Clearnet darf dieser Header niemals vom Client selbst
+    stammen. Die Middleware \texttt{strip-remote-user} entfernt deshalb auf
+    allen normalen Routern jeden vom Client mitgeschickten
+    \texttt{Remote-*}-Header, bevor die Anfrage den Dienst erreicht. Niemand
+    kann sich somit durch einen gefälschten Header als anderer Benutzer
+    ausgeben.
+  \item \textbf{Auswertbare Logs.} Das Access-Log läuft im \ac{JSON}-Format
+    und wird an Loki weitergereicht. Sensible Header wie
     \texttt{Authorization} und \texttt{Cookie} werden dabei grundsätzlich
-    verworfen, während \\
-    \texttt{User-Agent} und \texttt{X-Forwarded-For} für
-    potentielle zukünftige forensische Auswertungen erhalten bleiben.
+    verworfen. \texttt{User-Agent} und \texttt{X-Forwarded-For} bleiben für
+    mögliche zukünftige forensische Auswertungen erhalten.
 \end{itemize}
 
 Diese Maßnahmen ergänzen die oben beschriebene Container-Härtung von Traefik
@@ -576,15 +589,15 @@ Pull Request, sobald für ein Image eine neue Version verfügbar ist. Dadurch
 haben wir einen kontrollierten und nachvollziehbaren Update-Prozess geschaffen:
 
 \begin{itemize}
-  \item Jedes Update kommt als einzelner, dokumentierter Pull Request, statt
-    unbemerkt im Hintergrund zu passieren.
+  \item Jedes Update kommt als einzelner, dokumentierter Pull Request und
+    geschieht nicht unbemerkt im Hintergrund.
   \item Unkritische Updates für den Monitoring-Stack werden automatisch
     zusammengefasst und können automatisch gemerged werden.
   \item Sicherheitskritische Komponenten wie Datenbanken oder Traefik werden
     bewusst nicht automatisch gemerged, sondern erst nach einer Wartezeit und
-    manueller Prüfung.
+    manueller Prüfung übernommen.
   \item Major-Updates mit möglichen Breaking Changes warten länger und werden
-    immer von Hand geprüft.
+    stets von Hand geprüft.
 \end{itemize}
 
 Die genannte Wartezeit wird über die Renovate-Option
@@ -663,26 +676,27 @@ Hierunter fallen Phishing, Brute-Force, kompromittierte Endgeräte und
 Supply-Chain-Angriffe auf Abhängigkeiten.
 
 \begin{itemize}
-  \item \textbf{Keine offenen Ports.} Da Web-Zugriff nur über das Heimnetz
-    und über Tor erfolgt und die Zertifikate per \ac{DNS}-01 geholt
-    werden, muss kein einziger Port ins Internet geöffnet werden. Das nimmt
-    klassischen Remote-Angriffen von vornherein die Angriffsfläche. Auch intern wird zusätzlich lediglich \ac{SSH} für die Wartung benötigt.
-  \item \textbf{Starke, zentrale Authentifizierung.} Authelia mit Argon2id und
-    Multi-Faktor-Authentifizierung schützt die Dienste. Authelia bringt dabei
-    zusätzlich einen eigenen Brute-Force-Schutz auf Anwendungsebene mit (siehe Abschnitt~\ref{sec:apphost-authelia}).
-    Ergänzend dazu sperrt Fail2ban nach wenigen Fehlversuchen sowohl bei
-    SSH, als auch bei fehlgeschlagenen Web-Logins auf
-    Netzwerkebene und verlängert die Sperrzeit progressiv.
-    eingehenden Verkehr standardmäßig und erlaubt nur das Nötigste. SSH ist
-    zusätzlich Rate-Limited.
-  \item \textbf{Supply-Chain.} RenovateBot, der wöchentliche Trivy-Scan und die
-    täglichen NixOS-Updates sorgen dafür, dass bekannte Schwachstellen schnell
-    geschlossen werden. Sollte trotzdem ein Container kompromittiert werden,
+  \item \textbf{Keine offenen Ports.} Der Web-Zugriff erfolgt nur über das
+    Heimnetz und über Tor und die Zertifikate werden per \ac{DNS}-01 bezogen.
+    Es muss daher kein einziger Port ins Internet geöffnet werden, was
+    klassischen Remote-Angriffen von vornherein die Angriffsfläche nimmt.
+    Auch intern wird zusätzlich lediglich \ac{SSH} für die Wartung benötigt.
+  \item \textbf{Starke, zentrale Authentifizierung.} Authelia mit Argon2id
+    und Multi-Faktor-Authentifizierung schützt die Dienste und bringt einen
+    eigenen Brute-Force-Schutz auf Anwendungsebene mit (siehe
+    Abschnitt~\ref{sec:apphost-authelia}). Ergänzend sperrt Fail2ban nach
+    wenigen Fehlversuchen sowohl bei \ac{SSH} als auch bei fehlgeschlagenen
+    Web-Logins auf Netzwerkebene und verlängert die Sperrzeit progressiv.
+    Die Firewall blockiert eingehenden Verkehr standardmäßig und erlaubt nur
+    das Nötigste. \ac{SSH} ist zusätzlich rate-limitiert.
+  \item \textbf{Supply-Chain.} RenovateBot, der wöchentliche Trivy-Scan und
+    die täglichen NixOS-Updates sorgen dafür, dass bekannte Schwachstellen
+    schnell geschlossen werden. Wird dennoch ein Container kompromittiert,
     greift die in Abschnitt~\ref{sec:apphost-container} beschriebene
-    Container-Härtung: entfernte Capabilities, \texttt{no-new-privileges},
+    Container-Härtung. Entfernte Capabilities, \texttt{no-new-privileges},
     read-only Dateisysteme, das Seccomp-Profil, AppArmor und vor allem das
-    User-Namespace-Remapping (root im Container ist nicht root auf dem Host)
-    begrenzen den möglichen Schaden. Die Netzwerksegmentierung
+    User-Namespace-Remapping begrenzen den möglichen Schaden, denn root im
+    Container ist nicht root auf dem Host. Die Netzwerksegmentierung
     (Abschnitt~\ref{sec:apphost-netze}) verhindert zusätzlich, dass sich ein
     Angreifer von einem Dienst aus frei weiterbewegen kann.
 \end{itemize}
@@ -695,19 +709,22 @@ ins Netzwerk müssen dagegen abgewehrt werden.
 
 \begin{itemize}
   \item \textbf{\ac{USB}-Angriffe.} Die Kernel-Module für \ac{USB}-Speicher
-    (\texttt{\ac{USB}-storage}, \texttt{uas}) und weitere unnötige Hardware-Module
-    sind per Blacklist deaktiviert. Auch auf dem Proxmox-Host werden \ac{USB}-Eingaben
-    gesperrt. Ein einfach angestecktes Bad\ac{USB}-Gerät findet so keinen direkten
-    Angriffsweg.
-  \item \textbf{Verifizierter Boot.} Secure Boot über lanzaboote sorgt dafür,
-    dass nur signierte Boot-Komponenten starten. Zusammen mit erzwungener
-    Kernel-Modul-Signatur (\texttt{module.sig\_enforce}) und dem Kernel-Lockdown
-    wird verhindert, dass ein lokaler Angreifer manipulierten Code einschleust.
-  \item \textbf{\ac{DMA}-Schutz.} Die \ac{IOMMU} wird erzwungen und früher \ac{PCI}-\ac{DMA}-Zugriff
-    blockiert, was Angriffe über direkten Speicherzugriff erschwert.
-  \item \textbf{Netzwerk.} Wer sich unautorisiert ins Netz einklinkt, trifft auf
-    eine Default-Deny-Firewall und auf Dienste, die hinter Authelia liegen. Ein
-    bloßer Netzwerkzugang reicht also nicht, um an die Dienste zu kommen.
+    (\texttt{usb-storage}, \texttt{uas}) und weitere nicht benötigte
+    Hardware-Module sind per Blacklist deaktiviert. Auch auf dem
+    Proxmox-Host werden \ac{USB}-Eingaben gesperrt. Ein angestecktes
+    Bad\ac{USB}-Gerät findet damit keinen direkten Angriffsweg.
+  \item \textbf{Verifizierter Boot.} Secure Boot über lanzaboote stellt
+    sicher, dass nur signierte Boot-Komponenten starten. Zusammen mit
+    erzwungener Kernel-Modul-Signatur (\texttt{module.sig\_enforce}) und dem
+    Kernel-Lockdown wird verhindert, dass ein lokaler Angreifer manipulierten
+    Code einschleust.
+  \item \textbf{\ac{DMA}-Schutz.} Die \ac{IOMMU} wird erzwungen und früher
+    \ac{PCI}-\ac{DMA}-Zugriff blockiert. Angriffe über direkten
+    Speicherzugriff werden dadurch erschwert.
+  \item \textbf{Netzwerk.} Wer sich unautorisiert ins Netz einklinkt, trifft
+    auf eine Default-Deny-Firewall und auf Dienste, die hinter Authelia
+    liegen. Ein bloßer Netzwerkzugang genügt somit nicht, um an die Dienste
+    zu gelangen.
 \end{itemize}
 
 \subsubsection{Metadaten-Leaks}
@@ -718,12 +735,15 @@ setzt das System an mehreren Stellen an:
 \begin{itemize}
   \item \textbf{Tor.} Der Zugriff über Onion Services verbirgt sowohl die
     Identität des Servers als auch die des Nutzers vor dem lokalen Provider.
-  \item \textbf{Verschlüsseltes \ac{DNS}.} Der Host nutzt \ac{DNS}-over-\ac{TLS} mit
-    \ac{DNSSEC}-Validierung gegen Resolver ohne Logging-Policy (Cloudflare und Quad9),
-    sodass \ac{DNS}-Anfragen nicht im Klartext beim Provider landen.
-  \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über \ac{NTS}, also authentifiziert über \ac{TLS}.
-  \item \textbf{Keine fremde Cloud für Benachrichtigungen.} Wie beschrieben laufen
-    Push-Benachrichtigungen ausschließlich über das selbst gehostete ntfy.
+  \item \textbf{Verschlüsseltes \ac{DNS}.} Der Host nutzt
+    \ac{DNS}-over-\ac{TLS} mit \ac{DNSSEC}-Validierung gegen Resolver ohne
+    Logging-Policy (Cloudflare und Quad9). \ac{DNS}-Anfragen landen dadurch
+    nicht im Klartext beim Provider.
+  \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über
+    \ac{NTS} und damit authentifiziert über \ac{TLS}.
+  \item \textbf{Keine fremde Cloud für Benachrichtigungen.}
+    Push-Benachrichtigungen laufen, wie beschrieben, ausschließlich über das
+    selbst gehostete ntfy.
 \end{itemize}
 
 \subsubsection{Eingegangene Kompromisse}
@@ -733,34 +753,42 @@ Diese stellt ebenfalls den Entwicklungsprozess und besitzen hohe Relevant für d
 Aufgrunddessen werden diese folgend thematisiert.
 
 \begin{itemize}
-  \item \textbf{Ein Host statt vieler \acp{VM}.} Wir bündeln viele Dienste auf einem
-    Host. Damit ist der Host ein attraktiveres Ziel, als es eine einzelne
-    Mini-\ac{VM} wäre. Wir halten das für vertretbar, weil die Isolation über
-    Docker-Netzwerke, User-Namespaces und die sehüsr umfangreiche Host-Härtung
-    erfolgt und der Gewinn an Wartbarkeit für den Mandanten den Unterschied
-    überwiegt.
-  \item \textbf{\ac{OIDC} und der duale \ac{URL}-Raum.} Dienste mit \ac{OIDC} funktionieren nicht
-    nahtlos gleichzeitig über die interne Domain und über Tor, weil \ac{OIDC} die
-    Tokens fest an eine Basis-\ac{URL} bindet (die Mechanik dahinter haben wir im
-    Tor-Abschnitt erläutert). Das ist eine reine Komforteinschränkung und kein
-    Sicherheitsproblem. Als Komfortverbesserung empfehlen wir dem Mandanten
-    ergänzend einen WireGuard-Zugang: Damit sind die internen Adressen von
-    überall über denselben Pfad erreichbar, der \ac{URL}-Wechsel entfällt und die
-    \ac{OIDC}-Anmeldung funktioniert ortsunabhängig. Tor bleibt als zusätzlicher
-    anonymer Zugangsweg davon unberührt.
-  \item \textbf{Collabora.} Der Office-Dienst Collabora benötigt für das
-    Rendern von Dokumenten erweiterte Rechte (unter anderem die Capability
-    \texttt{SYS\_ADMIN}, deaktiviertes Seccomp- und AppArmor-Profil). Unter den
-    für den Mandanten erreichbaren, nutzerdaten-verarbeitenden Diensten ist das
-    der am wenigsten eingeschränkte Container im Stack (die in
-    Abschnitt~\ref{sec:apphost-container} genannten Ausnahmen bei Monitoring
-    und Docker-Anbindung betreffen reine Infrastrukturkomponenten ohne direkten
-    Netzwerkzugriff von außen). Wir akzeptieren das, weil die Funktion sonst nicht läuft, und
-    begrenzen das Risiko über die Netzwerksegmentierung und die Anmeldung an OpenCloud. Aus diesem Grund ist Collabora jedoch standardmäßig nicht über Tor erreichbar.
-    In den letzten Monaten hat sich \ac{EU}-Office als (\ac{EU}-)Fork von OnlyOffice etabliert. Wir haben uns bewusst für Collabora entschieden, weil es in der Open-Source Community etabliert ist und eine große Nutzerbasis hat. \ac{EU}-Office ist noch sehr jung und hat noch nicht die gleiche Reife und Stabilität wie Collabora. Wir werden die Entwicklung von \ac{EU}-Office beobachten und bei Bedarf in Zukunft auf diese Alternative umsteigen.
-  \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen Sandbox-Runtimes
-    sind vorbereitet, aber standardmäßig nicht aktiv (siehe nächster
-    Abschnitt).
+  \item \textbf{Ein Host statt vieler \acp{VM}.} Der Aufbau bündelt viele
+    Dienste auf einem Host. Dieser ist damit ein attraktiveres Ziel, als es
+    eine einzelne Mini-\ac{VM} wäre. Das erscheint vertretbar, weil die
+    Isolation über Docker-Netzwerke und User-Namespaces sowie eine sehr
+    umfangreiche Host-Härtung erfolgt. Der Gewinn an Wartbarkeit für den
+    Mandanten überwiegt diesen Unterschied.
+  \item \textbf{\ac{OIDC} und der duale \ac{URL}-Raum.} Dienste mit \ac{OIDC}
+    funktionieren nicht gleichzeitig über die interne Domain und über Tor,
+    weil \ac{OIDC} die Tokens fest an eine Basis-\ac{URL} bindet. Die
+    Mechanik dahinter wurde im Tor-Abschnitt erläutert. Es handelt sich um
+    eine reine Komforteinschränkung und nicht um ein Sicherheitsproblem. Als
+    Komfortverbesserung wird dem Mandanten ergänzend ein WireGuard-Zugang
+    empfohlen. Damit sind die internen Adressen von überall über denselben
+    Pfad erreichbar, der \ac{URL}-Wechsel entfällt und die
+    \ac{OIDC}-Anmeldung funktioniert ortsunabhängig. Tor bleibt als
+    zusätzlicher anonymer Zugangsweg davon unberührt.
+  \item \textbf{Collabora.} Der Office-Dienst benötigt für das Rendern von
+    Dokumenten erweiterte Rechte, unter anderem die Capability
+    \texttt{SYS\_ADMIN} sowie deaktivierte Seccomp- und AppArmor-Profile.
+    Unter den für den Mandanten erreichbaren, nutzerdatenverarbeitenden
+    Diensten ist das der am wenigsten eingeschränkte Container im Stack. Die
+    in Abschnitt~\ref{sec:apphost-container} genannten Ausnahmen bei
+    Monitoring und Docker-Anbindung betreffen dagegen reine
+    Infrastrukturkomponenten ohne direkten Netzwerkzugriff von außen. Dieser
+    Zustand wird akzeptiert, weil die Funktion sonst nicht läuft. Das Risiko
+    wird über die Netzwerksegmentierung und die Anmeldung an OpenCloud
+    begrenzt. Aus demselben Grund ist Collabora standardmäßig nicht über Tor
+    erreichbar. In den letzten Monaten hat sich \ac{EU}-Office als
+    (\ac{EU}-)Fork von OnlyOffice etabliert. Die Wahl fiel dennoch bewusst
+    auf Collabora, weil es in der Open-Source-Community etabliert ist und
+    eine große Nutzerbasis hat. \ac{EU}-Office ist noch sehr jung und
+    erreicht bislang nicht dieselbe Reife und Stabilität. Die Entwicklung
+    wird beobachtet und ein Umstieg bleibt für die Zukunft möglich.
+  \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen
+    Sandbox-Runtimes sind vorbereitet, aber standardmäßig nicht aktiv (siehe
+    nächster Abschnitt).
 \end{itemize}
 
 \subsection{Backups und Wiederherstellung}
@@ -810,30 +838,37 @@ deklarativ in den NixOS-Modulen festgelegt sind. Hier folgt ein geordneter
 steht.
 
 \begin{itemize}
-  \item \textbf{Boot und Firmware:} Secure Boot per lanzaboote, eingebundener
-    \ac{TPM}, deaktivierter Bootloader-Editor, erzwungene Kernel-Modul-Signatur und
+  \item \textbf{Boot und Firmware.} Zum Einsatz kommen Secure Boot per
+    lanzaboote, ein eingebundenes \ac{TPM}, ein deaktivierter
+    Bootloader-Editor, erzwungene Kernel-Modul-Signaturen und der
     Kernel-Lockdown.
-  \item \textbf{Kernel:} Aktivierte \ac{CPU}-Mitigationen (Spectre, Meltdown, MDS und
-    weitere), vollständiges \ac{ASLR}, init-on-alloc und init-on-free, erzwungene
-    \ac{IOMMU}, eingeschränkter Zugriff auf Kernel-Informationen sowie eine an den
-    \ac{CIS}-Benchmark angelehnte Modul-Blacklist.
-  \item \textbf{Netzwerk:} nftables mit Default-Deny, rate-limited \ac{SSH} und
-    \ac{ICMP}, gehärtete Sysctl-Einstellungen, \ac{DNS}-over-\ac{TLS} mit \ac{DNSSEC} und
-    authentifizierte Zeit über \ac{NTS}.
-  \item \textbf{Zugriff:} ausschließlich schlüsselbasiertes \ac{SSH} mit modernen
-    und post-quanten-fähigen Verfahren, gehärtetes sudo mit I/O-Logging, eine
+  \item \textbf{Kernel.} Aktiviert sind die \ac{CPU}-Mitigationen (Spectre,
+    Meltdown, MDS und weitere), vollständiges \ac{ASLR}, init-on-alloc und
+    init-on-free, eine erzwungene \ac{IOMMU} und ein eingeschränkter Zugriff
+    auf Kernel-Informationen. Hinzu kommt eine an den \ac{CIS}-Benchmark
+    angelehnte Modul-Blacklist.
+  \item \textbf{Netzwerk.} nftables arbeitet mit Default-Deny sowie
+    rate-limitiertem \ac{SSH} und \ac{ICMP}, ergänzt um gehärtete
+    Sysctl-Einstellungen. Zusätzlich sind \ac{DNS}-over-\ac{TLS} mit
+    \ac{DNSSEC} und authentifizierte Zeit über \ac{NTS} aktiv.
+  \item \textbf{Zugriff.} \ac{SSH} funktioniert ausschließlich
+    schlüsselbasiert mit modernen und post-quanten-fähigen Verfahren.
+    Ergänzend existieren ein gehärtetes sudo mit I/O-Logging, eine
     unveränderliche Benutzerdatenbank, ein gesperrtes Root-Konto und AppArmor
     als Mandatory Access Control.
-  \item \textbf{Audit und Intrusion Detection:} der Linux Audit Daemon für
-    sicherheitsrelevante Ereignisse, Fail2ban mit progressivem Banning und \ac{AIDE}
-    für die tägliche Prüfung der Dateisystemintegrität.
-  \item \textbf{Container:} User-Namespace-Remapping, Zugriff auf die Docker-\ac{API}
-    nur über einen eingeschränkten Socket-Proxy, entfernte Capabilities,
-    read-only Dateisysteme wo möglich und ein wöchentlicher \ac{CVE}-Scan.
-  \item \textbf{Updates:} tägliche NixOS-Aktualisierung, RenovateBot für die
-    Container inklusive Digest-Pinning für reproduzierbare Image-Referenzen
-    (Abschnitt~\ref{sec:apphost-digest-pinning}) und regelmäßiges Aufräumen des
-    Nix-Stores.
+  \item \textbf{Audit und Intrusion Detection.} Der Linux Audit Daemon
+    erfasst sicherheitsrelevante Ereignisse. Fail2ban arbeitet mit
+    progressivem Banning und \ac{AIDE} prüft täglich die
+    Dateisystemintegrität.
+  \item \textbf{Container.} Abgesichert wird über User-Namespace-Remapping,
+    den nur über einen eingeschränkten Socket-Proxy möglichen Zugriff auf die
+    Docker-\ac{API}, entfernte Capabilities, read-only Dateisysteme wo
+    möglich und einen wöchentlichen \ac{CVE}-Scan.
+  \item \textbf{Updates.} Das System aktualisiert sich täglich über
+    NixOS-Auto-Upgrade. RenovateBot pflegt die Container inklusive
+    Digest-Pinning für reproduzierbare Image-Referenzen
+    (Abschnitt~\ref{sec:apphost-digest-pinning}) und der Nix-Store wird
+    regelmäßig aufgeräumt.
 \end{itemize}
 
 \subsection{Herausforderungen}
@@ -844,61 +879,80 @@ auftraten und wie damit umgegangen wurde.
 
 \begin{itemize}
   \item \textbf{Der komplette Umbau weg von Kubernetes.} Wie eingangs
-    beschrieben hatten wir den Stack zuerst auf Kubernetes mit Talos Linux
-    aufgebaut und waren damit schon fast fertig. Die Erkenntnis, dass der Ansatz
-    für diesen Anwendungsfall zu komplex ist, kam entsprechend spät und war
-    ehrlich gesagt ein ziemlicher Dämpfer. Wir haben uns trotzdem für den
-    kompletten Rewrite auf Docker Compose entschieden, weil das Endergebnis
-    dadurch wartbarer und für den Mandanten nachvollziehbarer ist. Im Rückblick
-    war das die richtige Entscheidung, auch wenn sie viel Arbeit gekostet hat. Grund war ein gewisser Bias, der sich über Jahre entwickelt hat.
-  \item \textbf{Der Bias.} Durch die jahrelange Arbeit mit Kubernetes Clustern, entstand ein gewisser architektonischer Bias. Best Practices sind bekannt und oft sind sogar bereits fertige Lösungsbausteine existent. Dadurch entsteht die Tendenz, jede Herausforderung als Kubernetes-Usecase zu betrachten. Es ist jedoch wichtig, objektiv zu bleiben und anzuerkennen, dass diese Herangehensweise in bestimmten Einsatzszenarien keinen messbaren Vorteil bietet oder sogar unnötige Komplexität erzeugt.
-  Eines der Teammitglieder betreibt zum Beispiel seit Jahren sein Homelab auf Kubernetes-Basis: \texttt{https://github.com/LucaDev/Home/}
+    beschrieben, war der Stack zunächst auf Kubernetes mit Talos Linux
+    aufgebaut und nahezu fertiggestellt. Die Erkenntnis, dass dieser Ansatz
+    für den Anwendungsfall zu komplex ist, kam entsprechend spät. Die
+    Entscheidung fiel dennoch für den vollständigen Neuaufbau auf Docker
+    Compose, weil das Ergebnis dadurch wartbarer und für den Mandanten
+    nachvollziehbarer wird. Im Rückblick war das die richtige Entscheidung,
+    auch wenn sie erheblichen Mehraufwand bedeutete.
+  \item \textbf{Architektonischer Bias.} Mitverantwortlich für die späte
+    Kurskorrektur war eine über Jahre gewachsene Prägung. Durch langjährige
+    Arbeit mit Kubernetes-Clustern sind Best Practices vertraut und fertige
+    Lösungsbausteine oft vorhanden. Daraus entsteht die Tendenz, jede
+    Herausforderung als Kubernetes-Anwendungsfall zu betrachten. Wichtig ist
+    jedoch die objektive Einsicht, dass diese Herangehensweise in bestimmten
+    Szenarien keinen messbaren Vorteil bietet oder sogar unnötige Komplexität
+    erzeugt. Eines der Teammitglieder betreibt beispielsweise seit Jahren ein
+    Kubernetes-basiertes Homelab (\url{https://github.com/LucaDev/Home/}).
   \item \textbf{NixOS-Versionssprung kurz vor Abgabe.} Gegen Ende der
-    Bearbeitungszeit erschien die neue NixOS-Version, und der Sprung auf
-    \texttt{26.05} brachte einige Breaking Changes mit sich. Wir hätten es uns
-    einfach machen und auf der älteren Version bleiben können, wollten dem
-    Mandanten aber kein von Anfang an veraltetes System ausliefern. Wir haben den
-    Sprung also noch mitgenommen und die nötigen Anpassungen vorgenommen, was
-    unter Zeitdruck zusätzlichen Aufwand bedeutet hat.
-  \item \textbf{Kompatibilität von Kata Containers und gVisor.} Beide Sandbox-
-    Runtimes wollten wir eigentlich standardmäßig aktivieren. In der Praxis
-    haben sie sich aber je nach Proxmox-Konfiguration unterschiedlich verhalten,
-    insbesondere wenn nested-virtualization
-    nicht stabil verfügbar war. Damit das Setup auf möglichst vielen Hosts ohne
-    Probleme startet, haben wir beide Runtimes vorbereitet, aber nicht als
-    Standard gesetzt. Sie lassen sich pro Dienst aktivieren, sobald die Hardware
-    das stabil unterstützt.
-  \item \textbf{Zeit und Vereinbarkeit.} Wir arbeiten alle in Vollzeit und haben
-    dieses Projekt neben weiteren Modulen bearbeitet. Wir haben uns zeitweise
-    stark in Details verrannt, vor allem in der Kubernetes-Phase. Die wichtigste
-    Lehre daraus ist, frühzeitiger zu hinterfragen, ob ein gewählter Ansatz
-    wirklich zum Kern der Aufgabe passt, statt ihn aus Prinzip zu Ende zu bringen.
-  \item\textbf{Kata Containers vs. \texttt{userns-remap} (erst mit NixOS 26.05
-    aufgetreten).} Nach dem Versionssprung auf \texttt{26.05} startete
-    \texttt{docker.service} nicht mehr: \texttt{dockerd} verweigerte den Start
-    mit der Meldung \textit{"containerd-snapshotter is explicitly enabled, but
-    is not compatible with userns remapping"}. Grund war, dass Kata Containers 3.x
-    keine klassische OCI-Runtime-Binary mehr mitliefert, sondern ausschließlich
-    über den containerd-v2-Shim (\texttt{containerd-shim-kata-v2}) angesprochen
-    wird und genau das erfordert Dockers containerd-Snapshotter-Integration,
-    die wiederum mit \texttt{userns-remap} inkompatibel ist. Da uns das
-    UID/GID-Remapping zunächst wichtiger war als die direkte Ansprache von Kata über den Docker-Daemon, haben wir den
-    \texttt{kata-runtime}-Eintrag aus der Docker-Konfiguration entfernt und
-    \texttt{containerd-snapshotter} deaktiviert. Kata Containers bleiben über
-    \texttt{virtualisation.containerd} (CRI) weiterhin konfiguriert und nutzbar,
-    nur eben nicht mehr direkt via \texttt{docker run --runtime=kata-runtime}.
-  \item \textbf{AppArmor blockiert Audit-Regeln. Upstream-Fix erst wenige Tage
-    vor Abgabe.} Mit \texttt{security.audit.enable} und
-    \texttt{security.apparmor.enable} gleichzeitig aktiv scheiterte
-    \texttt{audit-rules-nixos.service} bei jedem \texttt{nixos-rebuild switch}
-    mit \textit{"There was an error in line 2 [...] audit.rules"} unabhängig vom Inhalt 
-    der Regeln. Ursache war ein Fehler in der Ladereihenfolge der Linux-Security-Module,
-    sobald AppArmor aktiviert ist
-    (\href{https://github.com/NixOS/nixpkgs/issues/483085}{nixpkgs Issue \#483085}),
-    behoben in \href{https://github.com/NixOS/nixpkgs/pull/535329}{nixpkgs PR \#535329}
-    ("nixos/apparmor: fix lsm loading order"). Das eigentliche Kernproblem: Der
-    upstream Fix war erst kurz vor Abgabe verfügbar.
-  \item \textbf{Lange Wartezeiten für die Erprobung von Neuinstallationen.} Durch den umfangreichen Setup-Prozess (VM Reset -> LiveCD Booten -> Repository Klonen -> NixOS Installation -> Secure Boot Konfiguration -> Docker UP) ist das Testen von Änderungen am Installationsprozess mitunter sehr langwierig und zeitintensiv.
-  \item \textbf{Traefik ignoriert \texttt{\$\{ACME\_EMAIL\}} und \texttt{\$\{DOMAIN\}}
-    aus der \texttt{.env}.} Traefik ist nicht in der Lage werte aus der statischen Konfiguration mit Umgebungsvariablen zu ersetzen. Um eine saubere und einfache Installation zu ermöglichen, mussten wir die traefik.yaml templaten. Keine große Herausforderung aber ein gutes Beispiel eines Problems, dass uns an unterschiedlichen Stellen begegnet ist: Manche Anwendungen erlauben keine einfache Möglichkeit, mehrere Konfigurationsebenen übereinander zu legen.
+    Bearbeitungszeit erschien die neue NixOS-Version. Der Sprung auf
+    \texttt{26.05} brachte einige Breaking Changes mit sich. Ein Verbleib auf
+    der älteren Version wäre einfacher gewesen. Dem Mandanten sollte jedoch
+    kein von Beginn an veraltetes System ausgeliefert werden. Der
+    Versionssprung wurde daher noch umgesetzt, was unter Zeitdruck
+    zusätzlichen Aufwand bedeutete.
+  \item \textbf{Kompatibilität von Kata Containers und gVisor.} Beide
+    Sandbox-Runtimes sollten ursprünglich standardmäßig aktiv sein. In der
+    Praxis verhielten sie sich je nach Proxmox-Konfiguration unterschiedlich,
+    insbesondere wenn Nested Virtualization nicht stabil verfügbar war.
+    Damit das Setup auf möglichst vielen Hosts problemlos startet, wurden
+    beide Runtimes vorbereitet, aber nicht als Standard gesetzt. Sie lassen
+    sich pro Dienst aktivieren, sobald die Hardware das stabil unterstützt.
+  \item \textbf{Zeit und Vereinbarkeit.} Alle Teammitglieder arbeiten in
+    Vollzeit und haben das Projekt neben weiteren Modulen bearbeitet.
+    Zeitweise wurde zu viel Aufwand in Details investiert, vor allem in der
+    Kubernetes-Phase. Die wichtigste Lehre daraus ist, frühzeitig zu
+    hinterfragen, ob ein gewählter Ansatz wirklich zum Kern der Aufgabe
+    passt, statt ihn aus Prinzip zu Ende zu führen.
+  \item \textbf{Kata Containers und \texttt{userns-remap} (erst mit NixOS
+    26.05 aufgetreten).} Nach dem Versionssprung startete
+    \texttt{docker.service} nicht mehr. \texttt{dockerd} verweigerte den
+    Start mit der Meldung \textit{"containerd-snapshotter is explicitly
+    enabled, but is not compatible with userns remapping"}. Kata Containers
+    3.x liefert keine klassische OCI-Runtime-Binary mehr mit, sondern wird
+    ausschließlich über den containerd-v2-Shim
+    (\texttt{containerd-shim-kata-v2}) angesprochen. Genau das erfordert
+    Dockers containerd-Snapshotter-Integration, die wiederum mit
+    \texttt{userns-remap} inkompatibel ist. Da das UID/GID-Remapping
+    wichtiger erschien als die direkte Ansprache von Kata über den
+    Docker-Daemon, wurde der \texttt{kata-runtime}-Eintrag aus der
+    Docker-Konfiguration entfernt und \texttt{containerd-snapshotter}
+    deaktiviert. Kata Containers bleiben über
+    \texttt{virtualisation.containerd} (CRI) weiterhin konfiguriert und
+    nutzbar, nur nicht mehr direkt via
+    \texttt{docker run --runtime=kata-runtime}.
+  \item \textbf{AppArmor blockiert Audit-Regeln.} Mit gleichzeitig aktivem
+    \texttt{security.audit.enable} und \texttt{security.apparmor.enable}
+    scheiterte \texttt{audit-rules-nixos.service} bei jedem
+    \texttt{nixos-rebuild switch} mit \textit{"There was an error in line 2
+    [...] audit.rules"}, unabhängig vom Inhalt der Regeln. Ursache war ein
+    Fehler in der Ladereihenfolge der Linux-Security-Module bei aktiviertem
+    AppArmor (\href{https://github.com/NixOS/nixpkgs/issues/483085}{nixpkgs
+    Issue \#483085}), behoben in
+    \href{https://github.com/NixOS/nixpkgs/pull/535329}{nixpkgs PR
+    \#535329}. Erschwerend kam hinzu, dass der Upstream-Fix erst wenige Tage
+    vor Abgabe verfügbar war.
+  \item \textbf{Lange Wartezeiten für die Erprobung von Neuinstallationen.}
+    Der umfangreiche Setup-Prozess umfasst das Zurücksetzen der \ac{VM}, das
+    Booten der LiveCD, das Klonen des Repositorys, die NixOS-Installation,
+    die Secure-Boot-Konfiguration und den Start der Container. Das Testen von
+    Änderungen am Installationsprozess war dadurch mitunter langwierig und
+    zeitintensiv.
+  \item \textbf{Traefik und Umgebungsvariablen.} Traefik ignoriert die Werte
+    \texttt{\$\{ACME\_EMAIL\}} und \texttt{\$\{DOMAIN\}} aus der
+    \texttt{.env}, denn es kann Werte in der statischen Konfiguration nicht
+    durch Umgebungsvariablen ersetzen. Für eine saubere und einfache
+    Installation musste die \texttt{traefik.yaml} daher templatisiert
+    werden.
 \end{itemize}
