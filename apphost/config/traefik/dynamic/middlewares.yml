@@ -67,6 +67,8 @@ http:
       forwardAuth:
         address: "http://authelia:9091/api/authz/forward-auth"
         trustForwardHeader: true
+        # Ohne Limit Möglichkeit von DoS/Speicher-Erschöpfung
+        maxResponseBodySize: 65536
         authResponseHeaders:
           - "Remote-User"
           - "Remote-Groups"
