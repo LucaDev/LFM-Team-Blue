@@ -26,7 +26,4 @@ tls:
       sniStrict: true
   # Default Store
   stores:
-    default:
-      defaultCertificate:
-        certFile: "/certs/default.crt"
-        keyFile: "/certs/default.key"
+    default: {}
