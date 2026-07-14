@@ -36,6 +36,7 @@ services:
       - "traefik.tcp.routers.mqtt-tls.rule=HostSNI(`${MOSQUITTO_SUBDOMAIN:-mqtt}.${DOMAIN}`)"
       - "traefik.tcp.routers.mqtt-tls.entrypoints=mqtt-tls"
       - "traefik.tcp.routers.mqtt-tls.tls=true"
+      - "traefik.tcp.routers.mqtt-tls.tls.options=strict@file"
       - "traefik.tcp.routers.mqtt-tls.tls.certresolver=letsencrypt"
       - "traefik.tcp.services.mqtt-tls.loadbalancer.server.port=1883"
       - "traefik.http.routers.mqtt-ws.rule=Host(`${MOSQUITTO_SUBDOMAIN:-mqtt}.${DOMAIN}`)"
