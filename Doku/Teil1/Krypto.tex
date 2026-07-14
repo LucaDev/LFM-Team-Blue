@@ -1,6 +1,6 @@
 \section{Krypto}
 \label{Krypto}
-Die Krypto-Architektur ergibt sich aus der Anforderung, Bitcoin \ac{TX} automatisiert durchführen zu können und gleichzeitig ein hohes Sicherheitsniveau zu gewährleisten.
+Die Krypto-Architektur ergibt sich aus der Anforderung, \ac{BTC} \ac{TX} automatisiert durchführen zu können und gleichzeitig ein hohes Sicherheitsniveau zu gewährleisten.
 Die besondere Schwierigkeit besteht darin, dass das Hot-Wallet direkt auf das Internet zugreifen können muss und dementsprechend als internet-exponiertes System einem erhöhten Risiko durch Remote-Angriffe ausgesetzt ist.
 Dieses gilt es ausreichend vor Kompromittierung zu schützen, da in eben diesem Fall potenziell unmittelbar auf kryptographische Schlüssel zugegriffen und der Wallet-Inhalt transferiert werden könnte.
 Im Zuge dessen wird es ebenfalls von den oben beschriebenen Services vor den aus dem Gefahrenmodell bekannten Angriffen geschützt (siehe \ref{sec:gefahrenmodell}) und weist so bereits eine erhöhte technische Sicherheit auf.
@@ -65,7 +65,7 @@ Dies erhöht die Sicherheit des Cold-Wallets drastisch und bildet einen Kompromi
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{Doku/Abbildungen/key_Architecture.png}
+    \includegraphics[width=1.0\textwidth]{Doku/Abbildungen/key_Architecture.png}
     \caption{Darstellung der Schlüsselverwendung im Signierprozess. \\Quelle: Eigene Darstellung.}
     \label{fig2:key_architecture}
 \end{figure}
@@ -88,7 +88,7 @@ Die schlüsselhaltende Hot-\ac{VM} (Key~A) wird analog gehärtet, ist jedoch nic
 Bei der Installation von NixOS werden die folgenden Warnmeldungen ausgegeben:
 \begin{itemize}
     \item \enquote{Mount point '/boot' which backs the random seed file is world accessible, which is a security hole! ...}
-    \item \enquote{Random seed file '/boot/loader/.\#bootctlrandom-seedc5706ea22f8895b0' is world accessible, which is a security hole! ...}
+    \item \enquote{Random seed file '/boot/loader/.\#bootctlrandom-seed...' is world accessible, which is a security hole! ...}
 \end{itemize}
 
 Diese rühren daher, dass die gesetzten Berechtigungen für die vfat-Boot-Partition nicht erkannt werden.
@@ -139,7 +139,7 @@ Für die spätere produktive Nutzung durch den Mandanten ist eine Umstellung von
 Die Nutzung der automatischen Blockchain-Verwaltung ersetzt einen zuvor evaluierten Ansatz auf Basis eines \ac{ZMQ}-Listeners. Dieser würde Ereignisse für ausgewählte Wallets überwachen und könnte eine Referenz der \acp{UTXO} in deren Besitz extrahieren. Diese Lösung würde eine separate persistierende Logik erfordern, sodass gefundene \acp{UTXO} in eine weitere Datenbank geschrieben werden müssten. Eine besondere Herausforderung stellt dabei die Blockchain-Reorganisation dar, bei der bereits verarbeitete Blöcke einer sogenannten Fork verworfen und bei der Reintegration in die Blockchain durch alternative Ketten ersetzt werden können. Eine korrekte Behandlung dieser Problematik hätte eine komplexe und fehleranfällige Logik mit Betrachtung verschiedener Edge Cases erfordert. Daneben gestaltet sich das Berechnen der Gebühren einer \ac{TX} ebenfalls als sehr aufwendig, da diese dynamisch auf Basis von Mempool-Zuständen, Blockhöhe, Chain-Tips und Netzwerk-Auslastung über mehrere Berechnungen stabilisiert werden müssten.
 
 Durch die Nutzung von Bitcoin Core können diese Aspekte vollständig ausgelagert werden.
-Insbesondere ermöglicht die Kombination aus Deskriptor-Import und dem \ac{RPC}-Befehl \texttt{walletcreatefundedpsbt} eine einfache Erstellung von Transaktionen \cite{bitcoincore_walletcreatefundedpsbt}.
+Insbesondere ermöglicht die Kombination aus Deskriptor-Import und dem \ac{RPC}-Befehl \\\path{walletcreatefundedpsbt} eine einfache Erstellung von Transaktionen \cite{bitcoincore_walletcreatefundedpsbt}.
 
 Zudem erlaubt Bitcoin Core, dynamisch generierte Zieladressen einem registrierten Wallet zuzuordnen, ohne auf statische Adressen angewiesen zu sein, was die Problematik aus \ref{sec:dyn_adress} auflöst. Auf diese Weise wird die Nachvollziehbarkeit von \acp{TX} sichergestellt, während gleichzeitig datenschutzrelevante Anforderungen des Mandanten erfüllt werden.
 Dies stellt einen relevanten Aspekt zur Umsetzung der vollautomatischen Partner-Kommunikation dar. Ankommende Anfragen müssen vor Ausführung autorisiert werden, wobei verschiedene Möglichkeiten bestehen. Eine lässt sich in einer engen Absprache mit dem Partner durch den Austausch eines gemeinsamen Geheimnisses (siehe \ref{sec:partner_auth}) oder in der Verwendung von statischen Adressen finden.
@@ -424,7 +424,7 @@ Der maximale Geldabfluss des Hot-Wallets ist an zwei voneinander unabhängigen P
 Der Signierer führt in einem Redis-Speicher ein rollierendes Zeitfenster (Standard 24\,Stunden, \texttt{\seqsplit{VELOCITY\_WINDOW\_SEC}}) über den bereits signierten Abfluss. Dementsprechend weist dieser eine Anfrage mit \ac{HTTP}~429 ab, sobald die Summe den konfigurierten Grenzwert (Standard 40\,000\,000~\ac{SATS}, \texttt{\seqsplit{VELOCITY\_CAP\_SATS}}) überschreiten würde.
 
 Gezählt wird ausschließlich der Nicht-Change-Abfluss über Single-Signatur-Inputs.
-\acp{PSBT} mit Multi-Signatur-Input (\texttt{cold\_to\_hot}-Nachbefüllungen) werden am Witness-Script herausgerechnet, während Wechselgeld-Rückgaben an die eigene Wallet über den Master-Fingerprint erkannt werden.
+\acp{PSBT} mit Multi-Signatur-Input (\texttt{cold\_to\_hot}-Nachbefüllungen) werden am Witness-Script herausgerechnet, während Wechselgeld"=Rückgaben an die eigene Wallet über den Master-Fingerprint erkannt werden.
 
 Die Beweggründe und Sicherheitsbetrachtung der gestaffelten Schranken und ihr Wertverhältnis werden weiter in der Sicherheitsbetrachtung diskutiert (siehe \ref{sec:doppelter_velocity}).
 

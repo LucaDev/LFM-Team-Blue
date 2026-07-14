@@ -102,7 +102,7 @@ Bewusst variiert wurde ausschließlich die fachliche Tiefe der Nutzereingaben. N
 Diese Asymmetrie wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung
 ausgewiesen.
 
-Beide Szenarien verfolgten dasselbe Ziel: Aufbau einer Self-Hosted-Infrastruktur mit mehreren Diensten, Zugriff über Tor, Monitoring, Backups und einem \ac{BTC}-Transaktions- beziehungsweise \ac{BTC}-Simulationsbereich. Der zentrale Unterschied lag in den Prompts des jeweiligen Nutzers. In Szenario A waren die Vorgaben bewusst offen und alltagsnah formuliert. In Szenario B enthielt der Initialprompt ein explizites Threat Model, klare Verbote, Pflichtdokumente, Dokumentationsregeln, Validierungsschritte und die Vorgabe, im \ac{BTC}-Bereich ausschließlich Simulationsdaten zu verwenden.
+Beide Szenarien verfolgten dasselbe Ziel: Aufbau einer Self-Hosted-Infrastruktur mit mehreren Diensten, Zugriff über Tor, Monitoring, Backups und einem \ac{BTC}-Transaktions- bwz. \ac{BTC}-Simula"=tionsbereich. Der zentrale Unterschied lag in den Prompts des jeweiligen Nutzers. In Szenario A waren die Vorgaben bewusst offen und alltagsnah formuliert. In Szenario B enthielt der Initialprompt ein explizites Threat Model, klare Verbote, Pflichtdokumente, Dokumentationsregeln, Validierungsschritte und die Vorgabe, im \ac{BTC}-Bereich ausschließlich Simulationsdaten zu verwenden.
 
 
 Die Evaluation erfolgte in sieben Hauptkategorien:
@@ -199,7 +199,7 @@ Für jeden Prüfindikator und damit für jede Kategorie wurden 0 bis 3 Punkte ve
 \end{itemize}
 
 Die Punktvergabe wurde von zwei Personen unabhängig anhand der Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden.
-Diese Methodik folgt wie bereits in Abschnitt~\ref{sec:Mukhopadhyay} beschrieben der Ausarbeitung von Mukhopadhyay et al., wobei als Bewerter die Ersteller des Basis- beziehungsweise Krypto-Teils herhalten\cite{KIIaC}.
+Diese Methodik folgt wie bereits in Abschnitt~\ref{sec:Mukhopadhyay} beschrieben der Ausarbeitung von Mukhopadhyay et al., wobei als Bewerter die Ersteller des Basis- bzw. Krypto-Teils herhalten\cite{KIIaC}.
 Nur sie bringen die nötige fachliche Tiefe für die jeweiligen Kategorien im Zuge dieser Ausarbeitung mit und sind dementsprechend die naheliegende Wahl. 
 Die Doppelrolle als Architekten der Referenzlösung und Bewerter der \ac{KI}-Ergebnisse ist zugleich ein methodisches Risiko, weil eigene Designentscheidungen unbewusst als Maßstab dienen können.
 Dieses Risiko wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung weiter ausgewiesen.
@@ -353,7 +353,7 @@ Schutzbedarfsklassen je Rolle fehlen jedoch, wobei die Zuordnung primär an den
 verfügbaren Ressourcen ausgerichtet wurde.\cite{runbookA}
 I2 (2): Die Platzierung ist grundsätzlich begründet (Host bleibt frei von Workloads, \ac{BTC} als eigene Rolle). 
 Der Abzug ergibt sich daraus, dass \texttt{202} und \texttt{204} dual-homed an beiden Bridges 
-(\texttt{10.10.10.10}/\texttt{10.10.20.10} beziehungsweise
+(\texttt{10.10.10.10}/\texttt{10.10.20.10} bzw.
 \texttt{10.10.10.30}/\texttt{10.10.20.30}) hängen und die Zonengrenze zwischen Service- und Monitoring-Segment damit aufweichen.\cite{runbookA}
 I3 (1): Ein dokumentiertes Regelwerk erlaubter Kommunikationspfade existiert nicht und die Laufzeit-Scans des Self-Audits zeigen, dass \texttt{sshd} (22) und \texttt{node-exporter} (9100) zwischen nahezu allen Containern erreichbar waren. Zudem ist \texttt{tor-edge} durch fast alle App- und Ops-Ports direkt ansprechbar.\cite{selfauditA}
 I4 (2): Der \ac{BTC}-Bereich ist sauber getrennt mit eigener Rolle, \ac{RPC} und \ac{P2P} nur
@@ -376,7 +376,7 @@ I4 (2): Der Stack folgt dem geforderten Katalog, jedoch entstanden zusätzlich e
 I1 (2): Registrierungen wurden geschlossen (\path{SIGNUPS_ALLOWED=false},
 in Gitea \path{DISABLE_REGISTRATION=true} plus \path{REQUIRE_SIGNIN_VIEW=true}), Log-Rotation und \texttt{admin off} für Caddy sind gesetzt. Dem stehen durchgängige \texttt{:latest}-Image-Tags und
 vorhersehbare Admin-Namen wie \texttt{admin} und \texttt{gitadmin} gegenüber.\cite{composeA,deployscriptA,selfauditA}
-I2 (1): Sämtliche Secrets werden im Klartext unter \path{/root/homelab-secrets} erzeugt und in \path{service-credentials.txt} inklusive Benutzer/Passwort-Paaren aggregiert. 
+I2 (1): Sämtliche Secrets werden im Klartext unter \path{/root/homelab-secrets} erzeugt und in \textttt{service"=credentials.txt} inklusive Benutzer/Passwort-Paaren aggregiert. 
 Zudem werden Datenbankpasswörter per \texttt{sed} in \path{initdb/01-init.sql} eingesetzt. 
 Zusätzlich exportiert der Backup-Job die privaten \path{hs_ed25519_secret_key}-Dateien der Hidden
 Services in ein unverschlüsseltes lokales Archiv. 
@@ -389,10 +389,10 @@ Snapshot-Ständen.\cite{runbookA,composeA}
 \paragraph{Netzwerk, Tor und Zugriff (2 von 3)} \mbox{}\\
 I1 (1): Die Host-Input-Chain besitzt keine Drop-Policy, da \path{nftables.conf} nur
 \texttt{type filter hook input priority filter} ohne
-\texttt{policy drop} deklariert. Dies blockt lediglich die vier Managementports 22, 111,
+\texttt{policy \\drop} deklariert. Dies blockt lediglich die vier Managementports 22, 111,
 3128 und 8006 aus \texttt{vmbr1}/\texttt{vmbr2}.
 Zudem ist die Forward-Chain leer und akzeptiert implizit alles. 
-Containerseitig endet die \path{HOMELAB-DOCKER-ACCESS}-Kette zwar mit \texttt{DROP}, hängt aber nur in \path{DOCKER-USER} und schützt damit ausschließlich Docker-publizierte Ports.
+Containerseitig endet die \texttt{HOMELAB-DOCKER"=ACCESS}-Kette zwar mit \texttt{DROP}, hängt aber nur in \path{DOCKER-USER} und schützt damit ausschließlich Docker-publizierte Ports.
 \ac{CT}-eigene Dienste wie \texttt{sshd} oder \texttt{node-exporter} werden von diesen Policies nicht adressiert.\cite{hostnftablesA,dockerfirewallA,selfauditA}
 I2 (2): Zwölf v3-Onions sind publiziert und Caddy bindet alle Reverse-Proxy-Listener per \texttt{bind 127.0.0.1}, sodass die Proxyports aus dem Labornetz nicht direkt erreichbar sind.
 Validiert wurde aber nur lokal mit Onion-Host-Headern.
@@ -510,7 +510,7 @@ Die Architektur wurde entlang klar definierter Rollen, Kommunikationspfade und S
 Positiv hervorzuheben ist außerdem die konsequente Vermeidung produktiver Geheimnisse. Während des gesamten Builds wurden keine produktiven Seeds, Wallet-Dateien, Private Keys oder \ac{API}-Schlüssel erzeugt oder gespeichert. Die Dokumentation der Sicherheitsgrenzen blieb dabei über die einzelnen Artefakte hinweg konsistent.
 Abgesichert werden soll dieses System über \path{nftables}, wobei dies einen validen Ansatz darstellt
 
-Die Analyse der \ac{BTC}-Komponente zeigt, dass mehrere sicherheitskritische Prozesse lediglich konzeptionell beziehungsweise simulativ abgebildet wurden. Dadurch konnte der vollständige Nachweis zentraler Sicherheitsfunktionen nicht erbracht werden. 
+Die Analyse der \ac{BTC}-Komponente zeigt, dass mehrere sicherheitskritische Prozesse lediglich konzeptionell bzw. simulativ abgebildet wurden. Dadurch konnte der vollständige Nachweis zentraler Sicherheitsfunktionen nicht erbracht werden. 
 Für eine belastbare Bewertung sicherheitskritischer Transaktionssysteme reicht die Existenz von Prozessartefakten allein nicht aus. Erforderlich ist zusätzlich die nachvollziehbare Ausführung und Prüfung der zugrunde liegenden Kernfunktionen.
 Zudem wäre einem Nutzer durch eine Simulation von einem \ac{BTC}-Setup nicht geholfen und seine eigentliche Anforderung bleibt unerfüllt.
 
@@ -546,7 +546,7 @@ I2 (3): Die Provisionierungsmatrix begründet je Gast Typ, Zone, Bridge und Isol
 Zudem ist auch die Zurückstellung von Collabora und Electrs einzeln begründet.\cite{masterplanB}
 I3 (3): Die Deny-by-default-Kommunikationsmatrix dokumentiert jeden erlaubten Pfad mit Quelle, Ziel, Port und Zweck. Dies äußert sich dadurch, dass \texttt{vm-bitcoin-service} nach \texttt{vm-bitcoin-node} nur über \texttt{TCP 8332} kommunizieren darf.
 Außerdem untersagen Querschnittsregeln Rückverbindungen in die Management-Zone.\cite{masterplanB}
-I4 (3): Admin-, Anwendungs- und \ac{BTC}-Bereich sind strikt getrennt. Der Admin-Pfad führt ausschließlich über Tor mit v3-Client-Auth auf den Admin-Onion beziehungsweise für die Proxmox-Web-\ac{UI} über einen lokalen \ac{SSH}-Tunnel.
+I4 (3): Admin-, Anwendungs- und \ac{BTC}-Bereich sind strikt getrennt. Der Admin-Pfad führt ausschließlich über Tor mit v3-Client-Auth auf den Admin-Onion bzw. für die Proxmox-Web-\ac{UI} über einen lokalen \ac{SSH}-Tunnel.
 \ac{BTC} bildet eine eigene Dummy-only-Zone auf \texttt{vmbr50} mit eigener Verbotsliste.\cite{masterplanB,finalsummaryB}
 
 \paragraph{Services (1 von 3)} \mbox{}\\
@@ -559,7 +559,7 @@ I4 (2): Unnötige Zusatzdienste wurden konsequent vermieden und der temporäre P
 Der Abzug ergibt sich daraus, dass fünf provisionierte Gäste als funktionslose Hüllen verbleiben.\cite{finalsummaryB,implementationlogB}
 
 \paragraph{Konfiguration (3 von 3)} \mbox{}\\
-I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte \ac{BS}-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \path{SystemMaxUse=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \path{policy-rc.d} gegen ungewollte Dienststarts bereit. 
+I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte \ac{BS}-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \textttt{SystemMax"=Use=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \texttt{policy"=rc.d} gegen ungewollte Dienststarts bereit. 
 Die \ac{VM}-Basis wurde gegen \texttt{SHA512SUMS} samt Signaturdatei verifiziert.\cite{section3scriptB,validatornotesB,masterplanB}
 I2 (3): In \ac{IaC}- und Doku-Pfaden liegen keine Klartext-Secrets. Dabei enthält \path{/etc/ailab/secrets} nur ein README mit dem expliziten Verbot echter Geheimnisse. 
 Laufzeitnahe Artefakte wie der Operator-Auth-Key liegen root-only unter \path{/root/ailab-runtime} außerhalb von \texttt{outputs} und \ac{IaC}.\cite{section3scriptB,implementationlogB}
@@ -579,9 +579,9 @@ I4 (3): Interne Pfade sind quell- und zielgebunden freigeschaltet, wie etwa \tex
 Für alle sieben Zielgäste ist die Blockade der Host-Gateway-Ports 22, 111, 8006 und 3128 einzeln validiert.\cite{section5scriptB,implementationlogB,finalsummaryB}
 
 \paragraph{Backup und Monitoring (2 von 3)} \mbox{}\\
-I1 (1): Das Borg-Repository ist mit \texttt{repokey-blake2} verschlüsselt und der Zugriff über den dedizierten Nutzer \texttt{borgrepo} mit \texttt{restrict}, \texttt{ForceCommand borg serve --restrict-to-path}, \texttt{PermitTTY no} und deaktiviertem Forwarding verengt.
+I1 (1): Das Borg-Repository ist mit \texttt{repokey-blake2} verschlüsselt und der Zugriff über den dedizierten Nutzer \texttt{borgrepo} mit \texttt{restrict}, \texttt{Force"=Command borg serve --restrict-to-path}, \texttt{PermitTTY no} und deaktiviertem Forwarding verengt.
 Das Repository liegt jedoch auf demselben Testhost, und die Passphrase wird per \texttt{openssl rand -hex 32} im Klartext unter \path{/root/ailab-runtime/borg-host-to-104/passphrase} abgelegt.\cite{section5scriptB,finalsummaryB}
-I2 (2): Der Restore wurde als Smoke-Restore des Archivs \path{ailab2-20260707T212412Z} mit \path{host/configs.tgz}, \path{ct-101/sanitized-configs.tgz}, \path{EXCLUSIONS.txt} nachgewiesen.
+I2 (2): Der Restore wurde als Smoke-Restore des Archivs \path{ailab2-20...2Z} mit \path{host/configs.tgz}, \path{ct-101/sanitized-configs.tgz}, \path{EXCLUSIONS.txt} nachgewiesen.
 Die Wiederherstellung einer vollständigen Rolle fehlt.\cite{finalsummaryB,validatornotesB}
 I3 (2): Der Host wird erstmals mitüberwacht (\texttt{node-exporter} auf \texttt{10.30.30.1:9100} plus \ac{SSH}-Auth-Textfile-Metriken), wobei alle sechs Prometheus-Targets \texttt{health=up} melden. 
 Die Abdeckung endet jedoch bei den drei laufenden Gästen. Die Dienste sind mangels Rollout nicht überwachbar und die Blackbox-Probe prüft nur den \texttt{ntfy}-Endpunkt.\cite{section5scriptB,finalsummaryB,implementationlogB}
@@ -591,7 +591,7 @@ I4 (2): Der Alertmanager routet auf das operator-only \texttt{ntfy} (\texttt{lis
 I1 (3): Alle vier Artefakte wurden mit tabellarischen Fundlisten (Priorität, Typ, Stelle) analysiert. Darunter finden sich auch strukturelle Befunde wie die \ac{IP}v6-Wirkung der \texttt{table inet}-Freigaben und das direkte Schreiben in finale Archivdateien.\cite{artefaktreviewB}
 I2 (3): Jede Datei enthält eine Variantenabwägung mit gewählter Korrekturvariante, Alternative und Begründung sowie die sanitisierte, generationierte und \texttt{age}-verschlüsselte Bundle-Variante statt eines Vollbackups mit nachgelagerten Excludes.\cite{artefaktreviewB}
 I3 (3): Die Referenzfassungen beheben die Kernprobleme, sodass die \path{firewall.fixed.nft} \texttt{policy drop} nutzt, die \texttt{define}-Variablen und Sets die Admin-Zugriffe an die Quelladresse \texttt{10.0.2.2} bindet und den Egress auf \ac{DNS}, \ac{NTP} und \ac{HTTP}(S) begrenzt.
-Die Datei \path{backup.fixed.sh} ergänzt \texttt{age}-Verschlüsselung, Generationen-Verzeichnisse und eine \path{EXCLUSIONS.txt}.\cite{artefaktreviewB}
+Die Datei \path{backup.fixed.sh} ergänzt \texttt{age}-Verschlüsse"=lung, Generationen-Verzeichnisse und eine \path{EXCLUSIONS.txt}.\cite{artefaktreviewB}
 I4 (3): Statt neuer Risiken führen die Korrekturen zusätzliche Härtung ein wie \path{cap_drop: [ALL]}, \path{read_only}, \texttt{tmpfs} und Grafana als unprivilegierter Nutzer \texttt{472:472}. Zudem werden die Restrisiken je Datei schlüssig dokumentiert.\cite{artefaktreviewB}
 
 \subsubsection{Bewertung des \ac{BTC}-Konzepts}
@@ -907,7 +907,7 @@ Diese Einschränkungen sprechen jedoch nicht zugunsten des \ac{LLM}. In einer ec
 
 \section{Takeaway für den Mandanten}
 
-\acs{LLM} und insbesondere agentische Systeme wie Codex können heute bereits einen erheblichen Teil der Konzeptions-, Umsetzungs-, Dokumentations- und Validierungsarbeit für ein sicheres Home-Lab übernehmen. Sie sind in der Lage, praktische Infrastruktur aufzubauen, Dateien zu korrigieren, Audits zu formulieren und unter enger Steuerung auch sicherheitsnahe Designs nachvollziehbar umzusetzen.\cite{openaiCodexDocs,openaiShellTool}
+\acs{LLM} und insbesondere agentische Systeme wie Codex können heute bereits einen erheblichen Teil der Konzeptions-, Umsetzungs-, Dokumenta"=tions- und Validierungsarbeit für ein sicheres Home-Lab übernehmen. Sie sind in der Lage, praktische Infrastruktur aufzubauen, Dateien zu korrigieren, Audits zu formulieren und unter enger Steuerung auch sicherheitsnahe Designs nachvollziehbar umzusetzen.\cite{openaiCodexDocs,openaiShellTool}
 
 Sie ersetzen den menschlichen Sicherheitsberater jedoch nicht vollständig. Der Hauptunterschied zwischen Szenario A und Szenario B lag in der Qualität der menschlichen Steuerung. Ohne fachlich starke Vorgaben tendierte der Agent zu einer funktional beeindruckenden, aber sicherheitstechnisch unschärferen Lösung. Mit enger Steuerung erreichte er ein deutlich belastbareres Ergebnis, benötigte aber weiterhin menschliche Priorisierung, Freigabe und klar gesetzte Grenzen.
 
@@ -924,7 +924,7 @@ Szenario A erfüllte seinen Zweck grundsätzlich gut. Der Nutzer wurde bewusst n
 Bei Szenario B bestätigte sich der Wert des offenen Simulationsrahmens als Testinstrument. Codex hat die naheliegende Regtest-Option von sich aus nicht evaluiert, obwohl eine \ac{BTC}-Core-Regtest-Umgebung, Test-Wallets, eine nachvollziehbare \texttt{bitcoin.conf} sowie simulierte Spend- und Recovery-Abläufe innerhalb des erlaubten Rahmens möglich gewesen wären. 
 Für einen produktiven Einsatz sollte diese Erwartung dagegen explizit in den Prompt aufgenommen werden, da die Eigenleistung des Modells an dieser Stelle nicht ausreicht.
 
-Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale Herausforderung beim Einsatz von \ac{KI} für technische Infrastrukturaufgaben. Die Qualität des Ergebnisses hängt nicht ausschließlich von den Fähigkeiten des Modells ab, sondern in hohem Maße davon, welche Ziele und Randbedingungen durch den Nutzer vorgegeben werden. In Szenario A erhielt die \ac{KI} vergleichsweise wenige Vorgaben. Dadurch konzentrierte sie sich stärker auf die unmittelbare Aufgabenstellung und erreichte innerhalb kurzer Zeit einen hohen praktischen Umsetzungsgrad. Im \ac{BTC}-Bereich wurden ein \ac{BTC}-Core-Node, Monitoring-Komponenten sowie die konzeptionellen Grundlagen für Watch-only-Wallets, \acp{PSBT} und einen späteren Signierprozess geschaffen. Obwohl zentrale Sicherheitsaspekte und Betriebsprozesse unvollständig blieben, entstand ein System, das sich deutlich an der eigentlichen fachlichen Anforderung orientierte. Szenario B verfolgte einen anderen Ansatz. Hier standen Sicherheitsanforderungen, Rollenmodelle, Validierungsschritte und die Vermeidung produktiver Geheimnisse bereits von Beginn an im Vordergrund. Das resultierende System war organisatorisch und sicherheitstechnisch deutlich strukturierter. Gleichzeitig verlagerte sich der Schwerpunkt der Arbeit zunehmend auf die Einhaltung dieser Rahmenbedingungen. Im \ac{BTC}-Bereich führte dies dazu, dass Rollen, Datenflüsse und Sicherheitsgrenzen sehr detailliert ausgearbeitet wurden, während wesentliche Kernfunktionen des eigentlichen Transaktionsprozesses überwiegend simuliert blieben. Die Ergebnisse deuten darauf hin, dass starke Steuerung nicht automatisch zu einer besseren Erfüllung der ursprünglichen Fachanforderung führt. Stattdessen optimiert das Modell auf diejenigen Ziele, die im Prompt und in den nachfolgenden Vorgaben besonders stark gewichtet werden. Werden Sicherheit, Nachweisbarkeit und Compliance zum dominierenden Ziel erklärt, kann dies dazu führen, dass die \ac{KI} erhebliche Ressourcen auf Dokumentation, Validierung und Regelkonformität verwendet, während die praktische Umsetzung der eigentlichen Kernfunktion in den Hintergrund tritt. Die Evaluation zeigt damit einen Zielkonflikt zwischen funktionaler Umsetzung und regulatorischer beziehungsweise sicherheitstechnischer Absicherung. Beide Aspekte sind notwendig, optimale Ergebnisse entstehen jedoch erst dann, wenn der Nutzer die Balance zwischen beiden Zielsetzungen aktiv steuert.
+Der direkte Vergleich von Szenario A und Szenario B verdeutlicht eine zentrale Herausforderung beim Einsatz von \ac{KI} für technische Infrastrukturaufgaben. Die Qualität des Ergebnisses hängt nicht ausschließlich von den Fähigkeiten des Modells ab, sondern in hohem Maße davon, welche Ziele und Randbedingungen durch den Nutzer vorgegeben werden. In Szenario A erhielt die \ac{KI} vergleichsweise wenige Vorgaben. Dadurch konzentrierte sie sich stärker auf die unmittelbare Aufgabenstellung und erreichte innerhalb kurzer Zeit einen hohen praktischen Umsetzungsgrad. Im \ac{BTC}-Bereich wurden ein \ac{BTC}-Core-Node, Monitoring-Komponenten sowie die konzeptionellen Grundlagen für Watch-only-Wallets, \acp{PSBT} und einen späteren Signierprozess geschaffen. Obwohl zentrale Sicherheitsaspekte und Betriebsprozesse unvollständig blieben, entstand ein System, das sich deutlich an der eigentlichen fachlichen Anforderung orientierte. Szenario B verfolgte einen anderen Ansatz. Hier standen Sicherheitsanforderungen, Rollenmodelle, Validierungsschritte und die Vermeidung produktiver Geheimnisse bereits von Beginn an im Vordergrund. Das resultierende System war organisatorisch und sicherheitstechnisch deutlich strukturierter. Gleichzeitig verlagerte sich der Schwerpunkt der Arbeit zunehmend auf die Einhaltung dieser Rahmenbedingungen. Im \ac{BTC}-Bereich führte dies dazu, dass Rollen, Datenflüsse und Sicherheitsgrenzen sehr detailliert ausgearbeitet wurden, während wesentliche Kernfunktionen des eigentlichen Transaktionsprozesses überwiegend simuliert blieben. Die Ergebnisse deuten darauf hin, dass starke Steuerung nicht automatisch zu einer besseren Erfüllung der ursprünglichen Fachanforderung führt. Stattdessen optimiert das Modell auf diejenigen Ziele, die im Prompt und in den nachfolgenden Vorgaben besonders stark gewichtet werden. Werden Sicherheit, Nachweisbarkeit und Compliance zum dominierenden Ziel erklärt, kann dies dazu führen, dass die \ac{KI} erhebliche Ressourcen auf Dokumentation, Validierung und Regelkonformität verwendet, während die praktische Umsetzung der eigentlichen Kernfunktion in den Hintergrund tritt. Die Evaluation zeigt damit einen Zielkonflikt zwischen funktionaler Umsetzung und regulatorischer bzw. sicherheitstechnischer Absicherung. Beide Aspekte sind notwendig, optimale Ergebnisse entstehen jedoch erst dann, wenn der Nutzer die Balance zwischen beiden Zielsetzungen aktiv steuert.
 
 Zu Beginn der Untersuchung wurde geprüft, ob Codex direkt auf der Serverumgebung des eigenen Home-Labs arbeiten könnte. Aus Sicherheitsgründen wurden die Zugriffsrechte dabei bewusst eingeschränkt, um unbeabsichtigte Änderungen an globalen Einstellungen, Zugriffspfaden oder anderen Bestandteilen zu verhindern. Dadurch war Codex zunächst gezwungen, über die Proxmox-\acs{API} zu arbeiten. Dieser Ansatz war jedoch aufwendig, langsam und der Tokenverbrauch zu hoch. 
 

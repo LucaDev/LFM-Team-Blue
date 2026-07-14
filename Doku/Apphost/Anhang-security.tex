@@ -29,13 +29,13 @@ bieten.
   \item Speculative Store Bypass Disable: \texttt{spec\_store\_bypass\_disable=on} Erzwingt Speculative Store Bypass für alle Anwendungen, nicht nur sandboxed. \texttt{Default: seccomp}
   \item \acs{TSX} deaktiviert + \acs{TAA}/\acs{MDS} vollständig mitigiert\\
   (\texttt{tsx=off}, \texttt{tsx\_async\_abort=full,nosmt}, \texttt{mds=full,nosmt}). Kein Standard. Deaktiviert \ac{SMT} und \ac{TSX} komplett, schützt jedoch vor Exploits ähnlich zu Retbleed. 
-  \item L1TF: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt} Kein Standard. Deaktiviert \ac{SMT} 
+  \item \acs{L1TF}: \texttt{l1tf=full,force}; Retbleed: \texttt{retbleed=auto,nosmt} Kein Standard. Deaktiviert \ac{SMT} 
 \end{itemize}
 
 \subsubsection*{Speicher- \& Adressraumschutz}
 \begin{itemize}
  \item Vollständiges \acs{ASLR}: \texttt{\textcolor{OliveGreen}{randomize\_va\_space=2}}, \texttt{\textcolor{OliveGreen}{vm.mmap\_rnd\_bits=32}}. Standardmäßig aktiv, lediglich explizit gesetzt
-  \item SLUB-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits. Standardmäßig deaktiviert, da es Performance kostet.
+  \item \acs{SLUB}-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits. Standardmäßig deaktiviert, da es Performance kostet.
   \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}. Standardmäßig auf xonly gesetzt. Sehr alte Programme, die noch auf vsyscalls setzen, verlieren ggf. ihre Funktion. Moderne haben keine Probleme damit.
   \item debugfs deaktiviert: \texttt{debugfs=off}. Standardmäßig aktiviert
 \end{itemize}
@@ -63,7 +63,7 @@ bieten.
 \subsubsection*{Dateisystem-Schutz (Kernel)}
 \begin{itemize}
   \item \textcolor{OliveGreen}{\texttt{fs.protected\_hardlinks=1}, \texttt{fs.protected\_symlinks=1}}. Nur explizit gesetzt
-  \item \texttt{fs.protected\_fifos=2}, \texttt{fs.protected\_regular=2}. Default=1. Erweitert FIFO und regular File Schutz
+  \item \texttt{fs.protected\_fifos=2}, \texttt{fs.protected\_regular=2}. Default=1. Erweitert \acs{FIFO} und regular File Schutz
   \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}. Default=nosuid,nodev. noexec für zusätzliche Absicherung
 \end{itemize}
 
@@ -114,7 +114,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \begin{itemize}
   \item Nur Public-Key-Authentifizierung (\texttt{PasswordAuthentication=false}, \texttt{PermitRootLogin=no})
   \item Post-Quanten-\ac{KEM}: \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
-  \item Ciphers: nur ChaCha20-Poly1305 und AES-256/128-GCM
+  \item Ciphers: nur ChaCha20-Poly1305 und \acs{AES}-256/128-\acs{GCM}
   \item \acs{MAC}s: nur \acs{ETM}-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
   \item X11/\acs{TCP}/Agent-Forwarding und Tunnel deaktiviert
   \item \texttt{MaxAuthTries=3}, \texttt{LoginGraceTime=30s}, \texttt{MaxSessions=3}
@@ -172,7 +172,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \begin{itemize}
   \item Tägliche automatische Prüfung via systemd-Service
   \item Überwachte Pfade: \texttt{/etc}, \texttt{/bin}, \texttt{/sbin}, \texttt{/lib*}, \texttt{/usr/bin}, \texttt{/usr/sbin}, \texttt{/boot}, \texttt{/opt/apphost/config}
-  \item Algorithmen: SHA-512, SHA-256, MD5, Tiger, HAVAL, GOST u.\,a.
+  \item Algorithmen: \acs{SHA}-512, \acs{SHA}-256, \acs{MD5}, Tiger, \acs{HAVAL}, \acs{GOST} u.\,a.
   \item Datenbank komprimiert (\texttt{gzip\_dbout=yes})
 \end{itemize}
 

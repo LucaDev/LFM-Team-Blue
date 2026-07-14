@@ -6,7 +6,8 @@ des Mandanten. Zunächst werden die Entscheidungen erläutert, die zu der
 gewählten Architektur geführt haben. Anschließend wird der konkrete Aufbau
 beschrieben. Abschließend wird gezeigt, wie die Umsetzung das vorgegebene
 Bedrohungsmodell abdeckt. An geeigneten Stellen wird auf die separate
-Installationsanleitung sowie auf den Anhang verwiesen, in dem die einze
+Installationsanleitung sowie auf den Anhang verwiesen, in dem die einzelnen
+Schritte und alle Sicherheitseinstellungen im Detail aufgeführt sind.
 
 \subsection{Evaluation verschiedener Ansätze}
 
@@ -264,7 +265,7 @@ Die Zertifikate bezieht Traefik über \texttt{Let's Encrypt} mit der
 der Server dafür nicht aus dem Internet erreichbar sein muss. Über die
 \ac{DNS}-\ac{API} des Anbieters (hier \texttt{Cloudflare}) wird lediglich kurzzeitig
 ein TXT-Eintrag gesetzt. Die Ports 80 und 443 können vollständig hinter dem
-Router verbleiben. An texttt{Cloudflare} fließen dabei keine Inhalte, sondern nur der
+Router verbleiben. An \texttt{Cloudflare} fließen dabei keine Inhalte, sondern nur der
 Nachweis der Kontrolle über die Domain.
 
 Eine bewusste Ausnahme bildet der Tor-Zugang. Onion-Adressen lassen sich von
@@ -494,7 +495,7 @@ produktiven Dienste des Mandanten bleiben vom vollen Härtungsmuster erfasst.
 Ergänzt wird die Container-Härtung durch automatische Sicherheitsscans. Ein
 geplanter Job prüft die laufenden Images wöchentlich (montags um 02:00 Uhr)
 mit Trivy auf bekannte Schwachstellen der Stufen HIGH und CRITICAL und legt
-den Bericht unter \texttt{/var/log/docker-security-scan.log} ab. Zusammen mit
+den Bericht unter \textit{/var/log/docker-security-scan.log} ab. Zusammen mit
 den durch RenovateBot laufend aktuell gehaltenen Images entsteht ein
 kontinuierlicher Kreislauf. Neue Schwachstellen werden zeitnah erkannt und
 das passende Update steht meist bereits als Pull Request bereit.
@@ -582,10 +583,10 @@ einem einzigen Befehl neu.
 \subsubsection{Kontrollierte Updates mit Renovate}
 \label{sec:renovate}
 Ein wiederkehrendes Problem beim Self-Hosting ist, dass Container-Images
-veralten und so unbemerkt Sicherheitslücken offen bleiben. Damit das nicht
-passiert, überwacht RenovateBot unser Repository und öffnet automatisch einen
-Pull Request, sobald für ein Image eine neue Version verfügbar ist. Dadurch
-haben wir einen kontrollierten und nachvollziehbaren Update-Prozess geschaffen:
+veralten und so unbemerkt Sicherheitslücken offen bleiben. Um das zu
+verhindern, überwacht RenovateBot das Repository und öffnet automatisch einen
+Pull Request, sobald für ein Image eine neue Version verfügbar ist. Daraus
+ergibt sich ein kontrollierter und nachvollziehbarer Update-Prozess.
 
 \begin{itemize}
   \item Jedes Update kommt als einzelner, dokumentierter Pull Request und
@@ -600,7 +601,7 @@ haben wir einen kontrollierten und nachvollziehbaren Update-Prozess geschaffen:
 \end{itemize}
 
 Die genannte Wartezeit wird über die Renovate-Option
-\texttt{minimumReleaseAge} umgesetzt. Für Major-Updates beträgt sie 14~Tage
+\textit{minimumReleaseAge} umgesetzt. Für Major-Updates beträgt sie 14~Tage
 und für das exponierte Traefik-Image 7~Tage. Renovate öffnet den
 Update-Pull-Request zwar sofort, markiert den zugehörigen Status-Check aber
 als ausstehend, bis die konfigurierte Zeit seit dem Release verstrichen ist.
@@ -741,15 +742,15 @@ setzt das System an mehreren Stellen an:
   \item \textbf{Authentifizierte Zeit.} Die Zeitsynchronisation läuft über
     \ac{NTS} und damit authentifiziert über \ac{TLS}.
   \item \textbf{Keine fremde Cloud für Benachrichtigungen.}
-    Push-Benachrichtigungen laufen, wie beschrieben, ausschließlich über das
+    Push-Benachrich"=tigungen laufen, wie beschrieben, ausschließlich über das
     selbst gehostete ntfy.
 \end{itemize}
 
 \subsubsection{Eingegangene Kompromisse}
 
-Die Grenzen eines Systems müssen offen benannt werden, sodass diese diskutiert und bewertet werden können.
-Diese stellt ebenfalls den Entwicklungsprozess und besitzen hohe Relevant für diese Ausarbeitung.
-Aufgrunddessen werden diese folgend thematisiert.
+Kein reales Setup ist frei von Kompromissen. Deren offene Benennung gehört zum
+Entwicklungsprozess und ist für diese Ausarbeitung von hoher Relevanz. Die
+folgenden Punkte behandeln daher die bewusst eingegangenen Kompromisse.
 
 \begin{itemize}
   \item \textbf{Ein Host statt vieler \acp{VM}.} Der Aufbau bündelt viele
@@ -786,7 +787,7 @@ Aufgrunddessen werden diese folgend thematisiert.
     erreicht bislang nicht dieselbe Reife und Stabilität. Die Entwicklung
     wird beobachtet und ein Umstieg bleibt für die Zukunft möglich.
   \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen
-    Sandbox-Runtimes sind vorbereitet, aber standardmäßig nicht aktiv (siehe
+    Sandbox"=Runtimes sind vorbereitet, aber standardmäßig nicht aktiv (siehe
     nächster Abschnitt).
 \end{itemize}
 
@@ -870,88 +871,14 @@ steht.
     regelmäßig aufgeräumt.
 \end{itemize}
 
-\subsection{Herausforderungen}
-\label{sec:apphost-herausforderungen}
-
-Abschließend wird dargelegt, an welchen Stellen größere Schwierigkeiten
-auftraten und wie damit umgegangen wurde.
-
-\begin{itemize}
-  \item \textbf{Der komplette Umbau weg von Kubernetes.} Wie eingangs
-    beschrieben, war der Stack zunächst auf Kubernetes mit Talos Linux
-    aufgebaut und nahezu fertiggestellt. Die Erkenntnis, dass dieser Ansatz
-    für den Anwendungsfall zu komplex ist, kam entsprechend spät. Die
-    Entscheidung fiel dennoch für den vollständigen Neuaufbau auf Docker
-    Compose, weil das Ergebnis dadurch wartbarer und für den Mandanten
-    nachvollziehbarer wird. Im Rückblick war das die richtige Entscheidung,
-    auch wenn sie erheblichen Mehraufwand bedeutete.
-  \item \textbf{Architektonischer Bias.} Mitverantwortlich für die späte
-    Kurskorrektur war eine über Jahre gewachsene Prägung. Durch langjährige
-    Arbeit mit Kubernetes-Clustern sind Best Practices vertraut und fertige
-    Lösungsbausteine oft vorhanden. Daraus entsteht die Tendenz, jede
-    Herausforderung als Kubernetes-Anwendungsfall zu betrachten. Wichtig ist
-    jedoch die objektive Einsicht, dass diese Herangehensweise in bestimmten
-    Szenarien keinen messbaren Vorteil bietet oder sogar unnötige Komplexität
-    erzeugt. Eines der Teammitglieder betreibt beispielsweise seit Jahren ein
-    Kubernetes-basiertes Homelab (\url{https://github.com/LucaDev/Home/}).
-  \item \textbf{NixOS-Versionssprung kurz vor Abgabe.} Gegen Ende der
-    Bearbeitungszeit erschien die neue NixOS-Version. Der Sprung auf
-    \texttt{26.05} brachte einige Breaking Changes mit sich. Ein Verbleib auf
-    der älteren Version wäre einfacher gewesen. Dem Mandanten sollte jedoch
-    kein von Beginn an veraltetes System ausgeliefert werden. Der
-    Versionssprung wurde daher noch umgesetzt, was unter Zeitdruck
-    zusätzlichen Aufwand bedeutete.
-  \item \textbf{Kompatibilität von Kata Containers und gVisor.} Beide
-    Sandbox-Runtimes sollten ursprünglich standardmäßig aktiv sein. In der
-    Praxis verhielten sie sich je nach Proxmox-Konfiguration unterschiedlich,
-    insbesondere wenn Nested Virtualization nicht stabil verfügbar war.
-    Damit das Setup auf möglichst vielen Hosts problemlos startet, wurden
-    beide Runtimes vorbereitet, aber nicht als Standard gesetzt. Sie lassen
-    sich pro Dienst aktivieren, sobald die Hardware das stabil unterstützt.
-  \item \textbf{Zeit und Vereinbarkeit.} Alle Teammitglieder arbeiten in
-    Vollzeit und haben das Projekt neben weiteren Modulen bearbeitet.
-    Zeitweise wurde zu viel Aufwand in Details investiert, vor allem in der
-    Kubernetes-Phase. Die wichtigste Lehre daraus ist, frühzeitig zu
-    hinterfragen, ob ein gewählter Ansatz wirklich zum Kern der Aufgabe
-    passt, statt ihn aus Prinzip zu Ende zu führen.
-  \item \textbf{Kata Containers und \texttt{userns-remap} (erst mit NixOS
-    26.05 aufgetreten).} Nach dem Versionssprung startete
-    \texttt{docker.service} nicht mehr. \texttt{dockerd} verweigerte den
-    Start mit der Meldung \textit{"containerd-snapshotter is explicitly
-    enabled, but is not compatible with userns remapping"}. Kata Containers
-    3.x liefert keine klassische OCI-Runtime-Binary mehr mit, sondern wird
-    ausschließlich über den containerd-v2-Shim
-    (\texttt{containerd-shim-kata-v2}) angesprochen. Genau das erfordert
-    Dockers containerd-Snapshotter-Integration, die wiederum mit
-    \texttt{userns-remap} inkompatibel ist. Da das UID/GID-Remapping
-    wichtiger erschien als die direkte Ansprache von Kata über den
-    Docker-Daemon, wurde der \texttt{kata-runtime}-Eintrag aus der
-    Docker-Konfiguration entfernt und \texttt{containerd-snapshotter}
-    deaktiviert. Kata Containers bleiben über
-    \texttt{virtualisation.containerd} (CRI) weiterhin konfiguriert und
-    nutzbar, nur nicht mehr direkt via
-    \texttt{docker run --runtime=kata-runtime}.
-  \item \textbf{AppArmor blockiert Audit-Regeln.} Mit gleichzeitig aktivem
-    \texttt{security.audit.enable} und \texttt{security.apparmor.enable}
-    scheiterte \texttt{audit-rules-nixos.service} bei jedem
-    \texttt{nixos-rebuild switch} mit \textit{"There was an error in line 2
-    [...] audit.rules"}, unabhängig vom Inhalt der Regeln. Ursache war ein
-    Fehler in der Ladereihenfolge der Linux-Security-Module bei aktiviertem
-    AppArmor (\href{https://github.com/NixOS/nixpkgs/issues/483085}{nixpkgs
-    Issue \#483085}), behoben in
-    \href{https://github.com/NixOS/nixpkgs/pull/535329}{nixpkgs PR
-    \#535329}. Erschwerend kam hinzu, dass der Upstream-Fix erst wenige Tage
-    vor Abgabe verfügbar war.
-  \item \textbf{Lange Wartezeiten für die Erprobung von Neuinstallationen.}
-    Der umfangreiche Setup-Prozess umfasst das Zurücksetzen der \ac{VM}, das
-    Booten der LiveCD, das Klonen des Repositorys, die NixOS-Installation,
-    die Secure-Boot-Konfiguration und den Start der Container. Das Testen von
-    Änderungen am Installationsprozess war dadurch mitunter langwierig und
-    zeitintensiv.
-  \item \textbf{Traefik und Umgebungsvariablen.} Traefik ignoriert die Werte
-    \texttt{\$\{ACME\_EMAIL\}} und \texttt{\$\{DOMAIN\}} aus der
-    \texttt{.env}, denn es kann Werte in der statischen Konfiguration nicht
-    durch Umgebungsvariablen ersetzen. Für eine saubere und einfache
-    Installation musste die \texttt{traefik.yaml} daher templatisiert
-    werden.
-\end{itemize}
+\subsection{Fazit}
+Der Apphost bildet den zentralen Einstiegspunkt für den Mandanten und das
+Rückgrat für sämtliche Dienste. Auf ihm laufen nicht nur die Alltags- und
+Produktivanwendungen, sondern auch der Hot-Wallet-Stack des
+\ac{BTC}-Zahlungsverkehrs (Abschnitt~\ref{Krypto}). Damit vereint eine einzige,
+deklarativ beschriebene und umfassend gehärtete Maschine die gesamte für den
+Mandanten sichtbare Infrastruktur. Die durchgängige Beschreibung als Code
+macht den Aufbau vor der Ausführung prüfbar und nach einem Ausfall
+reproduzierbar wiederherstellbar. Aus Sicht des Mandanten entsteht so ein
+System, das sich an einer Stelle betreiben, überwachen und warten lässt, ohne
+dass die Absicherung der einzelnen Dienste darunter leidet.

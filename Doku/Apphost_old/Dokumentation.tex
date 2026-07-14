@@ -354,6 +354,32 @@ Prometheus und Loki arbeiten rein intern, nur Grafana,
 Prometheus und Alertmanager sind über den Reverse Proxy zugänglich und dort
 durch Authelia geschützt.
 
+Damit nach dem ersten Start ohne manuelle Arbeit sofort aussagekräftige
+Ansichten bereitstehen, werden mehrere bewährte Community-Dashboards von
+\texttt{grafana.com} vorprovisioniert. Sie liegen als \ac{JSON}
+im Repository, werden schreibgeschützt in den Grafana-Container gemountet und
+beim Start automatisch in den Ordner \texttt{Default} geladen. Änderungen
+finden also in der Versionsverwaltung statt und nicht flüchtig in der
+Oberfläche. Die Datenquellen (Prometheus, Loki) sind dabei fest an die per
+Provisioning angelegten \ac{UID}s gebunden. Vorgesehen sind:
+
+\begin{itemize}
+  \item \textbf{Node Exporter Full} für die Host-Metriken wie
+    \ac{CPU}, Arbeitsspeicher, Festplatten und Netzwerk.
+  \item \textbf{cAdvisor} für die Ressourcennutzung der einzelnen
+    Container.
+  \item \textbf{Traefik Official} für Anfrageraten, Latenzen und
+    Status-Codes des Reverse Proxy.
+  \item \textbf{Prometheus 2.0 Overview} für den Zustand von
+    Prometheus selbst, etwa Scrape-Dauer und Speicherverbrauch.
+  \item \textbf{Redis} für die beiden Valkey-Instanzen von Immich und
+    Paperless, die je über einen eigenen \texttt{redis\_exporter} erfasst
+    werden.
+  \item \textbf{Logs / App} als Einstieg in die von Loki
+    gesammelten Container- und Host-Logs.
+\end{itemize}
+
+
 Dieser Stack stammt ursprünglich aus unserer Kubernetes-Phase, denn im
 cloud-nativen Umfeld ist die Kombination aus Prometheus und Grafana praktisch
 der De-facto-Standard für Monitoring. Beim Umbau auf Docker Compose hat sich
