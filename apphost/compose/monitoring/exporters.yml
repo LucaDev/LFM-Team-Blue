@@ -60,6 +60,7 @@ services:
     restart: unless-stopped
     runtime: runc
     networks: [monitoring-network]
+    userns_mode: "host"
     volumes:
       - ../../config/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
