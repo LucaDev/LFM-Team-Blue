@@ -55,4 +55,25 @@ for entry in "${RPC_USERS[@]}"; do
 done
 
 chmod 600 "$OUTPUT_FILE"
+
+# hotwallet-btc-core läuft im Container als UID 1000, aber Docker's userns-remap
+# (dockremap, siehe nixos/modules/docker.nix) verschiebt Container-UIDs auf dem Host
+# um einen festen Offset
+if [[ "$(id -u)" -eq 0 ]]; then
+    # Beim allerersten Lauf aus nixos/install.sh läuft dieses Skript auf der Live-ISO
+    # gegen das noch nicht gebootete Zielsystem unter /mnt (ROOT_DIR=/mnt/opt/monorepo/apphost);
+    # "dockremap" steht dann nur in /mnt/etc/subuid, nicht im /etc/subuid der ISO selbst.
+    # Bei jedem späteren manuellen Lauf auf dem gebooteten System liegt ROOT_DIR nicht
+    # unter /mnt, dann ist /etc/subuid direkt richtig.
+    SUBUID_FILE="/etc/subuid"
+    [[ "$ROOT_DIR" == /mnt/* ]] && SUBUID_FILE="/mnt/etc/subuid"
+    REMAP_BASE="$(awk -F: '$1=="dockremap"{print $2}' "$SUBUID_FILE" 2>/dev/null || true)"
+    if [[ -n "$REMAP_BASE" ]]; then
+        chown "$((REMAP_BASE + 1000)):$((REMAP_BASE + 1000))" "$OUTPUT_FILE"
+        echo "  -> Ownership $((REMAP_BASE + 1000)):$((REMAP_BASE + 1000)) gesetzt (userns-remap-UID für Container-UID 1000)"
+    else
+        echo "WARNING: dockremap nicht in /etc/subuid gefunden – Ownership nicht gesetzt (userns-remap aktiv?)" >&2
+    fi
+fi
+
 echo "Done. Written to $OUTPUT_FILE"
