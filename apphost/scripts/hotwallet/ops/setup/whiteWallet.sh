@@ -57,9 +57,9 @@ for META_FILE in "${METAS[@]}"; do
  
 
   if docker compose -f "$COMPOSE" exec -T \
-      -e NATS_URL="nats://setup:${HOTWALLET_NATS_SETUP_PASS}@nats:4222" \
-      middleware python -m src.com.nats_pub \
-      wallet.import.requested "/run/wallets/ext/${WALLET_NAME}.json"
+    -e NATS_URL="nats://setup:${HOTWALLET_NATS_SETUP_PASS}@hotwallet-nats:4222" \
+    hotwallet-middleware python -m src.com.nats_pub \
+    wallet.import.requested "/run/wallets/ext/${WALLET_NAME}.json"
   then
       echo "OK: ext-Wallet '${WALLET_NAME}' import angestoßen"
   else

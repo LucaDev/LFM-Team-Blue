@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USB_DEVICE="/dev/disk/by-label/USB"
-USB_MOUNT="/mnt/usb"
 
 WG_IF="wg0"
 WG_DIR="/etc/wireguard"
@@ -11,6 +9,10 @@ WG_CONF="$WG_DIR/$WG_IF.conf"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../../..")"
 
+# Verzeichnis auf dem Apphost, in das die vom Signer exportierten Dateien zuvor
+# per SSH kopiert wurden (kein USB-Mount auf dem Apphost).
+TRANSFER_DIR="${TRANSFER_DIR:-${PROJECT_ROOT}/secrets/hotwallet/transfer}"
+
 SECRETS_DIR="${PROJECT_ROOT}/secrets/hotwallet/secrets"
 ENV_RUNTIME="${PROJECT_ROOT}/secrets/hotwallet/secrets/env.runtime"
 
@@ -18,8 +20,6 @@ SIGNER_IP="10.10.0.2"
 SIGNER_URL="http://${SIGNER_IP}:8080"
 
 
-
-echo "Writing to host docker mount: $PROJECT_ROOT/secrets/hotwallet"
 
 mkdir -p "$USB_MOUNT" "$SECRETS_DIR"
 
@@ -109,8 +109,8 @@ fi
 
 #########################################
 #HMAC
-if [[ -f "$USB_MOUNT/communication/signer-hmac.secret" ]]; then
-    cp "$USB_MOUNT/communication/signer-hmac.secret" \
+if [[ -f "$TRANSFER_DIR/communication/signer-hmac.secret" ]]; then
+    cp "$TRANSFER_DIR/communication/signer-hmac.secret" \
        "$SECRETS_DIR/signer-hmac.secret"
     chmod 600 "$SECRETS_DIR/signer-hmac.secret"
     chown 1000:1000 "$SECRETS_DIR/signer-hmac.secret" 
@@ -135,10 +135,6 @@ else
 fi
 
 echo ""
-
-
-sync
-umount "$USB_MOUNT"
 
 echo ""
 echo "Import complete"

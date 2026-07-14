@@ -4,12 +4,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../../..")"        # apphost repo root
 COMPOSE="${PROJECT_ROOT}/docker-compose.yml"
 STAGING="${PROJECT_ROOT}/secrets/hotwallet"
-MNT="/mnt/usb"; LABEL="USB"
+# Ausgabeverzeichnis auf dem Apphost; die PSBT wird von hier per SSH abgeholt und
+# per USB an die physische Cold-VM weitergereicht (kein USB-Mount auf dem Apphost).
+OUT_DIR="${TRANSFER_DIR:-${STAGING}/transfer}/psbt"
 
 die() {
   echo "ERROR: $*" >&2
-  exit 1+
-  }
+  exit 1
+}
 info() {
   echo "[*] $*"
 }
@@ -27,30 +29,21 @@ ID_FILE="${STAGING}/refill.psbt.id"
 
 psbt_id="$(cat "$ID_FILE")"
 
-DEV="$(readlink -f /dev/disk/by-label/${LABEL} 2>/dev/null || true)"
-[[ -n "$DEV" ]] || die "kein Device mit Label ${LABEL}"
-
-mkdir -p "$MNT"
-mountpoint -q "$MNT" || mount "$DEV" "$MNT"
-mkdir -p "$MNT/psbt"
+mkdir -p "$OUT_DIR"
 
 shopt -s nullglob
-existing=( "$MNT/psbt"/*.psbt "$MNT/psbt"/*.txn )
+existing=( "$OUT_DIR"/*.psbt "$OUT_DIR"/*.txn )
 shopt -u nullglob
 
-[[ ${#existing[@]} -eq 0 ]] || die "USB hat bereits eine TX (Single-TX)"
+[[ ${#existing[@]} -eq 0 ]] || die "$OUT_DIR enthält bereits eine TX (Single-TX) – erst leeren"
 
-cp -f "$PSBT_FILE" "$MNT/psbt/${psbt_id}.psbt"
-sync
-info "Wrote ${psbt_id}.psbt"
-
-umount "$MNT"
-info "USB unmounted"
+cp -f "$PSBT_FILE" "$OUT_DIR/${psbt_id}.psbt"
+info "Wrote $OUT_DIR/${psbt_id}.psbt"
 
 echo '{}' > "${STAGING}/ops_export_done.json"
 
 docker compose -f "$COMPOSE" exec -T \
-  -e NATS_URL="nats://operator:${HOTWALLET_NATS_OPERATOR_PASS}@nats:4222" \
-  middleware python -m src.com.nats_pub refill.export.done /run/ops_export_done.json
+  -e NATS_URL="nats://operator:${HOTWALLET_NATS_OPERATOR_PASS}@hotwallet-nats:4222" \
+  hotwallet-middleware python -m src.com.nats_pub refill.export.done /run/ops_export_done.json
   
 info "export.done published (psbt_id=${psbt_id})"

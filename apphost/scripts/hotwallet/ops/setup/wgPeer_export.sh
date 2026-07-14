@@ -1,15 +1,12 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
-USB_DEVICE="/dev/disk/by-label/USB"
-USB_MOUNT="/mnt/usb"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../../..")"
 
-mkdir -p "$USB_MOUNT"
-if mountpoint -q "$USB_MOUNT"; then
-  echo "USB already mounted at $USB_MOUNT, skipping mount"
-else
-  echo "Mounting USB..."
-  mount "$USB_DEVICE" "$USB_MOUNT"
-fi
+# Ausgabeverzeichnis auf dem Apphost. Die exportierte Datei wird von hier per SSH
+# abgeholt und per USB an die physische Signer-VM weitergereicht.
+TRANSFER_DIR="${TRANSFER_DIR:-${PROJECT_ROOT}/secrets/hotwallet/transfer}"
 
 #Wenn noch nicht erstellt
 PRIVATE_KEY=/etc/wireguard/private.key
@@ -25,7 +22,7 @@ if [[ ! -f "$PRIVATE_KEY" ]]; then
     chmod 644 "$PUBLIC_KEY"
 fi
 
-mkdir -p "$USB_MOUNT/communication/wireguard"
+mkdir -p "$TRANSFER_DIR/communication/wireguard"
 
 
 
@@ -42,7 +39,7 @@ WALLET_IP="10.10.0.1/32"
 
 SIGNER_PUB_KEY="$(cat "$PUBLIC_KEY")"
 
-WIREGUARD_JSON="$USB_MOUNT/communication/wireguard/wireguard.wallet.json"
+WIREGUARD_JSON="$TRANSFER_DIR/communication/wireguard/wireguard.wallet.json"
 
 cat > "$WIREGUARD_JSON" <<EOF
 {
@@ -60,8 +57,5 @@ chmod 644 "$WIREGUARD_JSON"
 
 echo "WireGuard contract exported:"
 echo "  $WIREGUARD_JSON"
-
-sync
-umount "$USB_MOUNT"
 
 echo "done"

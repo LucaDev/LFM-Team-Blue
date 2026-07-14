@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-USB_DEVICE="/dev/disk/by-label/USB"
-USB_MOUNT="/mnt/usb"
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../../..")"
 
@@ -11,6 +8,10 @@ PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../../..")"
 set -a; source "$PROJECT_ROOT/.env"; set +a
 
 WALLET_DIR="${PROJECT_ROOT}/secrets/hotwallet/wallets"
+
+# Verzeichnis auf dem Apphost, in das die Wallet-Dateien zuvor per SSH kopiert
+# wurden (kein USB-Mount auf dem Apphost).
+TRANSFER_DIR="${TRANSFER_DIR:-${PROJECT_ROOT}/secrets/hotwallet/transfer}"
 
 patch_metadata() {
   local meta_file="$1"
@@ -46,20 +47,13 @@ echo "Writing to host docker mount: $PROJECT_ROOT/secrets/hotwallet"
 
 echo "=== Import Hot/Cold Signer ==="
 
-mkdir -p "$USB_MOUNT" "$WALLET_DIR"
+mkdir -p "$WALLET_DIR"
 
-if mountpoint -q "$USB_MOUNT"; then
-  echo "USB already mounted at $USB_MOUNT, skipping mount"
-else
-  echo "Mounting USB..."
-  mount "$USB_DEVICE" "$USB_MOUNT"
-fi
-
-echo "Importing wallets..."
+echo "Importing wallets from $TRANSFER_DIR ..."
 
 FOUND=0
 
-for WALLET_TYPE_DIR in "$USB_MOUNT/wallet"/*/
+for WALLET_TYPE_DIR in "$TRANSFER_DIR/wallet"/*/
 do
     [[ -d "$WALLET_TYPE_DIR" ]] || continue
 
@@ -126,8 +120,8 @@ do
         cp -f "$WALLET_META" "$WALLET_DIR/$WALLET_TYPE/metadata.json"
 
     if docker compose -f "$PROJECT_ROOT/docker-compose.yml" exec -T \
-        -e NATS_URL="nats://setup:${HOTWALLET_NATS_SETUP_PASS}@nats:4222" \
-        middleware python -m src.com.nats_pub \
+        -e NATS_URL="nats://setup:${HOTWALLET_NATS_SETUP_PASS}@hotwallet-nats:4222" \
+        hotwallet-middleware python -m src.com.nats_pub \
         wallet.import.requested "/run/wallets/$WALLET_TYPE/metadata.json"
     then
         echo "OK: $WALLET_TYPE import gestartet"
@@ -139,9 +133,6 @@ done
 if [[ "$FOUND" -eq 0 ]]; then
     echo "WARNING: no wallets found"
 fi
-
-sync
-umount "$USB_MOUNT"
 
 echo ""
 echo "Import complete"

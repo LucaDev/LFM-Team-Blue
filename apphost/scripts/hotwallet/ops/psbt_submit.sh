@@ -21,6 +21,6 @@ fi
 jq -n --arg psbt "$PSBT_B64" --arg sha "$SHA256" '{psbt:$psbt, sha256:$sha}' \
   > "${STAGING}/ops_submit.json"
 docker compose -f "$COMPOSE" exec -T \
-  -e NATS_URL="nats://operator:${HOTWALLET_NATS_OPERATOR_PASS}@nats:4222" \
-  middleware python -m src.com.nats_pub psbt.submit.requested /run/ops_submit.json
+  -e NATS_URL="nats://operator:${HOTWALLET_NATS_OPERATOR_PASS}@hotwallet-nats:4222" \
+  hotwallet-middleware python -m src.com.nats_pub psbt.submit.requested /run/ops_submit.json
 info "psbt.submit.requested published"
