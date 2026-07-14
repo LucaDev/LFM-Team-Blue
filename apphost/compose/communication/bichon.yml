@@ -46,4 +46,4 @@ services:
       - "homepage.group=Kommunikation"
       - "homepage.name=Bichon"
       - "homepage.href=https://${BICHON_SUBDOMAIN:-bichon}.${DOMAIN}"
-      - "homepage.icon=bichon.png"
+      - "homepage.icon=mdi-email"
