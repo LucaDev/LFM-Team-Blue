@@ -51,7 +51,7 @@ bieten.
 \begin{itemize}
   \item Kernel-Pointer versteckt: \texttt{kernel.kptr\_restrict=2}. Default=1. Stärkere Restriktion aktiviert
   \item dmesg nur für root: \texttt{\textcolor{OliveGreen}{kernel.dmesg\_restrict=1}}. Standard jedoch explizit gesetzt.
-  \item Unprivilegiertes BPF deaktiviert: \\
+  \item Unprivilegiertes \acs{BPF} deaktiviert: \\
   \textcolor{OliveGreen}{\texttt{kernel.unprivileged\_bpf\_disabled=1},\\
   \texttt{net.core.bpf\_jit\_enable=0}}, Standard unter NixOS jedoch explizit gesetzt.
   \item perf\_events nur privilegiert: \texttt{kernel.perf\_event\_paranoid=3}. Standard=2. Höheres Schutzlevel
@@ -67,7 +67,7 @@ bieten.
   \item \texttt{/tmp} gemountet mit \texttt{nosuid,nodev,noexec}. Default=nosuid,nodev. noexec für zusätzliche Absicherung
 \end{itemize}
 
-\subsubsection*{Blacklisted Kernel-Module (Angelehnt an CIS Benchmark)}
+\subsubsection*{Blacklisted Kernel-Module (Angelehnt an \acs{CIS} Benchmark)}
 Nicht benötigte Protokoll- und Dateisystem-Module sind deaktiviert, darunter:\\
 Netzwerk: \texttt{dccp}, \texttt{sctp}, \texttt{rds}, \texttt{tipc}, \texttt{ax25}, \texttt{atm}, \texttt{ipx}, \texttt{appletalk} u.\,a.\\
 Dateisysteme: \texttt{cramfs}, \texttt{hfs}, \texttt{hfsplus}, \texttt{jffs2}, \texttt{udf}, \texttt{cifs}, \texttt{nfs*}, \texttt{gfs2}\\
@@ -78,44 +78,44 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \begin{itemize}
   \item Input-Policy: \texttt{drop} - nur explizit erlaubter Verkehr passiert.
   \item Forward-Policy: \texttt{drop} - kein unerwünschtes Routing.
-  \item ICMP und ICMP6 rate-limitiert (5/s bzw.\ 10/s mit Burst).
-  \item SSH rate-limitiert: 5 Verbindungen/min, Burst 10.
+  \item \acs{ICMP} und \acs{ICMP}6 rate-limitiert (5/s bzw.\ 10/s mit Burst).
+  \item \acs{SSH} rate-limitiert: 5 Verbindungen/min, Burst 10.
   \item Alle abgewiesenen Pakete werden geloggt (\texttt{[nftables DROP]}).
 \end{itemize}
 
-\subsubsection*{IPv4/IPv6 Sysctl}
+\subsubsection*{\acs{IP}v4/\acs{IP}v6 Sysctl}
 \begin{itemize}
   \item Reverse Path Filtering aktiv (\texttt{rp\_filter=1})
   \item Source-Routing, ICMP-Redirects und Router-Advertisements deaktiviert
   \item SYN-Flood-Schutz: \texttt{tcp\_syncookies=1}, \texttt{tcp\_max\_syn\_backlog=4096}
   \item \acs{TCP}-Timestamps deaktiviert (verhindert Uptime-Fingerprinting)
-  \item IPv6 Router-Advertisements und Autoconf deaktiviert
+  \item \acs{IP}v6 Router-Advertisements und Autoconf deaktiviert
   \item Martian-Pakete werden geloggt
-  \item eBPF-JIT-Härtung: \texttt{net.core.bpf\_jit\_harden=2}
+  \item \acs{eBPF}-\acs{JIT}-Härtung: \texttt{net.core.bpf\_jit\_harden=2}
 \end{itemize}
 
 \subsubsection*{DNS-Sicherheit}
 \begin{itemize}
-  \item DNS-over-TLS erzwungen (\texttt{DNSOverTLS=true})
-  \item DNSSEC-Validierung aktiv (\texttt{DNSSEC=true})
-  \item Server: Cloudflare (\texttt{1.1.1.1}) und Quad9 (\texttt{9.9.9.9}) -- beide ohne Logging-Policy
+  \item \acs{DNS}-over-\acs{TLS} erzwungen (\texttt{DNSOverTLS=true})
+  \item \acs{DNSSEC}-Validierung aktiv (\texttt{DNSSEC=true})
+  \item Server:  \texttt{Cloudflare} (\texttt{1.1.1.1}) und \texttt{Quad9} (\texttt{9.9.9.9}) -- beide ohne Logging-Policy
 \end{itemize}
 
-\subsubsection*{NTP -- Authenticated Time Sync}
+\subsubsection*{\acs{NTP} -- Authenticated Time Sync}
 \begin{itemize}
-  \item chrony mit \textbf{Network Time Security (NTS)} -- Zeitserver werden über TLS authentifiziert
+  \item chrony mit \textbf{Network Time Security (\acs{NTS})} -- Zeitserver werden über \acs{TLS} authentifiziert
   \item \texttt{authselectmode=require} -- unauthentifizierte Server werden abgelehnt
   \item systemd-timesyncd deaktiviert
 \end{itemize}
 
 
 \subsection{Zugriffssteuerung \& Authentifizierung}
-\subsubsection*{SSH-Härtung}
+\subsubsection*{\acs{SSH}-Härtung}
 \begin{itemize}
   \item Nur Public-Key-Authentifizierung (\texttt{PasswordAuthentication=false}, \texttt{PermitRootLogin=no})
   \item Post-Quanten-\ac{KEM}: \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
   \item Ciphers: nur ChaCha20-Poly1305 und AES-256/128-GCM
-  \item MACs: nur ETM-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
+  \item \acs{MAC}s: nur \acs{ETM}-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
   \item X11/\acs{TCP}/Agent-Forwarding und Tunnel deaktiviert
   \item \texttt{MaxAuthTries=3}, \texttt{LoginGraceTime=30s}, \texttt{MaxSessions=3}
   \item Rechtlicher Hinweis-Banner bei Login: kein technischer Schutz jedoch rechtliche Absicherung der Auditierungs- und Logging-Maßnahmen. Entzieht
@@ -135,7 +135,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \subsubsection*{Benutzerverwaltung}
 \begin{itemize}
   \item Immutable User-Datenbank: \texttt{users.mutableUsers=false}
-  \item Root-Konto gesperrt: \texttt{hashedPassword=\textquotedbl!\textquotedbl}, keine SSH-Keys
+  \item Root-Konto gesperrt: \texttt{hashedPassword=\textquotedbl!\textquotedbl}, keine \acs{SSH}-Keys
   \item Nur ein unprivilegierter Benutzer (\texttt{apphost})
 \end{itemize}
 
@@ -162,13 +162,13 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 
 \subsubsection*{Fail2ban - Progressives Banning}
 \begin{itemize}
-  \item SSH-Jail: 3 Fehlversuche $\Rightarrow$ 2 Stunden Sperre
+  \item \acs{SSH}-Jail: 3 Fehlversuche $\Rightarrow$ 2 Stunden Sperre
   \item Traefik-Jail: 5 Fehlversuche (HTTP 401) $\Rightarrow$ 1 Stunde Sperre
   \item Progressives Banning aktiv: jede weitere Sperre verlängert sich automatisch, bis max.\ 48 Stunden
   \item Backend: nftables (systemweit kein iptables mehr im Einsatz)
 \end{itemize}
 
-\subsubsection*{AIDE - Dateisystem-Integrität}
+\subsubsection*{\texttt{AIDE} - Dateisystem-Integrität}
 \begin{itemize}
   \item Tägliche automatische Prüfung via systemd-Service
   \item Überwachte Pfade: \texttt{/etc}, \texttt{/bin}, \texttt{/sbin}, \texttt{/lib*}, \texttt{/usr/bin}, \texttt{/usr/sbin}, \texttt{/boot}, \texttt{/opt/apphost/config}
@@ -182,7 +182,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
   \item \textbf{User-Namespace-Remapping:} \texttt{userns-remap=default} - Root im Container wird auf UID 100000-165536 auf dem Host gemappt. Ein Container-Ausbruch liefert dem Angreifer keinen root-Zugriff auf den Host.
   \item \textbf{Docker-Socket nur via Unix-Socket:} kein \ac{TCP}-Listener \\
   (\texttt{hosts=[\textquotedbl{}unix:///var/run/docker.sock\textquotedbl{}]}), kein Userland-Proxy.
-  \item \textbf{Socket-Proxy:} Traefik greift nur über einen eingeschränkten Docker-Socket-Proxy auf die Docker-API zu. Direkter API-Zugriff ist geblockt.
+  \item \textbf{Socket-Proxy:} Traefik greift nur über einen eingeschränkten Docker-Socket-Proxy auf die Docker-\acs{API} zu. Direkter \acs{API}-Zugriff ist geblockt.
   \item \textbf{Seccomp-Profil:} Standard-Docker-Seccomp-Profil aktiv.
   \item \textbf{Strikte Verzeichnisrechte:} \texttt{/opt/apphost/secrets} ist \texttt{0700} (kein Gruppen-Zugriff); alle anderen App-Verzeichnisse \texttt{0750}.
   \item \textbf{Core-Dumps deaktiviert:} \texttt{LimitCORE=0} im Docker-Daemon.
@@ -207,7 +207,7 @@ vorausgesetzt das System wird aktuell gehalten.
   (\texttt{randomEncryption=true}) keine persistenten Daten im Swap. Standardmäßig nicht unter NixOS aktiviert.
   \item \textbf{Btrfs mit zstd-Kompression} auf allen Subvolumes.
   \item \textbf{/tmp eingeschränkt:} Mount-Optionen \texttt{nosuid,nodev,noexec}.
-  \item \textbf{ESP (\texttt{/boot}):} Umask \texttt{0077} (nur root darf lesen). 
+  \item \textbf{\acs{ESP} (\texttt{/boot}):} Umask \texttt{0077} (nur root darf lesen). 
 \end{itemize}
 
 \subsection{Update-Management}
