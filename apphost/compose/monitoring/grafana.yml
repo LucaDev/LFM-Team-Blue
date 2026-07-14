@@ -16,6 +16,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ../../config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../config/grafana/dashboards:/etc/grafana/dashboards:ro
     env_file:
       - ../../secrets/oidc-grafana.env
     environment:
