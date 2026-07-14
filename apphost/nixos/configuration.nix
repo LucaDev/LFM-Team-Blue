@@ -43,6 +43,7 @@
       "vhost_vsock"   # Kata Containers braucht vsock
       "kvm_amd"       # oder kvm_intel je nach CPU
       "dm_crypt"
+      "wireguard"
       # seit 26.05 müssen wir diese module scheinbar manuell laden, sonst funktioniert docker-compose up nicht mehr (er kann die nftables nicht erzeugen)
       "nf_nat"
       "iptable_nat"
