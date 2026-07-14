@@ -218,17 +218,15 @@ EOF
 chmod 640 "$OUTPUT_USERS"
 echo "  -> $OUTPUT_USERS"
 
-# 7. Ownership
-if [ "$(id -u)" -eq 0 ]; then
-    SUBUID_FILE="/etc/subuid"
-    [[ "$ROOT_DIR" == /mnt/* ]] && SUBUID_FILE="/mnt/etc/subuid"
-    REMAP_BASE="$(awk -F: '$1=="dockremap"{print $2}' "$SUBUID_FILE" 2>/dev/null || true)"
-    if [[ -n "$REMAP_BASE" ]]; then
-        chown "$((REMAP_BASE + 1000)):$((REMAP_BASE + 1000))" "$OUTPUT_ENV" "$OUTPUT_JWKS" "$OUTPUT_USERS"
-        echo "  -> Ownership $((REMAP_BASE + 1000)):$((REMAP_BASE + 1000)) gesetzt (userns-remap-UID für Container-UID 1000)"
-    else
-        echo "WARNING: dockremap nicht in /etc/subuid gefunden. Ownership nicht gesetzt" >&2
-    fi
+SUBUID_FILE="/etc/subuid"
+[[ "$ROOT_DIR" == /mnt/* ]] && SUBUID_FILE="/mnt/etc/subuid"
+REMAP_BASE="$(awk -F: '$1=="dockremap"{print $2}' "$SUBUID_FILE" 2>/dev/null || true)"
+
+if [[ -n "$REMAP_BASE" ]]; then
+    chown "$((REMAP_BASE + 1000)):$((REMAP_BASE + 1000))" "$OUTPUT_ENV" "$OUTPUT_JWKS" "$OUTPUT_USERS"
+    echo "  -> Ownership $((REMAP_BASE + 1000)):$((REMAP_BASE + 1000)) gesetzt (userns-remap-UID für Container-UID 1000)"
+else
+    echo "WARNING: dockremap nicht in /etc/subuid gefunden. Ownership nicht gesetzt" >&2
 fi
 
 echo ""

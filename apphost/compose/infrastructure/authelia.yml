@@ -7,7 +7,6 @@ services:
     container_name: authelia
     restart: unless-stopped
     runtime: runc
-    user: "1000:1000"
     networks:
       traefik-public: {}
     volumes:
@@ -19,6 +18,8 @@ services:
       - ../../secrets/authelia.env
     environment:
       TZ: Europe/Berlin
+      PUID: "1000"
+      PGID: "1000"
       X_AUTHELIA_CONFIG_FILTERS: template
       # Für Template-Auflösung in configuration.yml
       DOMAIN: ${DOMAIN}
@@ -33,6 +34,7 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, SETGID, SETUID]
     tmpfs:
       - /tmp:size=64m,mode=1777
     deploy:
