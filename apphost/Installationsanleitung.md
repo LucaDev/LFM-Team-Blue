@@ -652,6 +652,17 @@ Der `btc-hot`-Stack automatisiert das Signieren und Broadcasten von Hot-Wallet-T
    sudo bash scripts/hotwallet/ops/setup/whiteWallet.sh /pfad/zu/partner-meta-dateien
    ```
 
+### Wechselmedium-/SSH-Transport
+
+Die air-gapped Signer-/Cold-VMs tauschen Dateien (WG/HMAC-Daten, Refill-PSBTs, signierte TX) ausschließlich über ein USB-Medium mit dem Operator-PC aus; zwischen Operator-PC und dem Apphost läuft der Transfer per SSH. Die Ops-Skripte lesen bzw. schreiben dabei im Staging-Verzeichnis `secrets/hotwallet/` des Apphosts (kein direkter USB-Mount auf dem Apphost).
+
+**In den Apphost (Import, z. B. WG/HMAC oder signierte Cold-TX):**
+1. Auf der Signer-/Cold-VM die Datei per Export-Skript auf das USB-Medium schreiben.
+2. USB an den Operator-PC stecken, Datei herunterkopieren.
+3. Per SSH in das Staging-Verzeichnis kopieren:
+   ```bash
+   scp <datei> apphost:/opt/monorepo/apphost/secrets/hotwallet/
+
 ### Betrieb
 
 - **Manuelle PSBT einreichen:** `sudo API_BASE="https://${HOTWALLET_SUBDOMAIN}.${DOMAIN}" bash scripts/hotwallet/ops/psbt_submit.sh /pfad/zum/sparrow-export`

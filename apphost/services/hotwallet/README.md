@@ -3,7 +3,7 @@
 ***
 
 > [!NOTE]
-> Dieser Stack wurde aus dem eigenständigen `Hot-Wallet`-Repository in apphost integriert. Unterschiede zum Original sind unten unter „Integration in apphost" zusammengefasst; siehe auch [Abschnitt 18](../../Installationsanleitung.md#18-hot-wallet-bitcoin-custody-stack) der Installationsanleitung für Setup/Betrieb.
+> Dieser Stack wurde aus dem eigenständigen `Hot-Wallet`-Repository in apphost integriert. Unterschiede zum Original sind unten unter „Integration in apphost" zusammengefasst; siehe auch [Abschnitt 17](../../Installationsanleitung.md#17-hot-wallet-bitcoin-custody-stack) der Installationsanleitung für Setup/Betrieb.
 
 ## Ziel
 
@@ -23,12 +23,12 @@ Der Stack ist bewusst in containerisierte Services aufgeteilt und kommuniziert i
 Gegenüber dem eigenständigen Original-Repository wurde Folgendes angepasst:
 
 - **Compose:** Ein Service-Block `compose/finance/hotwallet.yml` statt eigenem `docker-compose.yaml`. Service- und Container-Namen sind mit `hotwallet-` präfixiert (`hotwallet-postgres`, `hotwallet-nats`, `hotwallet-opa`, `hotwallet-btc-core`, `hotwallet-tx-builder`, `hotwallet-middleware`), um Namenskollisionen mit anderen apphost-Diensten auszuschließen.
-- **Secrets:** Alle `.env`-Variablen sind mit `HOTWALLET_` präfixiert (z. B. `HOTWALLET_RPC_PASS_MW` statt `BTC_RPC_PASS_MW`, `HOTWALLET_NATS_MW_PASS` statt `MW_NATS_PASS`). `scripts/ops/setup/gen_secrets.sh` und `rotate_secrets.sh` aus dem Original entfallen; stattdessen: Passwörter in der gemeinsamen `.env` setzen und `bash scripts/update-secrets-hotwallet.sh` für die `rpcauth.conf` ausführen (siehe Installationsanleitung).
+- **Secrets:** Alle `.env`-Variablen sind mit `HOTWALLET_` präfixiert (z. B. `HOTWALLET_RPC_PASS_MW` statt `BTC_RPC_PASS_MW`, `HOTWALLET_NATS_MW_PASS` statt `MW_NATS_PASS`). `scripts/ops/setup/gen_secrets.sh` und `rotate_secrets.sh` aus dem Original entfallen; die Werte werden bei der Installation von `nixos/install.sh` zufällig in die gemeinsame `.env` geschrieben. Rotation: Wert in der `.env` ändern → abgeleitete Artefakte neu erzeugen (`sudo bash scripts/update-secrets-hotwallet.sh` für die `rpcauth.conf`, `bash scripts/update-secrets-ntfy.sh` für das ntfy-Passwort) → betroffene Container neu erstellen. PostgreSQL-Rollen-Passwörter zusätzlich per `ALTER ROLE` in der laufenden DB setzen (Init-Skripte laufen nur beim ersten Start eines leeren Volumes). Details im Abschnitt „Secret-Rotation" der Installationsanleitung. Hinweis: Der `regen-secrets`-Alias deckt die Hot-Wallet-Secrets **nicht** ab.
 - **Laufzeit-Daten:** `middleware_data/` (Wallet-Metadaten, Signer-HMAC-Secret, PSBT-Staging) liegt jetzt unter `secrets/hotwallet/` (gitignored), analog zum bestehenden apphost-`secrets/`-Verzeichnis.
 - **ntfy:** Der im Original enthaltene eigene `ntfy`-Container (`services/ntfy/`) wird **nicht** genutzt. Benachrichtigungen laufen über den bestehenden apphost-ntfy-Dienst; dafür wurde `services/middleware/src/com/ntfy.py` um Basic-Auth-Unterstützung (`NTFY_USER`/`NTFY_PASSWORD`) erweitert, da der apphost-ntfy-Dienst Benutzer/Passwort statt Access-Token verwendet.
 - **Exposition:** `hotwallet-middleware` ist über Traefik unter `https://${HOTWALLET_SUBDOMAIN}.${DOMAIN}` erreichbar, mit eigener Autorisierung (OPA + Whitelist) statt Authelia – siehe Installationsanleitung für die Begründung.
 - **Ops-Skripte:** `scripts/ops/*` und `scripts/testing/*` liegen jetzt unter `scripts/hotwallet/`, mit angepassten Pfaden (`PROJECT_ROOT`, `docker-compose.yml` statt `.yaml`, `secrets/hotwallet/` statt `middleware_data/`).
-- **WireGuard-Tunnel zur Signer-VM:** Noch **nicht** eingerichtet – nur die benötigten Werkzeuge (`wireguard-tools`, `jq`, `openssl`) sind auf dem NixOS-Host bereits vorhanden. `scripts/hotwallet/ops/setup/wg_setup.sh` funktioniert unverändert, muss aber weiterhin manuell ausgeführt werden.
+- **WireGuard-Tunnel zur Signer-VM:** Muss manuell eingerichtet werden; die benötigten Werkzeuge (`wireguard-tools`, `jq`, `openssl`) sind auf dem NixOS-Host vorhanden. Peer- und HMAC-Daten werden auf der Signer-VM per `wgHMAC_export.sh` auf das USB-Medium geschrieben und anschließend **per SSH** in das Staging-Verzeichnis (`secrets/hotwallet/`) des Apphosts kopiert; `scripts/hotwallet/ops/setup/wgHMAC_import.sh` liest sie dort ein (kein direkter USB-Mount auf dem Apphost). Ablauf siehe „Wechselmedium-/SSH-Transport" in der Installationsanleitung.
 
 Alles Folgende beschreibt den unveränderten Rest der Original-Architektur.
 
@@ -40,8 +40,8 @@ Alles Folgende beschreibt den unveränderten Rest der Original-Architektur.
                          ┌────────────────────────┐
  externe Anfrage  ─────▶ │  middleware (FastAPI)  │
  (BIP21 / PSBT)          └───────────┬─────────────┘
- Operator (manual)                   │ NATS (authentifiziert)
- X-Operator-Token          ┌─────────┴───────────┐
+ Operator (manuell)                  │ NATS (authentifiziert)
+ psbt.submit.requested     ┌─────────┴───────────┐
                            │                       │
                   intent.created           psbt.created / psbt.failed
                            │                       │
@@ -81,7 +81,7 @@ Zusätzlich existiert der manuelle Cold-Refill-Pfad: Sinkt die Hot-Wallet unter 
 
 Zentrale Orchestrierung: nimmt externe Zahlungsanfragen entgegen (`POST /api/v1/request/bip21`, `POST /api/v1/request/psbt`), fragt OPA für jede zu signierende PSBT um Entscheidung an (Betrags-, Fee- und Daily-Cap-Prüfung), prüft die Zieladresse gegen die registrierten Wallets (Whitelist), leitet zu signierende PSBTs HMAC-authentifiziert an die Signer-VM weiter, finalisiert und broadcastet signierte Transaktionen über `btc-core`, persistiert Zustände/Policy-Entscheidungen/Transaktionen in PostgreSQL, stellt den Cold-Refill-Workflow bereit und `/healthz`, `/health`, `/metrics` (Prometheus).
 
-> Hinweis: Der in der Architektur-Beschreibung erwähnte `X-Operator-Token`-Bypass für den manuellen Pfad ist im aktuellen Code nicht implementiert (siehe „Bekannte Lücken" in der Installationsanleitung) – jede Anfrage durchläuft dieselbe OPA-/Whitelist-Prüfung.
+> Hinweis: Der manuelle Operator-Pfad läuft nicht über HTTP (ein `X-Operator-Token` existiert nicht), sondern über das NATS-Subject `psbt.submit.requested` unter der dedizierten Operator-Identität (`scripts/hotwallet/ops/psbt_submit.sh`). Für diesen Rail entfällt die externe Whitelist (`txBuilder.py`) und OPA überspringt die Betrags-/Fee-Grenzen (`hot.rego`, `skip_amount_fee_checks`); Pflichtfeld-/Struktur-Prüfung samt SHA-256 und Tages-Cap (`max_daily_sats`) bleiben aktiv, dazu der unabhängige Velocity-Cap auf der Signer-VM.
 
 ### `tx-builder`
 
@@ -126,8 +126,8 @@ Hält den Hot-Signing-Key (Key A). Erreichbar ausschließlich über einen WireGu
 
 | Rail | Auslöser | Whitelist | OPA-Betrags-/Fee-Check | Daily-Cap |
 |---|---|---|---|---|
-| `bip21` | `POST /api/v1/request/bip21` | ext-Whitelist | ja | ja |
 | `psbt` | `POST /api/v1/request/psbt` | ext-Whitelist | ja | ja |
+| `manual` | NATS `psbt.submit.requested` (Operator, fertige PSBT) | Bypass | übersprungen | ja |
 | `OPA_hot`/`OPA_cold` | interne Refill-/Sicherungs-Logik | interne Wallets | übersprungen (systemgewählt) | – |
 
 ***
@@ -159,4 +159,4 @@ Hält den Hot-Signing-Key (Key A). Erreichbar ausschließlich über einen WireGu
 
 ## Setup, Betrieb, Testing
 
-Siehe [Abschnitt 18 der Installationsanleitung](../../Installationsanleitung.md#18-hot-wallet-bitcoin-custody-stack) für die vollständige Schritt-für-Schritt-Anleitung (Secrets, Stack-Start, Wallet-Import, WireGuard, Cold-Refill, Testing).
+Siehe [Abschnitt 17 der Installationsanleitung](../../Installationsanleitung.md#17-hot-wallet-bitcoin-custody-stack) für die vollständige Schritt-für-Schritt-Anleitung (Secrets, Stack-Start, Wallet-Import, WireGuard, Cold-Refill, Testing).
