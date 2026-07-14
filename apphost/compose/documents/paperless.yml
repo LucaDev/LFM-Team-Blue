@@ -38,7 +38,7 @@ services:
       # IP-Whitelist für diesen Header (siehe Security-Hinweis im Review).
       PAPERLESS_ENABLE_HTTP_REMOTE_USER: "true"
       PAPERLESS_HTTP_REMOTE_USER_HEADER_NAME: "HTTP_REMOTE_USER"
-      PAPERLESS_OCR_LANGUAGE: -deu+eng
+      PAPERLESS_OCR_LANGUAGE: deu+eng
       PAPERLESS_SESSION_COOKIE_SECURE: "true"
       PAPERLESS_CSRF_COOKIE_SECURE: "true"
       PAPERLESS_ENABLE_UPDATE_CHECK: "false"
