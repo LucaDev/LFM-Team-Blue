@@ -54,6 +54,22 @@ services:
       retries: 3
     labels:
       - "traefik.enable=false"
+  alloy-init:
+    image: busybox:1.36
+    container_name: alloy-init
+    restart: "no"
+    runtime: runc
+    network_mode: "none"
+    userns_mode: "host"
+    user: "0:0"
+    volumes:
+      - alloy_data:/var/lib/alloy/data
+    entrypoint: ["chown", "-R", "0:0", "/var/lib/alloy/data"]
+    security_opt: ['no-new-privileges:true']
+    cap_drop: [ALL]
+    cap_add: [CHOWN]
+    labels:
+      - "traefik.enable=false"
   alloy:
     image: grafana/alloy:v1.17.1@sha256:4f6ddc56ffdcf8a6316748fc5162972e20cb301523cac1bb4a31957df733ae9b
     container_name: alloy
@@ -61,6 +77,9 @@ services:
     runtime: runc
     networks: [monitoring-network]
     userns_mode: "host"
+    depends_on:
+      alloy-init:
+        condition: service_completed_successfully
     volumes:
       - ../../config/alloy:/etc/alloy:ro
       - alloy_data:/var/lib/alloy/data
