@@ -7,6 +7,7 @@ services:
     container_name: authelia
     restart: unless-stopped
     runtime: runc
+    user: "1000:1000"
     networks:
       traefik-public: {}
     volumes:
@@ -32,7 +33,6 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
-    cap_add: [CHOWN, DAC_OVERRIDE, SETGID, SETUID]
     tmpfs:
       - /tmp:size=64m,mode=1777
     deploy:

@@ -54,6 +54,7 @@ services:
       - "80:8081"
       - "443:8443"
       - "443:8443/udp" # HTTP/3 QUIC
+      - "8883:8883" # MQTT+TLS (SNI-Routing zu Mosquitto)
     volumes:
       # Zertifikate: named volume (persistent, Traefik erstellt acme.json selbst)
       - traefik_certs:/certs

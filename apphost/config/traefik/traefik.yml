@@ -44,6 +44,8 @@ entryPoints:
         readTimeout: "30s"
         writeTimeout: "30s"
         idleTimeout: "120s"
+  mqtt-tls:
+    address: ":8883"
   traefik-internal:
     address: ":8080"
   tor-http:
