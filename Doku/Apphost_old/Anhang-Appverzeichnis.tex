@@ -1,7 +1,7 @@
 \section{Installierte Applikationen}
 \label{sec:apps}
 
-Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<subdomain>.<DOMAIN>}. Konfigurierbare Subdomains können in der \texttt{.env}-Datei überschrieben werden. Die Spalte \textbf{Tor} zeigt, ob der Dienst zusätzlich über einen eigenen \texttt{<subdomain>.<onion-adresse>.onion}-Router erreichbar ist. Rein intern genutzte Komponenten haben keinen Traefik-Router und damit auch keinen Tor-Zugang.
+Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<subdomain>.<DOMAIN>}. Konfigurierbare Subdomains können in der \texttt{.env}-Datei überschrieben werden. Die Spalte \textbf{Tor} zeigt, ob der Dienst zusätzlich über einen eigenen \texttt{<subdomain>.<onion-adresse>.onion}-Router erreichbar ist; rein intern genutzte Komponenten haben gar keinen Traefik-Router und damit auch keinen Tor-Zugang.
 
 \begin{xltabular}{\linewidth}{p{3.2cm} p{2.6cm} p{1.3cm} X}
   \toprule
@@ -23,7 +23,7 @@ Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<
   Authelia        & \texttt{auth.*}         & Ja   & \acs{SSO} / \acs{MFA} / \acs{OIDC}-Provider \\
   Garage          & \texttt{s3.*}           & Nein & \acs{S3}-kompatibler Objektspeicher \\
   Garage UI       & \texttt{garage.*}       & Nein & Garage Web-Verwaltung \\
-  Tor             & --                      & --   & Onion-Routing für die anderen Dienste \\
+  Tor             & ---                     & ---  & Onion-Routing für die anderen Dienste \\
   \midrule
   \multicolumn{4}{l}{\textbf{Medien}} \\
   \midrule
