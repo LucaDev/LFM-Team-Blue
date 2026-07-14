@@ -21,13 +21,20 @@ Gerade dieser zweite Schritt ist für die vorliegende Arbeit methodisch wichtig.
 
 Für die eigene Evaluation wurde übernommen, dass bewertet werden muss, ob Codex nicht nur eine plausible Architektur beschreibt oder Dateien erzeugt, sondern ob diese Dateien und der Systemzustand tatsächlich zu den Anforderungen passen: getrennte Rollen, restriktive Zugriffspfade, Tor als kontrollierter Zugang, wirksame Netzwerkgrenzen, geschützte Backups, Monitoring sowie ein sicher begrenzter \ac{BTC}-Simulationsprozess.
 
+Zhang et al. erweitern diese Sichtweise mit ihrem Benchmark \emph{DPIaC-Eval} um die Dimension der tatsächlichen Deployability und überpüfen dementsprechend \ac{LLM}-generierte \ac{IaC} nicht nur auf syntaktische Korrektheit. Stattdessen wird getrennt danach bewertet, ob der Code in der Zielumgebung tatsächlich ausrollbar ist, ob er den Nutzer-Intent trifft und ob dieser Sicherheitsanforderungen einhält. Die Ergebnisse zeigen, dass formal gültiger Code in der Zielumgebung dennoch nicht ausrollbar sein kann.\cite{zhang2025deployabilitycentriciac} 
+Für die eigene Evaluation folgt daraus, dass beschriebenes Konzept, erzeugte Dateien und tatsächlicher Laufzeitzustand als getrennte Nachweisebenen behandelt werden müssen.
+
 Hase et al. untersuchen in ihrer auf dem IEEE-Symposium ISDFS 2026 veröffentlichten Arbeit gezielt die Security-Policy-Compliance von \ac{LLM}-generierten \acs{IaC}-Skripten. Ein Skript kann syntaktisch korrekt sein und die Anforderungen erfüllen, aber trotzdem problematische Einstellungen enthalten. Hase et al. verwenden dafür unter anderem statische Policy-Prüfung mit Checkov.\cite{hase2026securitypolicyiac} Für die eigene Evaluation muss die Sicherheit auch ein Kriterium für die Bewertung sein. Für das Home-Lab bedeutet es also, dass ein Dienst nicht allein deshalb gut bewertet werden darf, weil er läuft, sondern er muss zusätzlich überprüft werden, ob Zugriffspfade eng begrenzt sind, Secrets nicht im Klartext liegen, administrative Dienste nicht unnötig exponiert werden, Backups angemessen geschützt sind und Netze begrenzt werden.
 
 Lian et al. betrachten mit \emph{Ciri} eine zweite Rolle von \ac{LLM}: nicht die Generierung von Infrastruktur, sondern die Validierung von Konfigurationen. Die Autoren untersuchen, ob ein \ac{LLM} Konfigurationsartefakte daraufhin prüfen kann, ob sie gültig, fehlerhaft oder sicherheitskritisch problematisch sind. \cite{lian2023ciri} Daraus lässt sich eine weitere Prüfkategorie ableiten: Es geht nicht nur darum, ob \ac{KI} neue Lösungen oder Konfigurationen vorschlagen kann. Ebenso wichtig ist, ob sie bestehende Konfigurationen sinnvoll prüfen kann. Dazu gehört, dass Fehlkonfigurationen und Sicherheitslücken erkannt werden, die Einschätzung nachvollziehbar begründet und passende Korrekturmaßnahmen vorschlägt. Gerade für die Rolle als Sicherheitsberater ist dieser Bereich auch wichtig, da er im Berufsalltag auch vorhandene Systeme bewertet und verbessert.
 
 Diese Prüfkategorie wurde in der eigenen Evaluation als separate Fehleranalyse am Ende beider Szenarien aufgegriffen; die konkrete Umsetzung wird in Abschnitt~\ref{subsec:methodikanforderungen} beschrieben.
 
-Die drei Arbeiten unterscheiden sich methodisch deutlich und viele Elemente sind nicht direkt auf die vorliegende Fragestellung anwendbar. Die Tabelle~\ref{tab:forschungsstand-methoden} stellt die Evaluationsmethodologien für einen besseren Vergleich gegenüber.
+\label{sec:Mukhopadhyay}
+Mukhopadhyay et al. vergleichen schließlich verschiedene Nutzungsformen wie Zero-Shot, Few-Shot und Fine-Tuning. Dabei bewerten die Autoren die erzeugte \ac{IaC} mehrdimensional, unter anderem nach Correctness, Security, Compliance und Readability. Methodisch relevant ist dabei vor allem, dass sie die automatische Bewertung durch ein \ac{LLM}-as-a-Judge mit einem manuellen Review durch Fachexperten kombinieren\cite{KIIaC}.
+Für die eigene Methodik ergibt sich daraus, dass die Punktvergabe nicht einer einzelnen Einschätzung überlassen werden darf, sondern eine menschliche Kontrollinstanz mit fachlicher Tiefe benötigt.
+
+Die genannten Arbeiten unterscheiden sich methodisch deutlich und viele Elemente sind nicht direkt auf die vorliegende Fragestellung anwendbar. Die Tabelle~\ref{tab:forschungsstand-methoden} stellt die Evaluationsmethodologien der drei Arbeiten gegenüber, aus denen die zentralen Prüfprinzipien übernommen wurden. Zhang et al. und Mukhopadhyay et al. ergänzen diesen Rahmen um die Trennung der Nachweisebenen und das menschliche Experten-Review.
 
 \begin{table}[htbp]
 \centering
@@ -58,7 +65,7 @@ eigenes Ausschlusskriterium & separate Fehleranalyse-Aufgabe \\
 \label{tab:forschungsstand-methoden}
 \end{table}
 
-Der größte Unterschied liegt in der Testmenge. Alle drei Arbeiten stützen ihre Erkenntnisse auf große, automatisiert prüfbare und reproduzierbare Aufgabenmengen. 
+Der größte Unterschied liegt in der Testmenge. Alle genannten Arbeiten stützen ihre Erkenntnisse auf große, automatisiert prüfbare und reproduzierbare Aufgabenmengen. 
 Das war aufgrund monetärer und zeitlicher Begrenzungen für die vorliegende Aufgabenstellung nicht umsetzbar, weshalb sich die Untersuchung auf einen Durchlauf je Szenario beschränkt.
 Aggregierte Erfolgsquoten wie in den Benchmarks der veröffentlichten Arbeiten sind hier deshalb nicht sinnvoll anwendbar. 
 Stattdessen soll die Prüftiefe im Einzelfall erhöht werden, wobei jede Kategorie anhand definierter Indikatoren gegen Dateien, Laufzeitzustand und Dokumentation geprüft wird. Zudem begrenzen sicherheitskritische Ausschlussfehler die erreichbare Punktzahl.
@@ -69,14 +76,16 @@ Die externen Arbeiten liefern damit die Prüfprinzipien, nicht die Messinstrumen
 
 \subsection{Methodikanforderungen} \label{subsec:methodikanforderungen}
 
-Aus den genannten Arbeiten ergeben sich drei methodische Anforderungen an die eigene Untersuchung.
+Aus den genannten Arbeiten ergeben sich vier methodische Anforderungen an die eigene Untersuchung.
 
-Erstens muss zwischen sprachlicher Plausibilität und technischer Umsetzung unterschieden werden. Ein \ac{LLM} kann eine überzeugende Architektur beschreiben, ohne dass diese im System tatsächlich umgesetzt wurde. Deshalb wurden nicht nur Konzepte, sondern auch erzeugte Dateien, Regeln usw. ausgewertet.
+Erstens muss zwischen sprachlicher Plausibilität und technischer Umsetzung unterschieden werden. Ein \ac{LLM} kann eine überzeugende Architektur beschreiben, ohne dass diese im System tatsächlich umgesetzt wurde. Deshalb wurden nicht nur Konzepte, sondern auch erzeugte Dateien, Regeln usw. ausgewertet. Diese Trennung der Nachweisebenen folgt dem Vorgehen von Kon et al. und Zhang et al.\cite{kon2024iaceval,zhang2025deployabilitycentriciac}
 
 Zweitens muss die Sicherheit als eigenes Kriterium behandelt werden. Aus Hase et al. folgt, dass syntaktisch oder funktional richtige Infrastruktur trotzdem Policy-Verstöße enthalten kann.\cite{hase2026securitypolicyiac} Deshalb wurden kritische Ausschlussfehler definiert. Dazu gehörten öffentlich erreichbare Admin-Dienste ohne zusätzliche Beschränkung, unsegmentierte Netze, unverschlüsselte sensible Backups, Klartext-Secrets in Dokumentation oder Compose-Dateien sowie echte Seeds oder Private Keys auf Online-Systemen. Trat ein solcher Fehler in einer Kategorie auf, konnte diese Kategorie höchstens mit einem Punkt bewertet werden.
 
 Drittens muss auch die Fähigkeit der Fehleranalyse des \ac{LLM} betrachtet werden. Deshalb erhielten beide Szenarien identische, absichtlich fehlerhafte Dateien aus den Bereichen Backup, \ac{BTC}, Docker Compose und Firewall. Bewertet wurde, ob Codex die Fehler nur oberflächlich kommentiert oder ob es sie fachlich korrekt einordnet und richtige Konfigurationen erstellt.
 Für jedes der vier Artefakte wurde vor den Läufen festgelegt, welche Fehler enthalten sind und woran eine korrekte Behebung erkannt wird. Zur Verifizierung sind die Artefakte zusammen mit den Korrekturfassungen im Projekt-Repository abgelegt.\cite{ki_eval_github}
+
+Viertens muss die Bewertung selbst gegen einseitige Einschätzungen abgesichert werden. Dabei wird in dieser Ausarbeitung ein weiteres manuelles Review durch Fachexperten nach Mukhopadhyay et al. durchgeführt.\cite{KIIaC} Deshalb wurde die Punktvergabe in dieser Untersuchung von zwei Personen unabhängig voneinander vorgenommen und abweichende Wertungen wurden gemeinsam aufgelöst (siehe Abschnitt~\ref{sec:teststrategie}).
 
 
 \subsection{Teststrategie} \label{sec:teststrategie}
@@ -176,7 +185,7 @@ Fehleranalyse &
 } \\
 \hline
 \end{tabular}
-\caption{Prüfindikatoren der Hauptkategorien für die Basis-System Komponente}
+\caption{Prüfindikatoren der Hauptkategorien für die Apphost Komponente}
 \label{tab:kategorien-indikatoren}
 \end{table}
 
@@ -189,14 +198,15 @@ Für jeden Prüfindikator und damit für jede Kategorie wurden 0 bis 3 Punkte ve
 \item \textbf{3 Punkte}: Die Lösung ist fachlich korrekt, eng gefasst, nachvollziehbar begründet und durch Dateien, Laufzeitprüfungen oder gleichwertige Simulationsnachweise belegt.
 \end{itemize}
 
-Die Punktvergabe wurde von zwei Personen unabhängig anhand der Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden. 
-Als Bewerter fungierten die Ersteller des Basis- beziehungsweise Krypto-Teils, da nur sie die nötige fachliche Tiefe für die jeweiligen Kategorien mitbrachten. 
-Diese Doppelrolle als Architekten der Referenzlösung und Bewerter der \ac{KI}-Ergebnisse ist zugleich ein methodisches Risiko, weil eigene Designentscheidungen unbewusst als Maßstab dienen können.
+Die Punktvergabe wurde von zwei Personen unabhängig anhand der Prüfindikatoren aus Tabelle~\ref{tab:kategorien-indikatoren} und nach der vordefinierten Skala vorgenommen, wobei abweichende Bewertungen gemeinsam aufgelöst wurden.
+Diese Methodik folgt wie bereits in Abschnitt~\ref{sec:Mukhopadhyay} beschrieben der Ausarbeitung von Mukhopadhyay et al., wobei als Bewerter die Ersteller des Basis- beziehungsweise Krypto-Teils herhalten\cite{KIIaC}.
+Nur sie bringen die nötige fachliche Tiefe für die jeweiligen Kategorien im Zuge dieser Ausarbeitung mit und sind dementsprechend die naheliegende Wahl. 
+Die Doppelrolle als Architekten der Referenzlösung und Bewerter der \ac{KI}-Ergebnisse ist zugleich ein methodisches Risiko, weil eigene Designentscheidungen unbewusst als Maßstab dienen können.
 Dieses Risiko wird in Abschnitt~\ref{sec:grenzen_eval} als Einschränkung weiter ausgewiesen.
 
 \subsection{Bewertung des \ac{BTC}-Systems} \label{subsec:btc-bewertung}
 
-Das \ac{BTC}-System wurde gesondert evaluiert, weil hier andere Sicherheitsgrenzen galten als bei produktiven Diensten. In Szenario B war ausdrücklich vorgegeben, ausschließlich Simulationsdaten zu verwenden und niemals echte Seeds, Private Keys oder produktive Geheimnisse zu erzeugen. Der Verzicht auf echte \ac{BTC}-Werte war daher keine Schwäche, sondern eine Sicherheitsanforderung.
+Das \ac{BTC}-System wurde gesondert evaluiert, weil dabei andere Sicherheitsgrenzen galten als bei produktiven Diensten. In Szenario B war ausdrücklich vorgegeben, ausschließlich Simulationsdaten zu verwenden und niemals echte Seeds, Private Keys oder produktive Geheimnisse zu erzeugen. Der Verzicht auf echte \ac{BTC}-Werte war daher keine Schwäche, sondern eine Sicherheitsanforderung.
 
 Für die volle Punktzahl genügte jedoch nicht, lediglich auf produktive Geheimnisse zu verzichten. Innerhalb des erlaubten Simulationsrahmens wären Test-Secrets, Test-Wallets, Dummy-Dateien, Dummy-\acp{PSBT} oder eine lokale \ac{BTC}-Core-Regtest-Umgebung zulässig gewesen. Bewertet wurde daher, ob Codex einen nachvollziehbaren simulierten Prozess abbildete: Erzeugung oder Darstellung von Testdaten, Trennung zwischen Watch-only-, Hot-Service- und Offline-Handoff-Rolle, simulierter Spend-Pfad, Recovery-Überlegung und Nachweis, dass keine produktiven Schlüsselmaterialien auf Online-Systemen lagen.
 
@@ -335,7 +345,7 @@ Fehleranalyse             & 3 & 3 & 3 & 3 & 3{,}00 & 3 \\
 Die Einzelwertungen der Indikatoren begründen sich wie folgt aus den erzeugten
 Dateien und dem geprüften Laufzeitzustand.
 
-\paragraph{Architekturplanung (2 von 3)}
+\paragraph{Architekturplanung (2 von 3)} \mbox{}\\
 I1 (2): Die Punktzahl begründet sich daraus, dass ein Rollen- und Zonenmodell vorhanden ist.
 Dabei existieren vier getrennte \ac{LXC}-Rollen bestehend aus \texttt{201 tor-edge}, \texttt{202 app-core}, \texttt{203 ops} und \texttt{204 btc-node}, welche sich die zwei Bridges \texttt{vmbr1} für Service- und \texttt{vmbr2} für Monitoring-Verkehr, definiert über \path{/etc/network/interfaces.d/homelab-bridges.cfg}, teilen. 
 Explizite
@@ -350,7 +360,7 @@ I4 (2): Der \ac{BTC}-Bereich ist sauber getrennt mit eigener Rolle, \ac{RPC} und
 auf Loopback und einer eigenen Firewallkette. 
 Der Admin-Bereich bildet dagegen keine eigene Zone, sodass die Host-Managementports (22, 8006, 3128, 111) erst in der Findings-Remediation nachträglich gegenüber den Container-Bridges gefiltert werden.\cite{runbookA,selfauditA}
 
-\paragraph{Services (2 von 3)}
+\paragraph{Services (2 von 3)} \mbox{}\\
 I1 (3): Szenario A verwendet 20 Container-Dienste in zwei Compose-Stacks. Dabei entfallen elf auf \texttt{app-core} und neun auf \texttt{ops}. Zudem wurde ein Tor/Caddy auf \texttt{tor-edge} und
 \texttt{bitcoind} auf \texttt{btc-node} eingerichtet. Alle Dienste wurden per
 \ac{HTTP}-Statuscheck validiert, etwa Vaultwarden mit 200, Paperless-ngx mit 302 und
@@ -362,7 +372,7 @@ I3 (2): Punktuelle Härtungen sind belegt, etwa der entfernte Docker-Socket-Moun
 Kein einziger Dienst nutzt jedoch \path{cap_drop}, \path{no-new-privileges} oder \path{read_only}, und alle Compose-Ports sind unbeschränkt auf allen Interfaces publiziert.\cite{composeA,runbookA}
 I4 (2): Der Stack folgt dem geforderten Katalog, jedoch entstanden zusätzlich ein redundanter zweiter Monitoring-Pfad (Uptime Kuma parallel zu Prometheus/Blackbox/Alertmanager) sowie der selbstgebaute \texttt{alert-forwarder} auf Basis eines generischen \texttt{python:3.12-alpine}-Images mit eingehängtem Skript.\cite{composeA}
 
-\paragraph{Konfiguration (2 von 3)}
+\paragraph{Konfiguration (2 von 3)} \mbox{}\\
 I1 (2): Registrierungen wurden geschlossen (\path{SIGNUPS_ALLOWED=false},
 in Gitea \path{DISABLE_REGISTRATION=true} plus \path{REQUIRE_SIGNIN_VIEW=true}), Log-Rotation und \texttt{admin off} für Caddy sind gesetzt. Dem stehen durchgängige \texttt{:latest}-Image-Tags und
 vorhersehbare Admin-Namen wie \texttt{admin} und \texttt{gitadmin} gegenüber.\cite{composeA,deployscriptA,selfauditA}
@@ -376,7 +386,7 @@ I4 (2): Je Arbeitsabschnitt existieren \texttt{apply-}/\texttt{verify-}Skriptpaa
 Ein deterministischer Neuaufbau scheitert jedoch an den \texttt{:latest}-Tags und fehlenden
 Snapshot-Ständen.\cite{runbookA,composeA}
 
-\paragraph{Netzwerk, Tor und Zugriff (2 von 3)}
+\paragraph{Netzwerk, Tor und Zugriff (2 von 3)} \mbox{}\\
 I1 (1): Die Host-Input-Chain besitzt keine Drop-Policy, da \path{nftables.conf} nur
 \texttt{type filter hook input priority filter} ohne
 \texttt{policy drop} deklariert. Dies blockt lediglich die vier Managementports 22, 111,
@@ -393,7 +403,7 @@ I4 (2): Wirksam begrenzt ist der Docker-Pfad, wobei \texttt{app-core} neue Verbi
 Die Gegenprobe \texttt{app-core} nach \texttt{ops} scheitert nachweislich.
 Offen blieben \texttt{sshd} und \texttt{node-exporter} zwischen den Containern.\cite{dockerfirewallA,runbookA,selfauditA}
 
-\paragraph{Backup und Monitoring (1 von 3)}
+\paragraph{Backup und Monitoring (1 von 3)} \mbox{}\\
 I1 (0): Alle Sicherungen liegen unter \path{/var/lib/homelab-backups} auf demselben Host. Weder die \texttt{vzdump}-Archive noch die \texttt{tar.gz}-Exporte sind verschlüsselt, und das Identitätsarchiv enthält die privaten Hidden-Service-Schlüssel.\cite{backupscriptA,selfauditA}
 I2 (0): Ein Restore fand nicht statt, sodass ausschließlich die Archivlesbarkeit über \texttt{zstd -t}, \texttt{tar -tzf} und ein \texttt{sha256}-Manifest geprüft wurde.
 Das Runbook weist den fehlenden Restore-Drill selbst als offenen Punkt aus.\cite{backupscriptA,runbookA}
@@ -405,7 +415,7 @@ I4 (1): Die Kette Alertmanager, \texttt{alert-forwarder}, \texttt{ntfy} und Aler
 Uptime Kuma hat aber null Notification-Definitionen, und eine Zustellung bis zu einem Endgerät
 des Betreibers wurde nie ausgelöst.\cite{selfauditA,runbookA}
 
-\paragraph{Fehleranalyse (3 von 3)}
+\paragraph{Fehleranalyse (3 von 3)} \mbox{}\\
 I1 (3): Alle vier Artefakte wurden mit priorisierten, zeilengenauen Fundlisten (P1 bis P3) analysiert. Darunter allein 14 Einzelbefunde für \path{backup.bad.sh}.\cite{artefaktpruefungA}
 I2 (3): Die Befunde sind fachlich eingeordnet mit einer Klassifizierung der Mitsicherung von
 \path{var/lib/tor} als Hidden-Service-Key-Leak, der \ac{RPC}-Zugang über eine Onion-Adresse als Remote-Signierfläche und \texttt{policy accept} als Bruch des Default-Deny-Prinzips.
@@ -530,7 +540,7 @@ Fehleranalyse             & 3 & 3 & 3 & 3 & 3{,}00 & 3 \\
 
 Die Einzelwertungen der Indikatoren begründen sich wie folgt.
 
-\paragraph{Architekturplanung (3 von 3)}
+\paragraph{Architekturplanung (3 von 3)} \mbox{}\\
 I1 (3): Der Masterplan definiert sechs Sicherheitszonen und weist jeder Zone einen Schutzbedarf, erlaubte Zugriffspfade sowie eine eigene Secrets-Klasse mit expliziter Positiv- und Negativliste und eine Backup-/Restore-Klasse zu.\cite{masterplanB}
 I2 (3): Die Provisionierungsmatrix begründet je Gast Typ, Zone, Bridge und Isolationsprofil. Dabei führt hoher Schutzbedarf zu \acp{VM} aus einem gepinnten Debian-Cloud-Image, Infrastrukturrollen zu unprivilegierten \ac{LXC}s ohne \texttt{nesting}, \texttt{keyctl}, \texttt{fuse} oder \texttt{mknod}.
 Zudem ist auch die Zurückstellung von Collabora und Electrs einzeln begründet.\cite{masterplanB}
@@ -539,7 +549,7 @@ Außerdem untersagen Querschnittsregeln Rückverbindungen in die Management-Zone
 I4 (3): Admin-, Anwendungs- und \ac{BTC}-Bereich sind strikt getrennt. Der Admin-Pfad führt ausschließlich über Tor mit v3-Client-Auth auf den Admin-Onion beziehungsweise für die Proxmox-Web-\ac{UI} über einen lokalen \ac{SSH}-Tunnel.
 \ac{BTC} bildet eine eigene Dummy-only-Zone auf \texttt{vmbr50} mit eigener Verbotsliste.\cite{masterplanB,finalsummaryB}
 
-\paragraph{Services (1 von 3)}
+\paragraph{Services (1 von 3)} \mbox{}\\
 I1 (0): Der geplante Katalog aus 20 Diensten verblieb vollständig auf Planungsebene, sodass bis zum Ende des Runs keine App-Rollouts erfolgten. Als Zusatzpakete wurden ausschließlich \texttt{qemu-guest-agent} und \texttt{cloud-guest-utils} installiert und fünf der acht Gäste verblieben im Sollzustand \texttt{stopped}.\cite{finalsummaryB,masterplanB}
 I2 (1): Die schutzbedarfsgerechte Verteilung existiert nur als Matrix. Dementsprechend sind lediglich der Monitoring-Stack auf \texttt{103} und der
 Borg-Endpunkt auf \texttt{104} real verteilt.\cite{masterplanB,finalsummaryB}
@@ -548,7 +558,7 @@ Für den eigentlichen Servicekatalog existiert kein in Dateien nachweisbares Rec
 I4 (2): Unnötige Zusatzdienste wurden konsequent vermieden und der temporäre Paketpfad (\texttt{vmbr90}, \texttt{apt-cacher-ng}) nach der Validierung vollständig zurückgebaut. 
 Der Abzug ergibt sich daraus, dass fünf provisionierte Gäste als funktionslose Hüllen verbleiben.\cite{finalsummaryB,implementationlogB}
 
-\paragraph{Konfiguration (3 von 3)}
+\paragraph{Konfiguration (3 von 3)} \mbox{}\\
 I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte \ac{BS}-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \path{SystemMaxUse=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \path{policy-rc.d} gegen ungewollte Dienststarts bereit. 
 Die \ac{VM}-Basis wurde gegen \texttt{SHA512SUMS} samt Signaturdatei verifiziert.\cite{section3scriptB,validatornotesB,masterplanB}
 I2 (3): In \ac{IaC}- und Doku-Pfaden liegen keine Klartext-Secrets. Dabei enthält \path{/etc/ailab/secrets} nur ein README mit dem expliziten Verbot echter Geheimnisse. 
@@ -557,7 +567,7 @@ I3 (3): Jeder Abschnitt endet mit einem Validator-Lauf, der Datei- und Live-Zust
 I4 (3): Reproduzierbarkeit ist über durchgängige Snapshots wie beispielsweise \texttt{post-provision-base}, \texttt{post-config-base} und \texttt{post-network-tor-base} für alle acht Gäste gegeben. Zudem belegen definierte Soll-Zustände und der nachgewiesene Rückbau des Temp-Pfads
 diesen Zustand.\cite{finalsummaryB,validatornotesB}
 
-\paragraph{Netzwerk, Tor und Zugriff (3 von 3)}
+\paragraph{Netzwerk, Tor und Zugriff (3 von 3)} \mbox{}\\
 I1 (3): Die Tabelle \texttt{inet ailab} setzt \texttt{policy drop} auf \texttt{input} und \texttt{forward}. Dadurch werden nur Loopback, \texttt{established/related} sowie zwei quellgebundene Pfade (\texttt{vmbr0} mit \texttt{ip saddr @operator\_v4} auf die Ports 22 und 8006
 sowie \texttt{vmbr10} mit der Adresse des Tor-Relays auf Port 22) akzeptiert.
 Da \texttt{pve-firewall} deaktiviert wurde, ist genau ein Regelwerk wirksam.\cite{section4scriptB,finalsummaryB, proxmoxFirewall}
@@ -568,7 +578,7 @@ Der Negativtest mit einem unautorisierten Tor-Client nach vollständigem Bootstr
 I4 (3): Interne Pfade sind quell- und zielgebunden freigeschaltet, wie etwa \texttt{ip saddr 10.30.30.103 ip daddr 10.30.30.1 tcp dport 9100 accept} für den Monitoring-Pull.
 Für alle sieben Zielgäste ist die Blockade der Host-Gateway-Ports 22, 111, 8006 und 3128 einzeln validiert.\cite{section5scriptB,implementationlogB,finalsummaryB}
 
-\paragraph{Backup und Monitoring (2 von 3)}
+\paragraph{Backup und Monitoring (2 von 3)} \mbox{}\\
 I1 (1): Das Borg-Repository ist mit \texttt{repokey-blake2} verschlüsselt und der Zugriff über den dedizierten Nutzer \texttt{borgrepo} mit \texttt{restrict}, \texttt{ForceCommand borg serve --restrict-to-path}, \texttt{PermitTTY no} und deaktiviertem Forwarding verengt.
 Das Repository liegt jedoch auf demselben Testhost, und die Passphrase wird per \texttt{openssl rand -hex 32} im Klartext unter \path{/root/ailab-runtime/borg-host-to-104/passphrase} abgelegt.\cite{section5scriptB,finalsummaryB}
 I2 (2): Der Restore wurde als Smoke-Restore des Archivs \path{ailab2-20260707T212412Z} mit \path{host/configs.tgz}, \path{ct-101/sanitized-configs.tgz}, \path{EXCLUSIONS.txt} nachgewiesen.
@@ -577,7 +587,7 @@ I3 (2): Der Host wird erstmals mitüberwacht (\texttt{node-exporter} auf \texttt
 Die Abdeckung endet jedoch bei den drei laufenden Gästen. Die Dienste sind mangels Rollout nicht überwachbar und die Blackbox-Probe prüft nur den \texttt{ntfy}-Endpunkt.\cite{section5scriptB,finalsummaryB,implementationlogB}
 I4 (2): Der Alertmanager routet auf das operator-only \texttt{ntfy} (\texttt{listen-http} auf \texttt{10.30.30.103:2586}), wobei eine Zustellung bis zu einem Endgerät des Betreibers nicht durchgetestet wurde.\cite{section5scriptB,finalsummaryB}
 
-\paragraph{Fehleranalyse (3 von 3)}
+\paragraph{Fehleranalyse (3 von 3)} \mbox{}\\
 I1 (3): Alle vier Artefakte wurden mit tabellarischen Fundlisten (Priorität, Typ, Stelle) analysiert. Darunter finden sich auch strukturelle Befunde wie die \ac{IP}v6-Wirkung der \texttt{table inet}-Freigaben und das direkte Schreiben in finale Archivdateien.\cite{artefaktreviewB}
 I2 (3): Jede Datei enthält eine Variantenabwägung mit gewählter Korrekturvariante, Alternative und Begründung sowie die sanitisierte, generationierte und \texttt{age}-verschlüsselte Bundle-Variante statt eines Vollbackups mit nachgelagerten Excludes.\cite{artefaktreviewB}
 I3 (3): Die Referenzfassungen beheben die Kernprobleme, sodass die \path{firewall.fixed.nft} \texttt{policy drop} nutzt, die \texttt{define}-Variablen und Sets die Admin-Zugriffe an die Quelladresse \texttt{10.0.2.2} bindet und den Egress auf \ac{DNS}, \ac{NTP} und \ac{HTTP}(S) begrenzt.
@@ -657,7 +667,7 @@ Die 17 Punkte für Szenario B bedeuten nicht, dass ein fertiges Produktivsystem 
 Fragen wie Produktivbetrieb, langfristige Wartung oder verbleibende Restrisiken flossen nicht in die Bewertung ein. 
 Erst der Abgleich mit der Eigenentwicklung zeigt zudem, wie viel Weg zwischen einer gut belegten Testbasis und einem tatsächlich betreibbaren System liegt.
 
-Auf die Details der Eigenentwicklung wird analog zum \ac{BTC}-Konzept nur kurz eingegangen. Tabelle~\ref{tab:basis-eigen-details} begründet die vergebenen Wertungen und liefert die Vergleichspunkte für die folgenden Absätze. Die genannten Aspekte können in der Ausarbeitung des Basis-Systems nachgelesen
+Auf die Details der Eigenentwicklung wird analog zum \ac{BTC}-Konzept nur kurz eingegangen. Tabelle~\ref{tab:basis-eigen-details} begründet die vergebenen Wertungen und liefert die Vergleichspunkte für die folgenden Absätze. Die genannten Aspekte können in der Ausarbeitung des Apphosts nachgelesen
 werden (Abschnitt~\ref{Apphost}).
 
 \begingroup
@@ -769,10 +779,10 @@ Auf die Details der Eigenentwicklung wird nur grob eingegangen und sind deswegen
 \textbf{Unterkriterium} & \textbf{Score} & \textbf{Details der Eigenentwicklung} \\
 \midrule
 Architekturschlüssigkeit & 3 &
-Drei Vertrauenszonen aus exponiertem Basis-System, \ac{WG}-isolierter Signierer-\ac{VM} und air-gapped Cold-Zone; explizite \ac{BIP}-174-Rollenzuordnung; dokumentierte Abwägung verworfener Alternativen wie Online-Koordinator und Hash-Freigabeschicht. \\
+Drei Vertrauenszonen aus exponiertem Apphost, \ac{WG}-isolierter Signierer-\ac{VM} und air-gapped Cold-Zone; explizite \ac{BIP}-174-Rollenzuordnung; dokumentierte Abwägung verworfener Alternativen wie Online-Koordinator und Hash-Freigabeschicht. \\
 \addlinespace
 Trennung Schlüsselmaterial / Rollen & 3 &
-Basis-System nur mit Watch-only-Deskriptoren, Key~A \ac{TPM}-versiegelt hinter \ac{WG}, Key~B und Key~C air-gapped; Segregation of Duties über reale, per Regtest-Ableitungspfade erzeugte Schlüssel. \\
+Apphost nur mit Watch-only-Deskriptoren, Key~A \ac{TPM}-versiegelt hinter \ac{WG}, Key~B und Key~C air-gapped; Segregation of Duties über reale, per Regtest-Ableitungspfade erzeugte Schlüssel. \\
 \addlinespace
 \ac{PSBT}-, Signier- \& Handoff-Prozess & 3 &
 Echte \ac{BIP}-174-\acp{PSBT} über \path{walletcreatefundedpsbt}; Strukturprüfung auf \path{witness_utxo} und \ac{BIP}32-Pfade; Signatur über \path{embit} aus der \ac{TPM}-Entsiegelung; 2-aus-3-Multi-Signatur offline; realer Broadcast; Nutzung \ac{BTC}-Core; vollautomatischer Trigger mit Balance-Evaluation und Handoff-Löschlogik. \\

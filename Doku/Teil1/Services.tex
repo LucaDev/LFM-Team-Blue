@@ -5,7 +5,7 @@ Die ausgewählten Services beinhalten dabei sowohl alltägliche Anwendungen, wie
 
 Der thematische Schwerpunkt liegt auf der Integration eines sicheren Bitcoin-Ökosystems, das sowohl automatisierte Prozesse als auch manuelle Kontrollmechanismen unterstützt und damit den spezifischen Anforderungen des Mandanten gerecht wird. Die Umsetzung des Ökosystems von Bitcoin wird in Kapitel \ref{Krypto} vertieft und in diesem Kapitel lediglich als Teil der angebotenen Services aufgelistet.
 
-Das gesamte System besteht aus einer Vielzahl von Containern, welche in der deklarativ beschriebenen Linux-Distribution NixOS ausgeführt werden, die innerhalb der Open-Source Virtualisierungsumgebung \glqq Proxmox \grqq ausgeführt wird. 
+Das gesamte System besteht aus einer Vielzahl von Containern. Diese laufen in der deklarativ beschriebenen Linux-Distribution NixOS, die ihrerseits innerhalb der quelloffenen Virtualisierungsumgebung Proxmox betrieben wird.
 
 \begin{enumerate}
     \item Dokumente, Medien \& Notizen
@@ -17,6 +17,7 @@ Das gesamte System besteht aus einer Vielzahl von Containern, welche in der dekl
         \item bento-pdf
         \end{multicols}
     \end{itemize}
+    \newpage
     \item Cloud, Speicher \& Archivierung
     \begin{itemize}
      \begin{multicols}{2}
@@ -59,18 +60,18 @@ Das gesamte System besteht aus einer Vielzahl von Containern, welche in der dekl
         \item ntfy
         \end{multicols}
     \end{itemize}
-    \item Authentifizierung \& Passwort- Management
+    \item Authentifizierung \& Passwortmanagement
     \begin{itemize}
         \begin{multicols}{2}
-        \item Authelia (Ursprünglich: KeyCloak)
+        \item Authelia \\(Ursprünglich: KeyCloak)
         \item Vaultwarden
         \end{multicols}
     \end{itemize}
     \item Infrastruktur
     \begin{itemize}
         \begin{multicols}{2}
-        \item Traefik (Ursprünglich: envoy-gateway)
-        \item Valkey (ursprünglich: dragonflydb)
+        \item Traefik \\(Ursprünglich: envoy-gateway)
+        \item Valkey \\(ursprünglich: dragonflydb)
         \item PostgreSQL
         \item volsync
         \item forgejo
@@ -82,9 +83,9 @@ Das gesamte System besteht aus einer Vielzahl von Containern, welche in der dekl
 
 \subsubsection{Vaultwarden}
 
-Während der Freigabe der Services äußerte der Mandant Bedenken bezüglich des ausgewählten Passwortmanagers und brachte eine von ihm bevorzugte Alternative namens KeePass ein, da er einen Argon2-Schutz bevorzugt. Argon2 wird genutzt, um das Master-Passwort, welches die gesamte Datenbank entschlüsselt, zu hashen.\cite{argon2}
+Während der Freigabe der Services äußerte der Mandant Bedenken bezüglich des ausgewählten Passwortmanagers. Er brachte die von ihm bevorzugte Alternative KeePass ein, da er einen Argon2-Schutz wünscht. Argon2 wird genutzt, um das Master-Passwort zu hashen, welches die gesamte Datenbank entschlüsselt \cite{argon2}.
 
-Doch auch Vaultwarden ist mit Argon2 nutzbar \cite{cloudron}. Die konkrete Umsetzung von Argon2 ist in Kapitel (hier Referenz einfügen) beschrieben. Damit haben bezüglich der kryptographischen Absicherung der Master-Passwörter Vaultwarden und KeePass ein vergleichbares Sicherheitsniveau. 
+Doch auch Vaultwarden ist mit Argon2 nutzbar \cite{cloudron}, womit Vaultwarden und KeePass bezüglich der kryptographischen Absicherung der Master-Passwörter ein vergleichbares Sicherheitsniveau haben. 
 
 Ein bedeutender Vorteil von Vaultwarden liegt in der Vereinbarkeit von Sicherheit und Benutzerfreundlichkeit. Während KeePass als lokale, dateibasierte Lösung konzipiert ist und eine manuelle Synchronisation erfordert, ermöglicht Vaultwarden eine zentral gemanagte, selbstgehostete Verwaltung der Logindaten. Dies erleichtert die Nutzung über mehrere Geräte, ohne auf eine externe Cloud angewiesen zu sein. Durch die Integration der Bitwarden-Browsererweiterung erhöht sich nochmal der Bedienkomfort durch das automatische Ausfüllen von Logindaten. Vaultwarden bietet außerdem Ende-zu-Ende-Verschlüsselung, die Trennung von Vertrauen zwischen Client und Server sowie Mehrfaktorauthentifizierung. Diese Aspekte machen Vaultwarden zu einer attraktiveren Lösung für das vorliegende Szenario. \cite{vaultwarden_git} 
 
@@ -94,6 +95,6 @@ Ein weiterer Vorteil ergibt sich im Bereich Monitoring. In der geplanten Archite
 
 Im Gegensatz dazu ist KeePass eine rein lokale Anwendung und deshalb nicht sinnvoll in das geplante Monitoring und Logging-Konzept integrierbar. Für Prometheus sind keine Metriken oder Authentifizierungsversuche erfassbar. Aktionen wie das Öffnen der Datenbank, fehlgeschlagene Log-In Versuche oder die Nutzung einzelner Einträge in der Datenbank bleiben lokal auf dem jeweiligen Gerät. 
 
-Die identifizierten Schwachstellen von Vaultwarden (insbesondere CVE-2024-55225 \cite{nist_cve_2024_55225}, CVE-2025-24364 \cite{nist_cve_2025_24364} und CVE-2025-24365 \cite{nist_cve_2025_24365}) wurden im Rahmen der Umsetzung betrachtet. Allerdings sind diese (teils auch schwerwiegenden) Sicherheitslücken nur unter spezifischen Voraussetzungen ausnutzbar (z. B. bei vorhandenem Zugriff auf das Admin-Panel oder vorhandene Nutzerrechte) und bereits durch Updates oder manuelle Anleitungen behoben. Durch die im vorliegenden System implementierten Schutzmechanismen wird die Wahrscheinlichkeit einer erfolgreichen Ausnutzung dieser oder ähnlicher Schwachstellen erheblich reduziert (zudem wurden die Schwachstellen bereits behoben oder durch bereitgestellte Anleitungen zur manuellen Behebung adressiert).
+Die identifizierten Schwachstellen von Vaultwarden (insbesondere \ac{CVE}-2024-55225 \cite{nist_cve_2024_55225}, \ac{CVE}-2025-24364 \cite{nist_cve_2025_24364} und \ac{CVE}-2025-24365 \cite{nist_cve_2025_24365}) wurden im Rahmen der Umsetzung betrachtet. Allerdings sind diese (teils auch schwerwiegenden) Sicherheitslücken nur unter spezifischen Voraussetzungen ausnutzbar (z. B. bei vorhandenem Zugriff auf das Admin-Panel oder vorhandene Nutzerrechte) und bereits durch Updates oder manuelle Anleitungen behoben. Durch die im vorliegenden System implementierten Schutzmechanismen wird die Wahrscheinlichkeit einer erfolgreichen Ausnutzung dieser oder ähnlicher Schwachstellen erheblich reduziert (zudem wurden die Schwachstellen bereits behoben oder durch bereitgestellte Anleitungen zur manuellen Behebung adressiert).
 
 Trotzdem muss Vaultwarden als Passwort-Manager kritisch bewertet werden, da eine Kompromittierung potenziell den Zugriff auf alle gespeicherten Logindaten ermöglichen würde. Dies hätte insbesondere im Kontext der Implementierung des Bitcoin-Transaktionssystems gravierende Auswirkungen. Insgesamt sind die bestehenden Risiken durch geeignete technische und organisatorische Maßnahmen kontrollierbar und im Rahmen des Sicherheitskonzepts angemessen adressiert, sodass eine Nutzung von Vaultwarden unter den genannten Aspekten berechtigt ist.
