@@ -35,7 +35,7 @@ Cluster-Updates müssen verstanden und gepflegt werden. Der Kern der Aufgabe
 liegt jedoch in der \emph{sorgfältigen Absicherung} der Dienste und nicht im
 Betrieb eines Cluster-Stacks. Aus diesem Grund wurde der Stack trotz des
 bereits investierten Aufwands auf Docker Compose neu aufgebaut (siehe
-Abschnitt~\ref{sec:apphost-herausforderungen}).
+Abschnitt~\ref{sec:herausforderungen-selfhosted}).
 
 \subsubsection*{Ausgetauschte Komponenten}
 
@@ -144,7 +144,7 @@ seinen Diensten, also genau dort, wo die sensiblen Daten des Mandanten liegen.
 
 \subsubsection*{Getrennte Umgebung für \ac{KI}-Experimente}
 
-Im Rahmen des zweiten Aufgabenteils (\ac{KI}-Evaluation) sollten Agenten
+Im Rahmen des zweiten Aufgabenteils (Siehe Abschnitt~\ref{chap:ki-evaluation}-Evaluation) sollten Agenten
 teilweise autonom in Proxmox arbeiten können. Damit diese Experimente die
 manuelle Arbeit nicht gefährden konnten, erhielten sie eigene
 Proxmox-Benutzer und vollständig getrennte Resource Pools. Bis auf einen
@@ -311,7 +311,7 @@ die beim Setup automatisch generiert wird. Die zentrale Anmeldung ist damit
 deklarativ beschrieben und nicht in einer von außen nicht prüfbaren Datenbank
 abgelegt.
 
-\subsubsection{Zensurresistenter Zugriff über Tor}
+\subsubsection{Zensurresistenter Zugriff über Tor} \label{sec:Tor}
 
 Auf ausdrücklichen Kundenwunsch ist ein Großteil der Dienste zusätzlich über
 das Tor-Netzwerk als Onion Service v3 erreichbar. Dafür läuft ein
@@ -335,7 +335,7 @@ der Dienst nicht über Tor erreichbar, während sich am internen Zugriff nichts
 ändert. Der Mandant kann somit gezielt steuern, welche Dienste anonym von
 außen verfügbar sind und welche bewusst im Heimnetz verbleiben. Collabora ist
 aus Sicherheitsgründen standardmäßig nicht über Tor freigegeben (siehe
-Abschnitt zu den Kompromissen). Auch Garage hat bewusst keinen
+Abschnitt~\ref{sec:kompromisse_apphost}). Auch Garage hat bewusst keinen
 Tor-Einstiegspunkt, denn als \acs{S3}-kompatibler Objektspeicher im
 Hintergrund der anderen Dienste hat es keine eigenen Endnutzer, die von
 außerhalb des Heimnetzes darauf zugreifen müssten.
@@ -359,7 +359,7 @@ Forward-Auth-Diensten (zum Beispiel Prometheus oder die Homepage) tritt das
 Problem nicht auf, weil dort kein Token an eine feste Issuer-\ac{URL}
 gebunden wird. Es handelt sich um eine reine Komforteinschränkung und nicht
 um ein Sicherheitsproblem. Der Umgang damit und die ergänzende Empfehlung
-eines WireGuard-Zugangs werden im Abschnitt zu den eingegangenen Kompromissen
+eines WireGuard-Zugangs werden in Abschnitt~\ref{sec:kompromisse_apphost}
 erläutert.
 
 Der Zusammenhang mit dem \ac{HTTP}-Host-Header ist direkt. Authelia bestimmt
@@ -458,8 +458,8 @@ nachvollziehbar:
 \end{itemize}
 
 Nicht jeder Container folgt diesem Muster vollständig. Neben Collabora, das für
-das Rendern von Dokumenten erweiterte Rechte benötigt und im Abschnitt zu den
-Kompromissen behandelt wird, brauchen auch einige Monitoring-Komponenten und
+das Rendern von Dokumenten erweiterte Rechte benötigt und im Abschnitt~\ref{sec:kompromisse_apphost} 
+behandelt wird, brauchen auch einige Monitoring-Komponenten und
 die Docker-Anbindung selbst gezielte Ausnahmen:
 
 \begin{itemize}
@@ -631,7 +631,7 @@ Ein reiner Versions-Tag wie \texttt{traefik:v3.7.1} ist kein unveränderlicher
 Bezeichner. Er kann nachträglich auf einen anderen Image-Inhalt umgebogen
 werden, sei es versehentlich oder durch Kompromittierung. Für den
 Reproduzierbarkeitsanspruch, der bereits für NixOS formuliert wurde
-(Abschnitt~\ref{sec:warum-nixos}), stellt das einen Bruch dar. Dieselbe
+(siehe Abschnitt~\ref{sec:warum-nixos}), stellt das einen Bruch dar. Dieselbe
 \texttt{docker-compose.yml} könnte zu unterschiedlichen Zeitpunkten
 unterschiedliche Images ziehen, ohne dass sich am Tag etwas ändert.
 
@@ -680,7 +680,7 @@ Supply-Chain-Angriffe auf Abhängigkeiten.
     Heimnetz und über Tor und die Zertifikate werden per \ac{DNS}-01 bezogen.
     Es muss daher kein einziger Port ins Internet geöffnet werden, was
     klassischen Remote-Angriffen von vornherein die Angriffsfläche nimmt.
-    Auch intern wird zusätzlich lediglich \ac{SSH} für die Wartung benötigt.
+    Auch intern werden zusätzlich lediglich Ports für \ac{SSH}, \ac{HTTP}, \ac{HTTPS} und \ac{MQTT} benötigt.
   \item \textbf{Starke, zentrale Authentifizierung.} Authelia mit Argon2id
     und Multi-Faktor-Authentifizierung schützt die Dienste und bringt einen
     eigenen Brute-Force-Schutz auf Anwendungsebene mit (siehe
@@ -697,7 +697,7 @@ Supply-Chain-Angriffe auf Abhängigkeiten.
     read-only Dateisysteme, das Seccomp-Profil, AppArmor und vor allem das
     User-Namespace-Remapping begrenzen den möglichen Schaden, denn root im
     Container ist nicht root auf dem Host. Die Netzwerksegmentierung
-    (Abschnitt~\ref{sec:apphost-netze}) verhindert zusätzlich, dass sich ein
+    (siehe Abschnitt~\ref{sec:apphost-netze}) verhindert zusätzlich, dass sich ein
     Angreifer von einem Dienst aus frei weiterbewegen kann.
 \end{itemize}
 
@@ -746,7 +746,7 @@ setzt das System an mehreren Stellen an:
     selbst gehostete ntfy.
 \end{itemize}
 
-\subsubsection{Eingegangene Kompromisse}
+\subsubsection{Eingegangene Kompromisse}\label{sec:kompromisse_apphost}
 
 Kein reales Setup ist frei von Kompromissen. Deren offene Benennung gehört zum
 Entwicklungsprozess und ist für diese Ausarbeitung von hoher Relevanz. Die
@@ -762,7 +762,7 @@ folgenden Punkte behandeln daher die bewusst eingegangenen Kompromisse.
   \item \textbf{\ac{OIDC} und der duale \ac{URL}-Raum.} Dienste mit \ac{OIDC}
     funktionieren nicht gleichzeitig über die interne Domain und über Tor,
     weil \ac{OIDC} die Tokens fest an eine Basis-\ac{URL} bindet. Die
-    Mechanik dahinter wurde im Tor-Abschnitt erläutert. Es handelt sich um
+    Mechanik dahinter wurde im Abschnitt~\ref{sec:Tor} erläutert. Es handelt sich um
     eine reine Komforteinschränkung und nicht um ein Sicherheitsproblem. Als
     Komfortverbesserung wird dem Mandanten ergänzend ein WireGuard-Zugang
     empfohlen. Damit sind die internen Adressen von überall über denselben
@@ -788,7 +788,7 @@ folgenden Punkte behandeln daher die bewusst eingegangenen Kompromisse.
     wird beobachtet und ein Umstieg bleibt für die Zukunft möglich.
   \item \textbf{Kata Containers und gVisor.} Beide zusätzlichen
     Sandbox"=Runtimes sind vorbereitet, aber standardmäßig nicht aktiv (siehe
-    nächster Abschnitt).
+    Abschnitt~\ref{sec:kata_konfig}).
 \end{itemize}
 
 \subsection{Backups und Wiederherstellung}
@@ -812,8 +812,8 @@ Backup-Medium gestohlen wird. Für die Wiederherstellung nach einem
 Hardwaredefekt genügt es, Proxmox neu aufzusetzen und die \ac{VM} aus dem
 letzten Backup zurückzuspielen.
 
-\subsubsection{Dateisystemintegrität mit \ac{AIDE}}
-\ac{AIDE} (Advanced Intrusion Detection Environment) prüft die Integrität des
+\subsubsection{Dateisystemintegrität mit \acs{AIDE}}
+\ac{AIDE} prüft die Integrität des
 Dateisystems. Dazu legt es Prüfsummen und Metadaten (Rechte, Eigentümer,
 Timestamps) von zuvor konfigurierten Dateien und Verzeichnissen in einer
 Datenbank ab und vergleicht sie bei jedem weiteren Lauf mit dem aktuellen
@@ -867,7 +867,7 @@ steht.
   \item \textbf{Updates.} Das System aktualisiert sich täglich über
     NixOS-Auto-Upgrade. RenovateBot pflegt die Container inklusive
     Digest-Pinning für reproduzierbare Image-Referenzen
-    (Abschnitt~\ref{sec:apphost-digest-pinning}) und der Nix-Store wird
+    (siehe Abschnitt~\ref{sec:apphost-digest-pinning}) und der Nix-Store wird
     regelmäßig aufgeräumt.
 \end{itemize}
 
@@ -875,7 +875,7 @@ steht.
 Der Apphost bildet den zentralen Einstiegspunkt für den Mandanten und das
 Rückgrat für sämtliche Dienste. Auf ihm laufen nicht nur die Alltags- und
 Produktivanwendungen, sondern auch der Hot-Wallet-Stack des
-\ac{BTC}-Zahlungsverkehrs (Abschnitt~\ref{Krypto}). Damit vereint eine einzige,
+\ac{BTC}-Zahlungsverkehrs (siehe Abschnitt~\ref{Krypto}). Damit vereint eine einzige,
 deklarativ beschriebene und umfassend gehärtete Maschine die gesamte für den
 Mandanten sichtbare Infrastruktur. Die durchgängige Beschreibung als Code
 macht den Aufbau vor der Ausführung prüfbar und nach einem Ausfall
