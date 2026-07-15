@@ -20,22 +20,8 @@ SIGNER_IP="10.10.0.2"
 SIGNER_URL="http://${SIGNER_IP}:8080"
 
 
-
-mkdir -p "$USB_MOUNT" "$SECRETS_DIR"
-
-if mountpoint -q "$USB_MOUNT"; then
-  echo "USB already mounted at $USB_MOUNT, skipping mount"
-else
-  echo "Mounting USB..."
-  mount "$USB_DEVICE" "$USB_MOUNT"
-fi
-
-echo ""
-echo "Checking communication files ..."
-
-
 #WG
-WG_JSON="$USB_MOUNT/communication/wireguard/wireguard.signer.json"
+WG_JSON="./wireguard.signer.json"
 
 if [[ -f "$WG_JSON" ]]; then
     echo "Applying WireGuard peer from JSON..."
