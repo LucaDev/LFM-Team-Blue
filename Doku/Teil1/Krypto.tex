@@ -897,7 +897,7 @@ Eine prägnante Darstellung dieses Sachverhalts kann in Tabelle~\ref{tab:limits}
 Betrag je \ac{TX} & begrenzt den Schaden einer einzelnen unautorisierten Zahlung & \ac{OPA} (Apphost) & \path{data/data.json} \\
 Gebühr je \ac{TX} & verhindert Mittelabfluss über überhöhte Gebühren & \ac{OPA} (Apphost) & \path{data/data.json} \\
 Tages-Abfluss & deckelt den kumulierten Abfluss regulärer Zahlungen & \ac{OPA} (Apphost) & \texttt{max\_daily\_sats} \\
-Velocity-Cap & unabhängiger Backstop, überlebt eine Kompromittierung des Apphosts & Signierer (Key~A \ac{VM}) & \path{VELOCITY_CAP_SATS}, \path{VELOCITY_WINDOW_SEC} \\
+Velocity-Cap & unabhängiger Backstop, überlebt eine Kompromittierung des Apphosts & Signierer (Key~A \ac{VM}) & \path{VELOCITY_CAP_SATS}, \path{VELOCITY_WINDOW_} \path{SEC} \\
 Hot-Balance-Zielbereich & steuert die Aufteilung der Mittel zwischen Hot- und Cold-Wallet & \ac{OPA} \texttt{hot.limits} & \path{data/data.json} \\
 \ac{HMAC}-Zeitfenster & begrenzt die Wiederverwendbarkeit abgefangener Signieraufträge & Signierer (Key~A \ac{VM}) & Signer-Konfiguration \\
 \bottomrule
