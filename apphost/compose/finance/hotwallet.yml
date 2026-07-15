@@ -164,7 +164,6 @@ services:
     volumes:
       - hotwallet_btccore_data:/home/app/.bitcoin
       - ../../secrets/hotwallet/wallets:/run/wallets:ro
-      - ../../secrets/hotwallet/secrets:/run/secrets:ro
       - ../../secrets/hotwallet:/run
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
@@ -173,7 +172,6 @@ services:
       OPA_URL: http://hotwallet-opa:8181
       # Signer-VM: nur über den (separat einzurichtenden) WireGuard-Tunnel erreichbar,
       # siehe Installationsanleitung Abschnitt "Hot-Wallet".
-      SIGNER_URL: http://10.10.0.2
       SIGNER_PORT: 8080
       POSTGRES_HOST: hotwallet-postgres
       POSTGRES_PORT: "5432"
@@ -184,13 +182,14 @@ services:
       BTC_CORE_RPC_URL: http://hotwallet-btc-core:18443
       BTC_CORE_RPC_USER: middleware
       BTC_CORE_RPC_PASS: ${HOTWALLET_RPC_PASS_MW:?}
-      SIGNER_HMAC_SECRET: /run/secrets/signer-hmac.secret
       REFILL_PSBT: /run/refill.psbt
       WALLET_DIR: /home/app/.bitcoin
       # Benachrichtigungen über den bestehenden ntfy-Dienst (siehe compose/communication/ntfy.yml)
       NTFY_URL: "http://ntfy/hotwallet-alerts"
       NTFY_USER: hotwallet
       NTFY_PASSWORD: ${HOTWALLET_NTFY_PASSWORD:?}
+      SIGNER_URL: ${SIGNER_URL:?}
+      SIGNER_HMAC_SECRET: ${SIGNER_HMAC_SECRET:?}
     deploy:
       resources:
         limits: {cpus: "1.0", memory: 512M}
