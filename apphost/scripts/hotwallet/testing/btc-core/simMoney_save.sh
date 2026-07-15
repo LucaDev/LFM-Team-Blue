@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 RPC="docker exec hotwallet-btc-core bitcoin-cli -regtest -datadir=/home/app/.bitcoin"

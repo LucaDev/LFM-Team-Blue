@@ -11,7 +11,7 @@ WALLET_DIR="${PROJECT_ROOT}/secrets/hotwallet/wallets"
 
 # Verzeichnis auf dem Apphost, in das die Wallet-Dateien zuvor per SSH kopiert
 # wurden (kein USB-Mount auf dem Apphost).
-TRANSFER_DIR="${TRANSFER_DIR:-${PROJECT_ROOT}/secrets/hotwallet/transfer}"
+TRANSFER_DIR="./"
 
 patch_metadata() {
   local meta_file="$1"

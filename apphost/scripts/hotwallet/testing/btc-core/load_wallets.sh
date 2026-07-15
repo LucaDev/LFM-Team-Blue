@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Einmaliges Aufsetzen dieser Nodes.
 #Danach importieren der descitpoiren aus dem filesystem /wallets/, um über mehrere versuche dieselben Adressen zu haben.
 #Wichtig für OPA whitelisting

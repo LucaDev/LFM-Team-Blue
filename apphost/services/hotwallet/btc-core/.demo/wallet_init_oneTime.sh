@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #Einmaliges Ausführen zum Extrahieren der bitcoin wallet deskriptoren
 #Ausführen außerhalb der Docker container (CP aus dem Container nicht möglich)
 #Github kommt mit Standard generierten Deskiptoren
