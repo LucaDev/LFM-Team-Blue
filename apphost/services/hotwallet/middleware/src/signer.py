@@ -25,6 +25,12 @@ if not SIGNER_URL:
 if not SIGNER_HMAC_SECRET:
     raise RuntimeError("SIGNER_HMAC_SECRET is not set")
 
+# HMAC-Secret wird direkt als (Hex-)Env-Variable übergeben, nicht als Datei.
+try:
+    SIGNER_HMAC_KEY = bytes.fromhex(SIGNER_HMAC_SECRET.strip())
+except ValueError as e:
+    raise RuntimeError("SIGNER_HMAC_SECRET is not a valid hex string") from e
+
 log = logging.getLogger("middleware")
 
 
@@ -77,18 +83,8 @@ async def sign_psbt_on_signer(
         psbt: str,
         sha256: str
     ):
-    if os.path.isfile(SIGNER_HMAC_SECRET):
-        log.info("Gültige HMAC Dateo")
-        with open(SIGNER_HMAC_SECRET, "r") as f:
-            secret = bytes.fromhex(f.read().strip())
-    else:
-        log.error("HMAC nicht vorhanden oder kein File")
-        raise FileNotFoundError(
-                f"HMAC secret not found: {SIGNER_HMAC_SECRET}"
-        )
-    
-    
-    
+    secret = SIGNER_HMAC_KEY
+
     timestamp = utc_now_epoch()
     nonce = secrets.token_hex(16)
 
