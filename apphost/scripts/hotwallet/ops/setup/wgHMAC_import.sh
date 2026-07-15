@@ -4,10 +4,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/../../../..")"
 
-# Verzeichnis auf dem Apphost, in das die vom Signer exportierten Dateien zuvor
-# per SSH kopiert wurden (kein USB-Mount auf dem Apphost).
-TRANSFER_DIR="${TRANSFER_DIR:-${PROJECT_ROOT}/secrets/hotwallet/transfer}"
-
 SECRETS_DIR="${PROJECT_ROOT}/secrets/hotwallet/secrets"
 ENV_RUNTIME="${PROJECT_ROOT}/secrets/hotwallet/secrets/env.runtime"
 
@@ -16,8 +12,8 @@ SIGNER_URL="http://${SIGNER_IP}:8080"
 
 #########################################
 #HMAC
-if [[ -f "$TRANSFER_DIR/communication/signer-hmac.secret" ]]; then
-    cp "$TRANSFER_DIR/communication/signer-hmac.secret" \
+if [[ -f "./signer-hmac.secret" ]]; then
+    cp "./signer-hmac.secret" \
        "$SECRETS_DIR/signer-hmac.secret"
     chmod 600 "$SECRETS_DIR/signer-hmac.secret"
     # hotwallet-middleware läuft im Container als UID 1000, aber Docker's userns-remap
@@ -32,12 +28,7 @@ if [[ -f "$TRANSFER_DIR/communication/signer-hmac.secret" ]]; then
         fi
     fi
     echo "Imported: signer-hmac.secret"
-else
-    echo "Skipping: signer-hmac.secret "
-fi
 
-# env.runtime nur erzeugen wenn HMAC existiert
-if [[ -f "$SECRETS_DIR/signer-hmac.secret" ]]; then
     HMAC_SECRET=$(cat "$SECRETS_DIR/signer-hmac.secret")
 
     cat > "$ENV_RUNTIME" <<EOF
@@ -47,10 +38,9 @@ EOF
 
     chmod 600 "$ENV_RUNTIME"
     echo "Generated: env.runtime"
+    echo ""
+    echo "Import complete"
+    echo "Signer URL: ${SIGNER_URL}"
 else
-    echo "Skipping env.runtime"
+    echo "Error: signer-hmac.secret not found in current directory. Please provide the secret file to import."
 fi
-
-echo ""
-echo "Import complete"
-echo "Signer URL: ${SIGNER_URL}"
