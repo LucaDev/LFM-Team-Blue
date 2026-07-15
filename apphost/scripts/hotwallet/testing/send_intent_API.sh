@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="http://localhost:8080/api/v1/request"
+BASE="https://hotwallet.lbaecker.de/api/v1/request" # change this to match your hotwallet API endpoint
 
 CONTAINER="hotwallet-btc-core"
 
