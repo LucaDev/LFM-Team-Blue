@@ -212,7 +212,8 @@ In Kombination mit \ac{NATS} wird \ac{HTTP} als \ac{API} für gezielte GET-Abfra
 \paragraph{Netzwerkanbindung} \mbox{}\\
 Netzwerkseitig fügt sich das Hot-Wallet in die Segmentierung des Apphosts ein (siehe Abschnitt~\ref{sec:apphost-netze}). Dabei laufen Sämtliche Microservices in einem eigenen, rein internen Docker-Netzwerk (\texttt{finance-network}) ohne veröffentlichte Ports. 
 Bitcoin Core, PostgreSQL, \ac{NATS}, \ac{OPA} und der TX-Builder sind dadurch weder aus dem Heimnetz noch von anderen Dienstgruppen des Apphosts erreichbar.
-Einzig die Middleware ist zusätzlich an zwei weitere Netzwerke angebunden und schickt Daten an das \texttt{communication-network}, um Alarme über den bestehenden ntfy-Dienst zuzustellen. Sie empfängt Zahlungsanfragen an seiner \ac{API} unter einer eigenen Subdomain des reverse Proxy von dem \texttt{traefik-public}-Netzwerk.
+Einzig die Middleware ist zusätzlich an zwei weitere Netzwerke angebunden und schickt Daten an das \texttt{communication-network}, um Alarme über den bestehenden ntfy-Dienst zuzustellen. Sie empfängt Zahlungsanfragen an ihrer \ac{API} unter einer eigenen Subdomain des reverse Proxy von dem \texttt{traefik-public}-Netzwerk.
+Anders als die übrigen Web-Dienste des Apphosts wird die Zahlungs-\ac{API} bewusst nur über Clearnet (eigene Subdomain, gültiges TLS-Zertifikat) und nicht als Onion-Service exponiert (siehe Abschnitt \ref{sec:Tor}, da anbindende Partner-Systeme ein stabilen, zertifikatsgesicherten \ac{HTTPS}-Endpoint erwarten und der Tor-Zugang im Wesentlichen dem Betreiber-Zugriff auf die Verwaltungsdienste dient.
 
 \paragraph{\ac{WG}} \mbox{}\\
 \ac{WG} beziehungsweise sein gebildeter Tunnel stellt den einzigen Kommunikationspfad zwischen dem Hot-Apphost (Middleware) und der Signierer-\ac{VM} (Key~A) dar, wodurch die Signierer-\ac{VM} von keinem anderen System erreichbar ist. Übertragen werden ausschließlich die zu signierenden \acp{PSBT} vom Apphost zur Signierer-\ac{VM} und zurückgegeben werden die signierten \acp{PSBT}. Das geheime Schlüsselmaterial wird nicht ausgetauscht und verlässt zu keinem Zeitpunkt die \ac{VM} von Key~A (siehe \ref{sec:in_transit_vault}).
@@ -421,7 +422,7 @@ Zur Verhinderung einer mehrfachen Verarbeitung identischer Transaktionen wird je
 
 \textbf{Velocity-Cap (zweistufige Abflussbegrenzung)} \label{sec:keyA_vel} \\
 Der maximale Geldabfluss des Hot-Wallets ist an zwei voneinander unabhängigen Punkten begrenzt. Die erste Schranke bildet das oben beschriebene tägliche Limit des \ac{OPA} im Apphost (siehe \ref{sec:OPA_vel}). Die zweite Schranke ist ein harter, vom Apphost unabhängiger Velocity-Cap auf der Key~A \ac{VM}.
-Der Signierer führt in einem Redis-Speicher ein rollierendes Zeitfenster (Standard 24\,Stunden, \texttt{\seqsplit{VELOCITY\_WINDOW\_SEC}}) über den bereits signierten Abfluss. Dementsprechend weist dieser eine Anfrage mit \ac{HTTP}~429 ab, sobald die Summe den konfigurierten Grenzwert (Standard 40\,000\,000~\ac{SATS}, \texttt{\seqsplit{VELOCITY\_CAP\_SATS}}) überschreiten würde.
+Der Signierer führt in einem Redis-Speicher ein rollierendes Zeitfenster (Standard 24\,Stunden, \path{VELOCITY_WINDOW_SEC}) über den bereits signierten Abfluss. Dementsprechend weist dieser eine Anfrage mit \ac{HTTP}~429 ab, sobald die Summe den konfigurierten Grenzwert (Standard 40\,000\,000~\ac{SATS}, \path{VELOCITY_CAP_SATS}) überschreiten würde.
 
 Gezählt wird ausschließlich der Nicht-Change-Abfluss über Single-Signatur-Inputs.
 \acp{PSBT} mit Multi-Signatur-Input (\texttt{cold\_to\_hot}-Nachbefüllungen) werden am Witness-Script herausgerechnet, während Wechselgeld"=Rückgaben an die eigene Wallet über den Master-Fingerprint erkannt werden.
@@ -896,7 +897,7 @@ Eine prägnante Darstellung dieses Sachverhalts kann in Tabelle~\ref{tab:limits}
 Betrag je \ac{TX} & begrenzt den Schaden einer einzelnen unautorisierten Zahlung & \ac{OPA} (Apphost) & \path{data/data.json} \\
 Gebühr je \ac{TX} & verhindert Mittelabfluss über überhöhte Gebühren & \ac{OPA} (Apphost) & \path{data/data.json} \\
 Tages-Abfluss & deckelt den kumulierten Abfluss regulärer Zahlungen & \ac{OPA} (Apphost) & \texttt{max\_daily\_sats} \\
-Velocity-Cap & unabhängiger Backstop, überlebt eine Kompromittierung des Apphosts & Signierer (Key~A \ac{VM}) & \texttt{VELOCITY\_CAP\_SATS}, \path{VELOCITY\_WINDOW\_SEC} \\
+Velocity-Cap & unabhängiger Backstop, überlebt eine Kompromittierung des Apphosts & Signierer (Key~A \ac{VM}) & \path{VELOCITY_CAP_SATS}, \path{VELOCITY_WINDOW_SEC} \\
 Hot-Balance-Zielbereich & steuert die Aufteilung der Mittel zwischen Hot- und Cold-Wallet & \ac{OPA} \texttt{hot.limits} & \path{data/data.json} \\
 \ac{HMAC}-Zeitfenster & begrenzt die Wiederverwendbarkeit abgefangener Signieraufträge & Signierer (Key~A \ac{VM}) & Signer-Konfiguration \\
 \bottomrule

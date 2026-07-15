@@ -14,6 +14,9 @@
 
 \usepackage{csquotes}
 \usepackage[backend=bibtex,style=ieee,dashed=false]{biblatex} % Bibliothek
+\setcounter{biburlnumpenalty}{9000}
+\setcounter{biburlucpenalty}{9000}
+\setcounter{biburllcpenalty}{9000}
 \addbibresource{Doku/Definitionen/literatur.bib}
 \usepackage{url}
 \usepackage{float}
@@ -22,6 +25,7 @@
 
 \makeindex % nur, wenn Index benutzt wird!
 \usepackage{microtype} % optischer Randausgleich
+\setlength{\emergencystretch}{3em}
 \usepackage{ragged2e} % Für \RaggedRight in Tabellen
 \setlength{\parindent}{0pt}  % Absatz-Einrückung verhindern
 \usepackage[pdftex]{color,graphicx} % Bilder und Farben
@@ -94,6 +98,12 @@
   xleftmargin=5pt,
   xrightmargin=5pt,
 }
+
+\makeatletter
+\renewcommand*{\@pnumwidth}{2.6em}                       % breitere Seitenzahl-Spalte
+\renewcommand*\l@figure{\@dottedtocline{1}{1.5em}{3.2em}}% Platz für "A4.10"
+\let\l@table\l@figure
+\makeatother
 
 \usepackage{booktabs}
 \usepackage{xltabular}
@@ -170,8 +180,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  Anhang  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \cleardoublepage
-\chapter*{Anhang}
-\addcontentsline{toc}{chapter}{Anhang}
+\addchap{Anhang}
 
 % Ab hier keine Unterpunkte des Anhangs mehr ins Inhaltsverzeichnis
 \addtocontents{toc}{\protect\setcounter{tocdepth}{-1}}

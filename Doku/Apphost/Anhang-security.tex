@@ -34,7 +34,7 @@ bieten.
 
 \subsubsection*{Speicher- \& Adressraumschutz}
 \begin{itemize}
- \item Vollständiges \acs{ASLR}: \texttt{\textcolor{OliveGreen}{randomize\_va\_space=2}}, \texttt{\textcolor{OliveGreen}{vm.mmap\_rnd\_bits=32}}. Standardmäßig aktiv, lediglich explizit gesetzt
+ \item Vollständiges \acs{ASLR}: \texttt{\textcolor{OliveGreen}{randomize\_va\_space=2}},\\ \texttt{\textcolor{OliveGreen}{vm.mmap\_rnd\_bits=32}}. Standardmäßig aktiv, lediglich explizit gesetzt
   \item \acs{SLUB}-Debug, Page-Poison, Init-on-alloc/free: verhindert Use-after-free-Exploits. Standardmäßig deaktiviert, da es Performance kostet.
   \item vsyscall-Seite deaktiviert: \texttt{vsyscall=none}. Standardmäßig auf xonly gesetzt. Sehr alte Programme, die noch auf vsyscalls setzen, verlieren ggf. ihre Funktion. Moderne haben keine Probleme damit.
   \item debugfs deaktiviert: \texttt{debugfs=off}. Standardmäßig aktiviert
@@ -42,7 +42,7 @@ bieten.
 
 \subsubsection*{\acs{DMA}-Schutz (\acs{IOMMU})}
 \begin{itemize}
-  \item \acs{IOMMU} erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \texttt{intel\_iommu=on}. Sie ist oftmals automatisch aktiviert, jedoch nicht immer.
+  \item \acs{IOMMU} erzwungen: \texttt{iommu=force}, \texttt{amd\_iommu=on}, \\\texttt{intel\_iommu=on}. Sie ist oftmals automatisch aktiviert, jedoch nicht immer.
   \item \acs{DMA} Passthrough deaktiviert: \texttt{iommu.passthrough=0}. Verschlechtert Performance bei Thunderbolt/\acs{USB}4, schützt aber verlässlich gegen \acs{DMA}-Angriffe.
   \item Early \acs{PCI} \acs{DMA} blockiert: \texttt{efi=disable\_early\_pci\_dma}. Schließt mögliches Early-Boot Thunderbolt/\acs{USB}4/Angriffsfenster.
 \end{itemize}
@@ -87,7 +87,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \begin{itemize}
   \item Reverse Path Filtering aktiv (\texttt{rp\_filter=1})
   \item Source-Routing, ICMP-Redirects und Router-Advertisements deaktiviert
-  \item SYN-Flood-Schutz: \texttt{tcp\_syncookies=1}, \texttt{tcp\_max\_syn\_backlog=4096}
+  \item SYN-Flood-Schutz: \texttt{tcp\_syncookies=1},\\ \texttt{tcp\_max\_syn\_backlog=4096}
   \item \acs{TCP}-Timestamps deaktiviert (verhindert Uptime-Fingerprinting)
   \item \acs{IP}v6 Router-Advertisements und Autoconf deaktiviert
   \item Martian-Pakete werden geloggt
@@ -105,20 +105,20 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 \begin{itemize}
   \item chrony mit \textbf{Network Time Security (\acs{NTS})} -- Zeitserver werden über \acs{TLS} authentifiziert
   \item \texttt{authselectmode=require} -- unauthentifizierte Server werden abgelehnt
-  \item systemd-timesyncd deaktiviert
 \end{itemize}
 
 
 \subsection{Zugriffssteuerung \& Authentifizierung}
 \subsubsection*{\acs{SSH}-Härtung}
 \begin{itemize}
-  \item Nur Public-Key-Authentifizierung (\texttt{PasswordAuthentication=false}, \texttt{PermitRootLogin=no})
-  \item Post-Quanten-\ac{KEM}: \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
+  \item Nur Public-Key-Authentifizierung \\(\texttt{PasswordAuthentication=false},~ \texttt{PermitRootLogin=no})
+  \item Post-Quanten-\ac{KEM}:\\
+    \texttt{mlkem768x25519-sha256}, \texttt{sntrup761x25519-sha512}
   \item Ciphers: nur ChaCha20-Poly1305 und \acs{AES}-256/128-\acs{GCM}
-  \item \acs{MAC}s: nur \acs{ETM}-Varianten (\texttt{hmac-sha2-512-etm}, \texttt{hmac-sha2-256-etm})
+  \item \acs{MAC}s: nur \acs{ETM}-Varianten (\seqsplit{\texttt{hmac-sha2-512-etm},~ \texttt{hmac-sha2-256-etm}})
   \item X11/\acs{TCP}/Agent-Forwarding und Tunnel deaktiviert
   \item \texttt{MaxAuthTries=3}, \texttt{LoginGraceTime=30s}, \texttt{MaxSessions=3}
-  \item Rechtlicher Hinweis-Banner bei Login: kein technischer Schutz jedoch rechtliche Absicherung der Auditierungs- und Logging-Maßnahmen. Entzieht
+  \item Rechtlicher Hinweis-Banner bei Login: \\Kein technischer Schutz jedoch rechtliche Absicherung der \seqsplit{Auditierungs-} und Logging-Maßnahmen. Entzieht
   unbefugten Zugreifenden jegliche Grundlage für eine Berufung auf Unkenntnis der Überwachung und
   dokumentiert befugten Nutzenden die Bedingungen des Zugriffs.
 \end{itemize}
@@ -134,15 +134,15 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
 
 \subsubsection*{Benutzerverwaltung}
 \begin{itemize}
-  \item Immutable User-Datenbank: \texttt{users.mutableUsers=false}
-  \item Root-Konto gesperrt: \texttt{hashedPassword=\textquotedbl!\textquotedbl}, keine \acs{SSH}-Keys
+  \item Immutable User-Datenbank: \texttt{\seqsplit{users.mutableUsers=false}}
+  \item Root-Konto gesperrt: \texttt{\seqsplit{hashedPassword=\textquotedbl!\textquotedbl}}, keine \acs{SSH}-Keys
   \item Nur ein unprivilegierter Benutzer (\texttt{apphost})
 \end{itemize}
 
 \subsubsection*{AppArmor (Mandatory Access Control)}
 \begin{itemize}
   \item AppArmor aktiv: \texttt{security.apparmor.enable=true}
-  \item \texttt{killUnconfinedConfinables=true} - Prozesse ohne Profil werden beendet
+  \item \texttt{\seqsplit{killUnconfinedConfinables=true}} - Prozesse ohne Profil werden beendet
   \item Upstream AppArmor-Profile eingebunden (\texttt{apparmor-profiles})
 \end{itemize}
 
@@ -189,7 +189,7 @@ Hardware: \texttt{bluetooth}, \texttt{btusb}, \texttt{usb-storage}, \texttt{fire
   \item \textbf{Wöchentlicher CVE-Scan:} Trivy scannt alle laufenden Images montags 02:00 auf HIGH/CRITICAL-Schwachstellen.
 \end{itemize}
 
-\subsubsection*{Kata Containers \& gVisor (optional, standardmäßig deaktiviert)}
+\subsubsection*{Kata Containers \& gVisor (optional, standardmäßig deaktiviert)} \label{sec:kata_konfig}
 Beide Runtimes sind konfiguriert, aber nicht als Standard gesetzt, da sie
 unter bestimmten Hypervisor-Konfigurationen zu Instabilitäten führen können.
 Das gilt insbesondere, wenn Nested Virtualization nicht stabil unterstützt
@@ -204,7 +204,7 @@ vorausgesetzt das System wird aktuell gehalten.
 \subsection{Festplatte \& Daten}
 \begin{itemize}
   \item \textbf{Swap verschlüsselt:} Zufälliger Schlüssel pro Boot \\
-  (\texttt{randomEncryption=true}) keine persistenten Daten im Swap. Standardmäßig nicht unter NixOS aktiviert.
+  (\texttt{\seqsplit{randomEncryption=true}}) keine persistenten Daten im Swap. Standardmäßig nicht unter NixOS aktiviert.
   \item \textbf{Btrfs mit zstd-Kompression} auf allen Subvolumes.
   \item \textbf{/tmp eingeschränkt:} Mount-Optionen \texttt{nosuid,nodev,noexec}.
   \item \textbf{\acs{ESP} (\texttt{/boot}):} Umask \texttt{0077} (nur root darf lesen). 
