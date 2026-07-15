@@ -9,7 +9,7 @@
 \renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\linewidth}{@{} >{\RaggedRight}p{2.6cm} >{\RaggedRight}X >{\RaggedRight}X @{}}
 \toprule
-\textbf{\seqsplit{Härtungsmaßnahme}} & \textbf{Beschreibung} & \textbf{Abgewehrter Angriffsvektor} \\
+\textbf{Härtungs-}\newline \textbf{maßnahme} & \textbf{Beschreibung} & \textbf{Abgewehrter Angriffsvektor} \\
 \midrule
 Air-Gap als Standardzustand (Cold-\acp{VM})
   & Das System bootet per NixOS-\emph{specialisation} standardmäßig vollständig air-gapped, ein Online-Modus existiert nur als separater, bewusst zu wählender Boot-Eintrag. Interfaces werden beim Boot heruntergefahren, IPv6 deaktiviert und ausgehender Verkehr per \texttt{nftables} (\texttt{policy drop}, nur Loopback) unterbunden.
@@ -20,7 +20,7 @@ Festplatten"=verschlüsselung (\acs{LUKS}2)
   & Auslesen von Wallet-/Konfigurationsdaten aus gestohlenen Datenträgern oder \ac{VM}-Abbildern (Data-at-Rest). \\
 \addlinespace
 Kernel-Härtung
-  & \texttt{kptr\_restrict}, \texttt{dmesg\_restrict}, \texttt{yama.ptrace\_scope}, deaktiviertes unprivilegiertes eBPF sowie \texttt{protectKernelImage} (kein kexec zur Laufzeit).
+  & \texttt{kptr\_restrict}, \texttt{dmesg\_restrict}, \texttt{yama.ptrace\_scope}, deaktiviertes unprivilegiertes \acs{eBPF} sowie \texttt{protectKernelImage} (kein kexec zur Laufzeit).
   & Lokale Rechteausweitung, Kernel-Informationslecks, Laufzeit-Manipulation des Kernels. \\
 \addlinespace
 Boot-Integrität

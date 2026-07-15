@@ -3,7 +3,8 @@
 
 Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<subdomain>.<DOMAIN>}. Konfigurierbare Subdomains können in der \texttt{.env}-Datei überschrieben werden. Die Spalte \textbf{Tor} zeigt, ob der Dienst zusätzlich über einen eigenen \texttt{<subdomain>.<onion-adresse>.onion}-Router erreichbar ist. Rein intern genutzte Komponenten haben keinen Traefik-Router und damit auch keinen Tor-Zugang.
 
-\begin{xltabular}{\linewidth}{p{3.2cm} p{3.5cm} p{1.3cm} X}
+
+\begin{xltabular}{\linewidth}{@{} >{\leavevmode}p{3.2cm} p{3.5cm} p{1.3cm} >{\RaggedRight\arraybackslash\leavevmode}X @{}}
   \toprule
   \textbf{Dienst} & \textbf{Subdomain} & \textbf{Tor} & \textbf{Beschreibung} \\
   \midrule
@@ -18,7 +19,6 @@ Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<
   \bottomrule
   \endlastfoot
   \multicolumn{4}{l}{\textbf{Infrastruktur}} \\
-  \midrule
   Traefik         & \texttt{traefik.*}      & Ja   & Reverse Proxy / \acs{TLS}-Termination \\
   Authelia        & \texttt{auth.*}         & Ja   & \acs{SSO} / \acs{MFA} / \acs{OIDC}-Provider \\
   Garage          & \texttt{s3.*}           & Nein & \acs{S3}-kompatibler Objektspeicher \\
@@ -26,37 +26,30 @@ Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<
   Tor             & --                      & --   & Onion-Routing für die anderen Dienste \\
   \midrule
   \multicolumn{4}{l}{\textbf{Medien}} \\
-  \midrule
   Jellyfin        & \texttt{jellyfin.*}     & Ja & Medienserver (Filme, Musik, TV) \\
   Immich          & \texttt{photos.*}       & Ja & Foto- und Video-Backup \\
   \midrule
   \multicolumn{4}{l}{\textbf{Dokumente}} \\
-  \midrule
   Paperless-NGX   & \texttt{paperless.*}    & Ja & Dokumentenmanagement / \acs{OCR} \\
   Bento-PDF       & \texttt{pdf.*}          & Ja & PDF-Werkzeuge \\
-  \midrule
+  \pagebreak
   \multicolumn{4}{l}{\textbf{Cloud \& Office}} \\
-  \midrule
   OpenCloud       & \texttt{cloud.*}        & Ja   & Nextcloud-Alternative, Dateisync \\
   Collabora       & \texttt{office.*}       & Nein & Browser-basierte Office-Suite \\
   \acs{WOPI}-Server     & \texttt{wopi.*}         & Nein & Collaboration-Backend \\
   \midrule
   \multicolumn{4}{l}{\textbf{Home Automation}} \\
-  \midrule
   Home Assistant  & \texttt{home.*}         & Ja & Hausautomation \\
   Mosquitto       & \texttt{mqtt.*}         & Ja & \acs{MQTT}-Broker (WebSocket) \\
   \midrule
   \multicolumn{4}{l}{\textbf{Kommunikation}} \\
-  \midrule
   Ntfy            & \texttt{ntfy.*}         & Ja & Push-Benachrichtigungen \\
   Bichon          & \texttt{bichon.*}       & Ja & E-Mail-Client \\
   \midrule
   \multicolumn{4}{l}{\textbf{Entwicklung}} \\
-  \midrule
   Forgejo         & \texttt{git.*}          & Ja & Self-hosted Git-Plattform \\
   \midrule
   \multicolumn{4}{l}{\textbf{Monitoring}} \\
-  \midrule
   Grafana         & \texttt{grafana.*}      & Ja   & Dashboards \& Visualisierung \\
   Prometheus      & \texttt{prometheus.*}   & Ja   & Metriken-Scraping \\
   Alertmanager    & \texttt{alertmanager.*} & Ja   & Alert-Routing \\
@@ -64,9 +57,7 @@ Alle Dienste sind über Traefik erreichbar. Die Standard-Subdomain ist \texttt{<
   Node Exporter   & --                      & Nein & Host-Metriken \\
   cAdvisor        & --                      & Nein & Container-Metriken \\
   Grafana Alloy   & --                      & Nein & Log-Shipper zu Loki (Docker- und Host-Logs) \\
-  \midrule
   \multicolumn{4}{l}{\textbf{Tools}} \\
-  \midrule
   Homepage        & \texttt{dashboard.*}    & Ja & Startseite / Service-Übersicht \\
   Vaultwarden     & \texttt{vault.*}        & Ja & Passwortmanager (Bitwarden-kompatibel) \\
   OpenSpeedTest   & \texttt{speedtest.*}    & Ja & Interner Netzwerk-Speedtest \\

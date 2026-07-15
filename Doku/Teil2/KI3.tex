@@ -376,7 +376,7 @@ I4 (2): Der Stack folgt dem geforderten Katalog, jedoch entstanden zusätzlich e
 I1 (2): Registrierungen wurden geschlossen (\path{SIGNUPS_ALLOWED=false},
 in Gitea \path{DISABLE_REGISTRATION=true} plus \path{REQUIRE_SIGNIN_VIEW=true}), Log-Rotation und \texttt{admin off} für Caddy sind gesetzt. Dem stehen durchgängige \texttt{:latest}-Image-Tags und
 vorhersehbare Admin-Namen wie \texttt{admin} und \texttt{gitadmin} gegenüber.\cite{composeA,deployscriptA,selfauditA}
-I2 (1): Sämtliche Secrets werden im Klartext unter \path{/root/homelab-secrets} erzeugt und in \textttt{service"=credentials.txt} inklusive Benutzer/Passwort-Paaren aggregiert. 
+I2 (1): Sämtliche Secrets werden im Klartext unter \path{/root/homelab-secrets} erzeugt und in \texttt{service"=credentials.txt} inklusive Benutzer/Passwort-Paaren aggregiert. 
 Zudem werden Datenbankpasswörter per \texttt{sed} in \path{initdb/01-init.sql} eingesetzt. 
 Zusätzlich exportiert der Backup-Job die privaten \path{hs_ed25519_secret_key}-Dateien der Hidden
 Services in ein unverschlüsseltes lokales Archiv. 
@@ -559,7 +559,7 @@ I4 (2): Unnötige Zusatzdienste wurden konsequent vermieden und der temporäre P
 Der Abzug ergibt sich daraus, dass fünf provisionierte Gäste als funktionslose Hüllen verbleiben.\cite{finalsummaryB,implementationlogB}
 
 \paragraph{Konfiguration (3 von 3)} \mbox{}\\
-I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte \ac{BS}-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \textttt{SystemMax"=Use=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \texttt{policy"=rc.d} gegen ungewollte Dienststarts bereit. 
+I1 (3): Alle Gäste erhielten über \path{section3_config_remote.sh} eine reproduzierbare gehärtete Minimalbasis. Diese stellt echte \ac{BS}-Updates (\texttt{--with-new-pkgs}), \texttt{Etc/UTC}, Journald-Limit \texttt{SystemMax"=Use=64M}, die \path{/etc/ailab}-Struktur mit 0700-Secrets-Verzeichnis und \texttt{policy"=rc.d} gegen ungewollte Dienststarts bereit. 
 Die \ac{VM}-Basis wurde gegen \texttt{SHA512SUMS} samt Signaturdatei verifiziert.\cite{section3scriptB,validatornotesB,masterplanB}
 I2 (3): In \ac{IaC}- und Doku-Pfaden liegen keine Klartext-Secrets. Dabei enthält \path{/etc/ailab/secrets} nur ein README mit dem expliziten Verbot echter Geheimnisse. 
 Laufzeitnahe Artefakte wie der Operator-Auth-Key liegen root-only unter \path{/root/ailab-runtime} außerhalb von \texttt{outputs} und \ac{IaC}.\cite{section3scriptB,implementationlogB}
