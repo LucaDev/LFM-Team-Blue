@@ -1,7 +1,7 @@
 name: apphost
 services:
   collabora:
-    image: collabora/code:25.04.10.3.1@sha256:a51dd5d1741dea5d19f49d9997de2c321bf582076015ec4015941f3f00a5f4c0
+    image: collabora/code:26.04.2.1.1@sha256:fece3a479b4ca57e7186d0c715155526170e337deef55bbbbbc79ee93b0e72e1
     container_name: collabora
     restart: unless-stopped
     runtime: runc
